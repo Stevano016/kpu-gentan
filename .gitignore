@@ -1,0 +1,15 @@
+# Global Git Ignore
+.DS_Store
+Thumbs.db
+*.log
+
+# Sub-projects dependency directories
+/backend/vendor/
+/backend/.env
+/web/node_modules/
+/web/dist/
+/mobile/.dart_tool/
+/mobile/build/
+
+# Local database
+/backend/database/database.sqlite
