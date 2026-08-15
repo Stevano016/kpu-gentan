@@ -1204,6 +1204,7 @@ export default function App() {
                     >
                       Selanjutnya
                     </button>
+                  </div>
                 </div>
               </>
             )}
