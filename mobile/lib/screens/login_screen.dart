@@ -17,6 +17,7 @@ class _LoginScreenState extends State<LoginScreen> {
 
   bool _isLoading = false;
   String? _errorMessage;
+  bool _obscurePassword = true;
 
   Future<void> _handleLogin() async {
     if (!_formKey.currentState!.validate()) return;
@@ -86,16 +87,17 @@ class _LoginScreenState extends State<LoginScreen> {
                       ),
                       const SizedBox(height: 12),
                       const Text(
-                        'Aplikasi KPPS',
+                        'Gentara',
                         textAlign: TextAlign.center,
                         style: TextStyle(
-                          fontSize: 24,
+                          fontSize: 28,
                           fontWeight: FontWeight.bold,
                           color: Color(0xFF1F2937),
+                          letterSpacing: 0.5,
                         ),
                       ),
                       const Text(
-                        'Petugas Lapangan TPS Gentan',
+                        'Aplikasi KPPS Lapangan',
                         textAlign: TextAlign.center,
                         style: TextStyle(
                           fontSize: 14,
@@ -151,10 +153,21 @@ class _LoginScreenState extends State<LoginScreen> {
                       // Password Input
                       TextFormField(
                         controller: _passwordController,
-                        obscureText: true,
+                        obscureText: _obscurePassword,
                         decoration: InputDecoration(
                           labelText: 'Password',
                           prefixIcon: const Icon(Icons.lock_outline),
+                          suffixIcon: IconButton(
+                            icon: Icon(
+                              _obscurePassword ? Icons.visibility_off : Icons.visibility,
+                              color: const Color(0xFF6B7280),
+                            ),
+                            onPressed: () {
+                              setState(() {
+                                _obscurePassword = !_obscurePassword;
+                              });
+                            },
+                          ),
                           border: OutlineInputBorder(
                             borderRadius: BorderRadius.circular(8),
                           ),

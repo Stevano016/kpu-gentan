@@ -323,14 +323,96 @@ class _HomeScreenState extends State<HomeScreen> {
 
 
 
+  void _showCustomConfirmDialog({
+    required BuildContext context,
+    required String title,
+    required String message,
+    required String confirmText,
+    required VoidCallback onConfirm,
+    Color? confirmColor,
+  }) {
+    final tealColor = const Color(0xFF0D9488);
+    showDialog(
+      context: context,
+      builder: (context) => Dialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        elevation: 8,
+        backgroundColor: Colors.white,
+        child: Padding(
+          padding: const EdgeInsets.all(24.0),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              Text(
+                title,
+                style: const TextStyle(
+                  fontSize: 18,
+                  fontWeight: FontWeight.bold,
+                  color: Color(0xFF1F2937),
+                ),
+              ),
+              const SizedBox(height: 12),
+              Text(
+                message,
+                style: const TextStyle(
+                  fontSize: 14,
+                  color: Color(0xFF4B5563),
+                  height: 1.5,
+                ),
+              ),
+              const SizedBox(height: 24),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.end,
+                children: [
+                  TextButton(
+                    onPressed: () => Navigator.pop(context),
+                    style: TextButton.styleFrom(
+                      foregroundColor: const Color(0xFF4B5563),
+                      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+                    ),
+                    child: const Text('Batal', style: TextStyle(fontWeight: FontWeight.w600)),
+                  ),
+                  const SizedBox(width: 8),
+                  ElevatedButton(
+                    onPressed: () {
+                      Navigator.pop(context);
+                      onConfirm();
+                    },
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: confirmColor ?? tealColor,
+                      foregroundColor: Colors.white,
+                      elevation: 0,
+                      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                    ),
+                    child: Text(confirmText, style: const TextStyle(fontWeight: FontWeight.bold)),
+                  ),
+                ],
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
   Future<void> _handleLogout() async {
-    if (!confirmLogout()) return;
-    await _storage.clearSession();
-    if (mounted) {
-      Navigator.of(context).pushReplacement(
-        MaterialPageRoute(builder: (_) => const LoginScreen()),
-      );
-    }
+    _showCustomConfirmDialog(
+      context: context,
+      title: 'Keluar Aplikasi?',
+      message: 'Apakah Anda yakin ingin keluar dari akun KPPS ini?',
+      confirmText: 'Keluar',
+      confirmColor: Colors.red[600],
+      onConfirm: () async {
+        await _storage.clearSession();
+        if (mounted) {
+          Navigator.of(context).pushReplacement(
+            MaterialPageRoute(builder: (_) => const LoginScreen()),
+          );
+        }
+      },
+    );
   }
 
   Widget _buildDashboardTab() {
@@ -856,27 +938,14 @@ class _HomeScreenState extends State<HomeScreen> {
                         Expanded(
                           child: ElevatedButton(
                             onPressed: _syncingInProgress ? null : () {
-                              showDialog(
+                              _showCustomConfirmDialog(
                                 context: context,
-                                builder: (context) => AlertDialog(
-                                  title: const Text('Kunci Hasil Suara?'),
-                                  content: const Text(
-                                    'Hasil quick count yang disubmit final akan dikunci dan dikirim ke sekretariat. Anda tidak dapat mengeditnya kembali tanpa reset.',
-                                  ),
-                                  actions: [
-                                    TextButton(
-                                      onPressed: () => Navigator.pop(context),
-                                      child: const Text('Batal'),
-                                    ),
-                                    ElevatedButton(
-                                      onPressed: () {
-                                        Navigator.pop(context);
-                                        _submitQuickCount('final');
-                                      },
-                                      child: const Text('Submit Final'),
-                                    ),
-                                  ],
-                                ),
+                                title: 'Kunci Hasil Suara?',
+                                message: 'Hasil quick count yang disubmit final akan dikunci dan dikirim ke sekretariat. Anda tidak dapat mengeditnya kembali tanpa reset.',
+                                confirmText: 'Submit Final',
+                                onConfirm: () {
+                                  _submitQuickCount('final');
+                                },
                               );
                             },
                             style: ElevatedButton.styleFrom(
@@ -1023,10 +1092,7 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
-  bool confirmLogout() {
-    // Standard confirm, let's just make a simple dialog or return true for quick action
-    return true;
-  }
+
 
   @override
   Widget build(BuildContext context) {
