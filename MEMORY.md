@@ -7,8 +7,8 @@ This file captures the active state, environment variables, completed tasks, and
 ## 📍 Last Known State
 
 - **Laravel Backend API (`/backend`)**: Running at `http://192.168.11.9:8000`. Resolved N+1 query loops in `DashboardController` by replacing map queries with a consolidated `withCount` database request. Updated `TpsController` and `UserController` index endpoints to support page-based pagination.
-- **Web Dashboard (`/web`)**: Running at `http://localhost:5173`. Fully paginated the **TPS & Monitoring** and **Akun KPPS** pages with React page state selectors and pagination footer components. All 4 lists (DPT, DPK, TPS, and KPPS Accounts) are now paginated.
-- **Mobile Client (`/mobile`)**: Analyzer is 100% clean (`No issues found!`). The check-in validation search query and scanning flow now uses the generated `id_pemilih` (with prefix `USH-GTN-026`) instead of NIK.
+- **Web Dashboard (`/web`)**: Running at `http://localhost:5173`. Fully paginated all list tables (DPT, DPK, TPS, and KPPS Accounts). Made all page header sections (`.section-header`) sticky at the top on desktop layouts with solid background masking to prevent scroll overlap. Integrated a custom confirm modal overlay that replaces default browser `confirm()` popups. Added show/hide password visibility toggle in login screen.
+- **Mobile Client (`/mobile`)**: Analyzer is 100% clean (`No issues found!`). The check-in validation search query and scanning flow now uses the generated `id_pemilih` (with prefix `USH-GTN-026`) instead of NIK. Designed a custom confirm dialog helper (`_showCustomConfirmDialog`) and implemented it for logging out and locking quick count results. Added password visibility toggle in login screen.
 
 ---
 
@@ -29,6 +29,8 @@ This file captures the active state, environment variables, completed tasks, and
 - **15 Aug 2026**: Switched check-in validation from NIK to unique voter ID (`USH-GTN-026xxxx`). Migrated backend SQLite database to add `id_pemilih` column and populated existing records. Updated manual and QR code scanner check-in in the Gentara app to search and validate by unique ID. Displayed the unique ID on both DPT and DPK web and mobile lists.
 - **15 Aug 2026**: Updated database seeder to inject realistic dummy records containing DPK voters across all TPS. Wiped and re-seeded SQLite backend instance.
 - **15 Aug 2026**: Paginated all lists (DPT, DPK, TPS, and KPPS Accounts) on the web dashboard and optimized backend database queries to prevent N+1 query patterns using eager-loading and subquery counters.
+- **15 Aug 2026**: Implemented custom password eye toggle on web and mobile. Redesigned mobile alert popups to use a custom rounded Dialog UI. Standardized confirm popups on the web with a custom confirm modal overlay. Made the web panel fully responsive.
+- **15 Aug 2026**: Fixed all `.section-header` headers on the web client to remain sticky/fixed at the top of the viewport when scrolling, with a background mask.
 
 ---
 
