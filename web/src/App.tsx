@@ -111,8 +111,14 @@ export default function App() {
   const [importLoading, setImportLoading] = useState(false);
 
   // KPPS Accounts Data
-  const [kppsUsers, setKppsUsers] = useState<any[]>([]);
+  const [kppsUsers, setKppsUsers] = useState<any>(null); // Change kppsUsers to hold the paginated object
+  const [kppsPage, setKppsPage] = useState(1);
   const [kppsLoading, setKppsLoading] = useState(false);
+
+  // TPS Pagination Data
+  const [tpsPage, setTpsPage] = useState(1);
+  const [tpsPageData, setTpsPageData] = useState<any>(null);
+  const [tpsPageLoading, setTpsPageLoading] = useState(false);
   const [isKppsModalOpen, setIsKppsModalOpen] = useState(false);
   const [kppsFormUsername, setKppsFormUsername] = useState('');
   const [kppsFormPassword, setKppsFormPassword] = useState('');
@@ -142,7 +148,7 @@ export default function App() {
     if (page === 'dashboard') {
       fetchDashboard();
     } else if (page === 'tps') {
-      fetchTpsList();
+      fetchTpsPageData();
     } else if (page === 'dpt' || page === 'dpk') {
       fetchDpts();
       fetchTpsList(); // For filter dropdown
@@ -150,7 +156,7 @@ export default function App() {
       fetchKppsUsers();
       fetchTpsList(); // For creation select
     }
-  }, [page, token, dptSearch, dptTpsFilter, dptPage]);
+  }, [page, token, dptSearch, dptTpsFilter, dptPage, tpsPage, kppsPage]);
 
   // Load single TPS detail if selected
   useEffect(() => {
@@ -241,6 +247,18 @@ export default function App() {
     } catch {}
   };
 
+  const fetchTpsPageData = async () => {
+    setTpsPageLoading(true);
+    try {
+      const res = await fetch(`${API_URL}/tps?page=${tpsPage}`, { headers: getAuthHeader() });
+      const json = await res.json();
+      if (res.ok) {
+        setTpsPageData(json.data);
+      }
+    } catch {}
+    setTpsPageLoading(false);
+  };
+
   const fetchTpsDetail = async (id: number) => {
     try {
       const res = await fetch(`${API_URL}/dashboard/tps/${id}`, { headers: getAuthHeader() });
@@ -311,7 +329,7 @@ export default function App() {
   const fetchKppsUsers = async () => {
     setKppsLoading(true);
     try {
-      const res = await fetch(`${API_URL}/users`, { headers: getAuthHeader() });
+      const res = await fetch(`${API_URL}/users?page=${kppsPage}`, { headers: getAuthHeader() });
       const json = await res.json();
       if (res.ok) {
         setKppsUsers(json.data);
@@ -843,54 +861,85 @@ export default function App() {
               </button>
             </div>
 
-            <div className="table-container">
-              <table>
-                <thead>
-                  <tr>
-                    <th>ID</th>
-                    <th>Nama TPS</th>
-                    <th>Wilayah / Alamat</th>
-                    <th>Jumlah Pemilih (DPT)</th>
-                    <th>Kehadiran (Hadir)</th>
-                    <th>% Kehadiran</th>
-                    <th>Jumlah Akun KPPS</th>
-                    <th>Aksi</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {tpsList.map((t: any) => (
-                    <tr key={t.id}>
-                      <td>{t.id}</td>
-                      <td style={{ fontWeight: '600' }}>{t.nama}</td>
-                      <td>{t.wilayah}</td>
-                      <td>{t.dpt_count ?? t.total_dpt}</td>
-                      <td>{t.hadir_count ?? 0}</td>
-                      <td>
-                        {t.dpt_count > 0 ? `${roundVal(((t.hadir_count ?? 0) / t.dpt_count) * 100)}%` : '0%'}
-                      </td>
-                      <td>{t.users_count}</td>
-                      <td>
-                        <button
-                          onClick={() => {
-                            setSelectedTpsId(t.id);
-                            setPage('tps-detail');
-                          }}
-                          className="btn btn-secondary"
-                          style={{ padding: '6px 12px', fontSize: '0.8rem' }}
-                        >
-                          Lihat Detail
-                        </button>
-                      </td>
-                    </tr>
-                  ))}
-                  {tpsList.length === 0 && (
-                    <tr>
-                      <td colSpan={6} style={{ textAlign: 'center', color: 'var(--text-muted)' }}>Belum ada data TPS.</td>
-                    </tr>
-                  )}
-                </tbody>
-              </table>
-            </div>
+            {tpsPageLoading && <div style={{ fontSize: '0.875rem', color: 'var(--text-muted)', marginBottom: '16px' }}>Memuat data TPS...</div>}
+
+            {tpsPageData && (
+              <>
+                <div className="table-container">
+                  <table>
+                    <thead>
+                      <tr>
+                        <th>ID</th>
+                        <th>Nama TPS</th>
+                        <th>Wilayah / Alamat</th>
+                        <th>Jumlah Pemilih (DPT)</th>
+                        <th>Kehadiran (Hadir)</th>
+                        <th>% Kehadiran</th>
+                        <th>Jumlah Akun KPPS</th>
+                        <th>Aksi</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {tpsPageData.data.map((t: any) => (
+                        <tr key={t.id}>
+                          <td>{t.id}</td>
+                          <td style={{ fontWeight: '600' }}>{t.nama}</td>
+                          <td>{t.wilayah}</td>
+                          <td>{t.dpt_count ?? t.total_dpt}</td>
+                          <td>{t.hadir_count ?? 0}</td>
+                          <td>
+                            {t.dpt_count > 0 ? `${roundVal(((t.hadir_count ?? 0) / t.dpt_count) * 100)}%` : '0%'}
+                          </td>
+                          <td>{t.users_count}</td>
+                          <td>
+                            <button
+                              onClick={() => {
+                                setSelectedTpsId(t.id);
+                                setPage('tps-detail');
+                              }}
+                              className="btn btn-secondary"
+                              style={{ padding: '6px 12px', fontSize: '0.8rem' }}
+                            >
+                              Lihat Detail
+                            </button>
+                          </td>
+                        </tr>
+                      ))}
+                      {tpsPageData.data.length === 0 && (
+                        <tr>
+                          <td colSpan={8} style={{ textAlign: 'center', color: 'var(--text-muted)' }}>Belum ada data TPS.</td>
+                        </tr>
+                      )}
+                    </tbody>
+                  </table>
+                </div>
+
+                {/* Pagination */}
+                <div className="pagination">
+                  <span style={{ fontSize: '0.875rem', color: 'var(--text-muted)' }}>
+                    Menampilkan Halaman {tpsPageData.current_page} dari {tpsPageData.last_page} ({tpsPageData.total} TPS)
+                  </span>
+                  <div style={{ display: 'flex', gap: '8px' }}>
+                    <button
+                      disabled={tpsPageData.current_page === 1}
+                      onClick={() => setTpsPage(prev => Math.max(1, prev - 1))}
+                      className="btn btn-secondary"
+                      style={{ padding: '6px 12px', fontSize: '0.8rem' }}
+                    >
+                      Sebelumnya
+                    </button>
+                    <button
+                      disabled={tpsPageData.current_page === tpsPageData.last_page}
+                      onClick={() => setTpsPage(prev => Math.min(tpsPageData.last_page, prev + 1))}
+                      className="btn btn-secondary"
+                      style={{ padding: '6px 12px', fontSize: '0.8rem' }}
+                    >
+                      Selanjutnya
+                    </button>
+                  </div>
+                </div>
+              </>
+            )}
           </div>
         )}
 
@@ -1394,62 +1443,91 @@ export default function App() {
 
             {kppsLoading && <div style={{ fontSize: '0.875rem', color: 'var(--text-muted)', marginBottom: '16px' }}>Memuat data...</div>}
 
-            <div className="table-container">
-              <table>
-                <thead>
-                  <tr>
-                    <th>Username</th>
-                    <th>Hak Akses / Peran</th>
-                    <th>Asosiasi TPS</th>
-                    <th>Dibuat Tanggal</th>
-                    <th>Aksi</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {kppsUsers.map((u: any) => (
-                    <tr key={u.id}>
-                      <td style={{ fontWeight: '600' }}>{u.username}</td>
-                      <td>
-                        {u.kpps_role === 'validasi' ? (
-                          <span className="badge badge-secondary" style={{ backgroundColor: 'oklch(0.92 0.02 240)', color: 'oklch(0.40 0.10 240)' }}>Hanya Validasi</span>
-                        ) : (
-                          <span className="badge badge-success" style={{ backgroundColor: 'oklch(0.92 0.05 160)', color: 'oklch(0.35 0.15 160)' }}>Validasi & Quick Count</span>
-                        )}
-                      </td>
-                      <td>{u.tps?.nama || 'Tidak Terhubung'}</td>
-                      <td>{new Date(u.created_at).toLocaleString('id-ID')}</td>
-                      <td>
-                        <div style={{ display: 'flex', gap: '8px' }}>
-                          <button
-                            onClick={() => {
-                              setResetUser(u);
-                              setResetPasswordVal('');
-                              setIsResetModalOpen(true);
-                            }}
-                            className="btn btn-secondary"
-                            style={{ padding: '4px 8px', fontSize: '0.75rem' }}
-                          >
-                            Reset Password
-                          </button>
-                          <button
-                            onClick={() => handleDeleteUser(u.id)}
-                            className="btn btn-secondary"
-                            style={{ padding: '4px 8px', fontSize: '0.75rem', color: 'var(--danger)' }}
-                          >
-                            Hapus
-                          </button>
-                        </div>
-                      </td>
-                    </tr>
-                  ))}
-                  {kppsUsers.length === 0 && (
-                    <tr>
-                      <td colSpan={4} style={{ textAlign: 'center', color: 'var(--text-muted)' }}>Belum ada akun KPPS terdaftar.</td>
-                    </tr>
-                  )}
-                </tbody>
-              </table>
-            </div>
+            {kppsUsers && (
+              <>
+                <div className="table-container">
+                  <table>
+                    <thead>
+                      <tr>
+                        <th>Username</th>
+                        <th>Hak Akses / Peran</th>
+                        <th>Asosiasi TPS</th>
+                        <th>Dibuat Tanggal</th>
+                        <th>Aksi</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {kppsUsers.data.map((u: any) => (
+                        <tr key={u.id}>
+                          <td style={{ fontWeight: '600' }}>{u.username}</td>
+                          <td>
+                            {u.kpps_role === 'validasi' ? (
+                              <span className="badge badge-secondary" style={{ backgroundColor: 'oklch(0.92 0.02 240)', color: 'oklch(0.40 0.10 240)' }}>Hanya Validasi</span>
+                            ) : (
+                              <span className="badge badge-success" style={{ backgroundColor: 'oklch(0.92 0.05 160)', color: 'oklch(0.35 0.15 160)' }}>Validasi & Quick Count</span>
+                            )}
+                          </td>
+                          <td>{u.tps?.nama || 'Tidak Terhubung'}</td>
+                          <td>{new Date(u.created_at).toLocaleString('id-ID')}</td>
+                          <td>
+                            <div style={{ display: 'flex', gap: '8px' }}>
+                              <button
+                                onClick={() => {
+                                  setResetUser(u);
+                                  setResetPasswordVal('');
+                                  setIsResetModalOpen(true);
+                                }}
+                                className="btn btn-secondary"
+                                style={{ padding: '4px 8px', fontSize: '0.75rem' }}
+                              >
+                                Reset Password
+                              </button>
+                              <button
+                                onClick={() => handleDeleteUser(u.id)}
+                                className="btn btn-secondary"
+                                style={{ padding: '4px 8px', fontSize: '0.75rem', color: 'var(--danger)' }}
+                              >
+                                Hapus
+                              </button>
+                            </div>
+                          </td>
+                        </tr>
+                      ))}
+                      {kppsUsers.data.length === 0 && (
+                        <tr>
+                          <td colSpan={5} style={{ textAlign: 'center', color: 'var(--text-muted)' }}>Belum ada akun KPPS terdaftar.</td>
+                        </tr>
+                      )}
+                    </tbody>
+                  </table>
+                </div>
+
+                {/* Pagination */}
+                <div className="pagination">
+                  <span style={{ fontSize: '0.875rem', color: 'var(--text-muted)' }}>
+                    Menampilkan Halaman {kppsUsers.current_page} dari {kppsUsers.last_page} ({kppsUsers.total} akun KPPS)
+                  </span>
+                  <div style={{ display: 'flex', gap: '8px' }}>
+                    <button
+                      disabled={kppsUsers.current_page === 1}
+                      onClick={() => setKppsPage(prev => Math.max(1, prev - 1))}
+                      className="btn btn-secondary"
+                      style={{ padding: '6px 12px', fontSize: '0.8rem' }}
+                    >
+                      Sebelumnya
+                    </button>
+                    <button
+                      disabled={kppsUsers.current_page === kppsUsers.last_page}
+                      onClick={() => setKppsPage(prev => Math.min(kppsUsers.last_page, prev + 1))}
+                      className="btn btn-secondary"
+                      style={{ padding: '6px 12px', fontSize: '0.8rem' }}
+                    >
+                      Selanjutnya
+                    </button>
+                  </div>
+                </div>
+              </>
+            )}
           </div>
         )}
 

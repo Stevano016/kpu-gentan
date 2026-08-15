@@ -47,24 +47,33 @@ class DashboardController extends Controller
         // Sync statistics
         $pendingSyncLogs = SyncLog::count(); // Simple count of sync log history
 
-        // List of all TPS with stats
+        // List of all TPS with stats (optimized using withCount to prevent N+1 queries)
         $tpsList = Tps::with(['quickCount'])
+            ->withCount([
+                'dpt as total_dpt' => function ($query) {
+                    $query->where('jenis_pemilih', 'dpt');
+                },
+                'dpt as total_dpk' => function ($query) {
+                    $query->where('jenis_pemilih', 'dpk');
+                },
+                'dpt as hadir_dpt' => function ($query) {
+                    $query->where('jenis_pemilih', 'dpt')->where('status_hadir', true);
+                },
+                'dpt as hadir_dpk' => function ($query) {
+                    $query->where('jenis_pemilih', 'dpk')->where('status_hadir', true);
+                }
+            ])
             ->get()
             ->map(function ($tps) {
-                $dptCount = Dpt::where('tps_id', $tps->id)->where('jenis_pemilih', 'dpt')->count();
-                $dpkCount = Dpt::where('tps_id', $tps->id)->where('jenis_pemilih', 'dpk')->count();
-                $hadirDpt = Dpt::where('tps_id', $tps->id)->where('jenis_pemilih', 'dpt')->where('status_hadir', true)->count();
-                $hadirDpk = Dpt::where('tps_id', $tps->id)->where('jenis_pemilih', 'dpk')->where('status_hadir', true)->count();
-                
                 return [
                     'id' => $tps->id,
                     'nama' => $tps->nama,
                     'wilayah' => $tps->wilayah,
-                    'total_dpt' => $dptCount,
-                    'total_dpk' => $dpkCount,
-                    'hadir' => $hadirDpt + $hadirDpk,
-                    'hadir_dpt' => $hadirDpt,
-                    'hadir_dpk' => $hadirDpk,
+                    'total_dpt' => (int)$tps->total_dpt,
+                    'total_dpk' => (int)$tps->total_dpk,
+                    'hadir' => (int)($tps->hadir_dpt + $tps->hadir_dpk),
+                    'hadir_dpt' => (int)$tps->hadir_dpt,
+                    'hadir_dpk' => (int)$tps->hadir_dpk,
                     'quick_count_status' => $tps->quickCount ? $tps->quickCount->status : 'belum_isi',
                     'quick_count' => $tps->quickCount ? [
                         'kandidat_1' => $tps->quickCount->kandidat_1,

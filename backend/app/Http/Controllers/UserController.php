@@ -22,9 +22,15 @@ class UserController extends Controller
     public function index(Request $request)
     {
         $this->checkSecretariat($request);
+ 
+        $query = User::with('tps')->where('role', 'kpps');
 
-        $users = User::with('tps')->where('role', 'kpps')->get();
-
+        if ($request->has('page')) {
+            $users = $query->paginate(10);
+        } else {
+            $users = $query->get();
+        }
+ 
         return response()->json([
             'status' => 'success',
             'data' => $users

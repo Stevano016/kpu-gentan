@@ -21,15 +21,21 @@ class TpsController extends Controller
     public function index(Request $request)
     {
         $this->checkSecretariat($request);
-
-        $tps = Tps::withCount([
+ 
+        $query = Tps::withCount([
             'dpt', 
             'users',
-            'dpt as hadir_count' => function ($query) {
-                $query->where('status_hadir', true);
+            'dpt as hadir_count' => function ($q) {
+                $q->where('status_hadir', true);
             }
-        ])->get();
+        ]);
 
+        if ($request->has('page')) {
+            $tps = $query->paginate(10);
+        } else {
+            $tps = $query->get();
+        }
+ 
         return response()->json([
             'status' => 'success',
             'data' => $tps
