@@ -143,7 +143,7 @@ export default function App() {
       fetchDashboard();
     } else if (page === 'tps') {
       fetchTpsList();
-    } else if (page === 'dpt') {
+    } else if (page === 'dpt' || page === 'dpk') {
       fetchDpts();
       fetchTpsList(); // For filter dropdown
     } else if (page === 'kpps') {
@@ -257,6 +257,11 @@ export default function App() {
       let url = `${API_URL}/dpt?page=${dptPage}`;
       if (dptSearch) url += `&search=${dptSearch}`;
       if (dptTpsFilter) url += `&tps_id=${dptTpsFilter}`;
+      if (page === 'dpt') {
+        url += `&jenis_pemilih=dpt`;
+      } else if (page === 'dpk') {
+        url += `&jenis_pemilih=dpk`;
+      }
       
       const res = await fetch(url, { headers: getAuthHeader() });
       const json = await res.json();
@@ -343,8 +348,8 @@ export default function App() {
     const url = editingDpt ? `${API_URL}/dpt/${editingDpt.nik}` : `${API_URL}/dpt`;
     const method = editingDpt ? 'PUT' : 'POST';
     const payload = editingDpt 
-      ? { nama: dptFormNama, tps_id: dptFormTps } 
-      : { nik: dptFormNik, nama: dptFormNama, tps_id: dptFormTps };
+      ? { nama: dptFormNama, tps_id: dptFormTps, jenis_pemilih: editingDpt.jenis_pemilih } 
+      : { nik: dptFormNik, nama: dptFormNama, tps_id: dptFormTps, jenis_pemilih: page === 'dpk' ? 'dpk' : 'dpt' };
 
     try {
       const res = await fetch(url, {
@@ -582,6 +587,12 @@ export default function App() {
                 <span>Data Pemilih (DPT)</span>
               </button>
             </li>
+            <li className={`menu-item ${page === 'dpk' ? 'active' : ''}`}>
+              <button onClick={() => setPage('dpk')}>
+                <Icons.Voters />
+                <span>Pemilih Khusus (DPK)</span>
+              </button>
+            </li>
             <li className={`menu-item ${page === 'kpps' ? 'active' : ''}`}>
               <button onClick={() => setPage('kpps')}>
                 <Icons.Users />
@@ -632,14 +643,14 @@ export default function App() {
                 {/* Aggregate Widgets */}
                 <div className="grid-cols-4">
                   <div className="card">
-                    <div className="card-title">Total DPT (Voters)</div>
-                    <div className="card-value">{dashboardData.stats.total_dpt}</div>
-                    <div className="card-subtext">Dari {dashboardData.stats.total_tps} TPS terdaftar</div>
+                    <div className="card-title">Total Pemilih (Voters)</div>
+                    <div className="card-value">{dashboardData.stats.total_pemilih}</div>
+                    <div className="card-subtext">DPT: {dashboardData.stats.total_dpt} | DPK: {dashboardData.stats.total_dpk}</div>
                   </div>
                   <div className="card">
                     <div className="card-title">Kehadiran (Check-In)</div>
                     <div className="card-value">{dashboardData.stats.total_hadir}</div>
-                    <div className="card-subtext">{dashboardData.stats.persentase_kehadiran}% Kehadiran</div>
+                    <div className="card-subtext">DPT: {dashboardData.stats.total_hadir_dpt} | DPK: {dashboardData.stats.total_hadir_dpk} ({dashboardData.stats.persentase_kehadiran}%)</div>
                   </div>
                   <div className="card">
                     <div className="card-title">TPS Sudah Kirim QC</div>
@@ -733,17 +744,17 @@ export default function App() {
                         </svg>
                         <div style={{ position: 'absolute', display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
                           <span style={{ fontSize: '2rem', fontWeight: '800', color: 'var(--text)' }}>{dashboardData.stats.persentase_kehadiran}%</span>
-                          <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)', fontWeight: '600' }}>Kehadiran DPT</span>
+                          <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)', fontWeight: '600' }}>Kehadiran</span>
                         </div>
                       </div>
-                      <div style={{ marginTop: '24px', display: 'flex', gap: '24px', fontSize: '0.875rem' }}>
+                      <div style={{ marginTop: '24px', display: 'flex', flexWrap: 'wrap', justifyContent: 'center', gap: '16px', fontSize: '0.875rem' }}>
                         <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                           <span style={{ width: '12px', height: '12px', borderRadius: '50%', backgroundColor: 'var(--primary)' }}></span>
-                          <span>Hadir: {dashboardData.stats.total_hadir}</span>
+                          <span>Hadir: {dashboardData.stats.total_hadir} (DPT: {dashboardData.stats.total_hadir_dpt} | DPK: {dashboardData.stats.total_hadir_dpk})</span>
                         </div>
                         <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                           <span style={{ width: '12px', height: '12px', borderRadius: '50%', backgroundColor: 'var(--border)' }}></span>
-                          <span>Belum Hadir: {dashboardData.stats.total_dpt - dashboardData.stats.total_hadir}</span>
+                          <span>Belum Hadir: {dashboardData.stats.total_pemilih - dashboardData.stats.total_hadir}</span>
                         </div>
                       </div>
                     </div>
@@ -759,6 +770,8 @@ export default function App() {
                         <th>Nama TPS</th>
                         <th>Wilayah</th>
                         <th>Total DPT</th>
+                        <th>Total DPK</th>
+                        <th>Total Pemilih</th>
                         <th>Hadir (Check-In)</th>
                         <th>% Kehadiran</th>
                         <th>Status Quick Count</th>
@@ -771,9 +784,16 @@ export default function App() {
                           <td style={{ fontWeight: '600' }}>{t.nama}</td>
                           <td>{t.wilayah}</td>
                           <td>{t.total_dpt}</td>
-                          <td>{t.hadir}</td>
+                          <td>{t.total_dpk}</td>
+                          <td>{t.total_dpt + t.total_dpk}</td>
                           <td>
-                            {t.total_dpt > 0 ? `${roundVal((t.hadir / t.total_dpt) * 100)}%` : '0%'}
+                            {t.hadir}
+                            <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>
+                              DPT: {t.hadir_dpt} | DPK: {t.hadir_dpk}
+                            </div>
+                          </td>
+                          <td>
+                            {t.total_dpt + t.total_dpk > 0 ? `${roundVal((t.hadir / (t.total_dpt + t.total_dpk)) * 100)}%` : '0%'}
                           </td>
                           <td>
                             {t.quick_count_status === 'final' ? (
@@ -884,20 +904,32 @@ export default function App() {
 
             <div className="grid-cols-4">
               <div className="card">
-                <div className="card-title">Total DPT</div>
-                <div className="card-value">{tpsDetailData.stats.total_dpt}</div>
+                <div className="card-title">Total Pemilih (Voters)</div>
+                <div className="card-value">{tpsDetailData.stats.total_pemilih}</div>
+                <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)', marginTop: '4px', fontWeight: '500' }}>
+                  DPT: {tpsDetailData.stats.total_dpt} | DPK: {tpsDetailData.stats.total_dpk}
+                </div>
               </div>
               <div className="card">
                 <div className="card-title">Check-in Hadir</div>
                 <div className="card-value" style={{ color: 'var(--success)' }}>{tpsDetailData.stats.hadir}</div>
+                <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)', marginTop: '4px', fontWeight: '500' }}>
+                  DPT: {tpsDetailData.stats.hadir_dpt} | DPK: {tpsDetailData.stats.hadir_dpk}
+                </div>
               </div>
               <div className="card">
                 <div className="card-title">Belum Hadir</div>
                 <div className="card-value" style={{ color: 'var(--text-muted)' }}>{tpsDetailData.stats.tidak_hadir}</div>
+                <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)', marginTop: '4px', fontWeight: '500' }}>
+                  Total pemilih belum absen
+                </div>
               </div>
               <div className="card">
                 <div className="card-title">Persentase Kehadiran</div>
                 <div className="card-value">{tpsDetailData.stats.persentase_kehadiran}%</div>
+                <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)', marginTop: '4px', fontWeight: '500' }}>
+                  Dari total pemilih
+                </div>
               </div>
             </div>
 
@@ -911,6 +943,7 @@ export default function App() {
                       <tr>
                         <th>NIK</th>
                         <th>Nama Pemilih</th>
+                        <th>Tipe</th>
                         <th>Status</th>
                         <th>Waktu Check-in</th>
                       </tr>
@@ -920,6 +953,11 @@ export default function App() {
                         <tr key={v.nik}>
                           <td>{v.nik}</td>
                           <td style={{ fontWeight: '500' }}>{v.nama}</td>
+                          <td>
+                            <span className={`badge ${v.jenis_pemilih === 'dpk' ? 'badge-warning' : 'badge-info'}`}>
+                              {v.jenis_pemilih?.toUpperCase() || 'DPT'}
+                            </span>
+                          </td>
                           <td>
                             {v.status_hadir ? (
                               <span className="badge badge-success">Hadir</span>
@@ -934,7 +972,7 @@ export default function App() {
                       ))}
                       {tpsDetailData.voters.length === 0 && (
                         <tr>
-                          <td colSpan={4} style={{ textAlign: 'center', color: 'var(--text-muted)' }}>Tidak ada data pemilih terdaftar di TPS ini.</td>
+                          <td colSpan={5} style={{ textAlign: 'center', color: 'var(--text-muted)' }}>Tidak ada data pemilih terdaftar di TPS ini.</td>
                         </tr>
                       )}
                     </tbody>
@@ -1148,6 +1186,165 @@ export default function App() {
                 <div className="pagination">
                   <span style={{ fontSize: '0.875rem', color: 'var(--text-muted)' }}>
                     Menampilkan Halaman {dptData.current_page} dari {dptData.last_page} ({dptData.total} pemilih)
+                  </span>
+                  <div style={{ display: 'flex', gap: '8px' }}>
+                    <button
+                      disabled={dptData.current_page === 1}
+                      onClick={() => setDptPage(prev => Math.max(1, prev - 1))}
+                      className="btn btn-secondary"
+                      style={{ padding: '6px 12px', fontSize: '0.8rem' }}
+                    >
+                      Sebelumnya
+                    </button>
+                    <button
+                      disabled={dptData.current_page === dptData.last_page}
+                      onClick={() => setDptPage(prev => Math.min(dptData.last_page, prev + 1))}
+                      className="btn btn-secondary"
+                      style={{ padding: '6px 12px', fontSize: '0.8rem' }}
+                    >
+                      Selanjutnya
+                    </button>
+                </div>
+              </>
+            )}
+          </div>
+        )}
+
+        {/* PAGE 3B: DPK LIST */}
+        {page === 'dpk' && (
+          <div>
+            <div className="section-header">
+              <div>
+                <h1 className="section-title">Daftar Pemilih Khusus (DPK)</h1>
+                <p className="section-desc">Kelola pemilih khusus yang didaftarkan pada hari H pemilihan di TPS masing-masing.</p>
+              </div>
+              <div style={{ display: 'flex', gap: '12px' }}>
+                <button onClick={() => {
+                  setEditingDpt(null);
+                  setDptFormNik('');
+                  setDptFormNama('');
+                  setDptFormTps('');
+                  setIsDptModalOpen(true);
+                }} className="btn btn-primary">
+                  <Icons.Plus />
+                  <span>Tambah DPK</span>
+                </button>
+              </div>
+            </div>
+
+            {/* Filter & Search Bar */}
+            <div style={{ display: 'flex', gap: '16px', marginBottom: '24px', backgroundColor: 'var(--surface)', padding: '16px', borderRadius: 'var(--radius-md)', border: '1px solid var(--border)', alignItems: 'center' }}>
+              <div style={{ display: 'flex', flexGrow: 1, border: '1px solid var(--border)', borderRadius: 'var(--radius-sm)', padding: '8px 12px', gap: '8px', alignItems: 'center', backgroundColor: 'var(--background)' }}>
+                <Icons.Search />
+                <input
+                  type="text"
+                  placeholder="Cari DPK berdasarkan NIK atau Nama..."
+                  style={{ border: 'none', outline: 'none', background: 'none', width: '100%', fontSize: '0.875rem' }}
+                  value={dptSearch}
+                  onChange={e => {
+                    setDptSearch(e.target.value);
+                    setDptPage(1);
+                  }}
+                />
+              </div>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <label style={{ fontSize: '0.875rem', fontWeight: '600', color: 'var(--text-muted)', whiteSpace: 'nowrap' }}>Filter TPS:</label>
+                <select
+                  className="form-control"
+                  style={{ width: '180px', padding: '8px 12px' }}
+                  value={dptTpsFilter}
+                  onChange={e => {
+                    setDptTpsFilter(e.target.value);
+                    setDptPage(1);
+                  }}
+                >
+                  <option value="">Semua TPS</option>
+                  {tpsList.map(t => (
+                    <option key={t.id} value={t.id}>{t.nama}</option>
+                  ))}
+                </select>
+              </div>
+            </div>
+
+            {dptLoading && <div style={{ fontSize: '0.875rem', color: 'var(--text-muted)', marginBottom: '16px' }}>Memuat data DPK...</div>}
+
+            {dptData && (
+              <>
+                <div className="table-container">
+                  <table>
+                    <thead>
+                      <tr>
+                        <th>NIK</th>
+                        <th>Nama DPK</th>
+                        <th>TPS Alokasi</th>
+                        <th>Kehadiran</th>
+                        <th>Waktu Check-in</th>
+                        <th>Aksi</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {dptData.data.map((v: any) => (
+                        <tr key={v.nik}>
+                          <td style={{ fontFamily: 'monospace', fontWeight: '500' }}>{v.nik}</td>
+                          <td style={{ fontWeight: '600' }}>{v.nama}</td>
+                          <td>{v.tps?.nama || `TPS ID: ${v.tps_id}`}</td>
+                          <td>
+                            {v.status_hadir ? (
+                              <span className="badge badge-success">Hadir</span>
+                            ) : (
+                              <span className="badge badge-danger">Belum Hadir</span>
+                            )}
+                          </td>
+                          <td style={{ color: 'var(--text-muted)' }}>
+                            {v.waktu_checkin ? new Date(v.waktu_checkin).toLocaleString('id-ID') : '-'}
+                          </td>
+                          <td>
+                            <div style={{ display: 'flex', gap: '8px' }}>
+                              <button
+                                onClick={() => fetchQrCode(v.nik, v.nama)}
+                                className="btn btn-secondary"
+                                style={{ padding: '4px 8px', fontSize: '0.75rem', color: 'var(--primary)' }}
+                              >
+                                Lihat QR
+                              </button>
+                              <button
+                                  onClick={() => {
+                                    setEditingDpt(v);
+                                    setDptFormNik(v.nik);
+                                    setDptFormNama(v.nama);
+                                    setDptFormTps(String(v.tps_id));
+                                    setIsDptModalOpen(true);
+                                    fetchEditingQr(v.nik);
+                                  }}
+                                  className="btn btn-secondary"
+                                  style={{ padding: '4px 8px', fontSize: '0.75rem' }}
+                                >
+                                  Edit
+                                </button>
+                                <button
+                                  onClick={() => handleDeleteDpt(v.nik)}
+                                  className="btn btn-secondary"
+                                  style={{ padding: '4px 8px', fontSize: '0.75rem', color: 'var(--danger)' }}
+                                >
+                                  Hapus
+                                </button>
+                            </div>
+                          </td>
+                        </tr>
+                      ))}
+                      {dptData.data.length === 0 && (
+                        <tr>
+                          <td colSpan={6} style={{ textAlign: 'center', color: 'var(--text-muted)' }}>Tidak ditemukan data pemilih DPK.</td>
+                        </tr>
+                      )}
+                    </tbody>
+                  </table>
+                </div>
+
+                {/* Pagination */}
+                <div className="pagination">
+                  <span style={{ fontSize: '0.875rem', color: 'var(--text-muted)' }}>
+                    Menampilkan Halaman {dptData.current_page} dari {dptData.last_page} ({dptData.total} pemilih DPK)
                   </span>
                   <div style={{ display: 'flex', gap: '8px' }}>
                     <button

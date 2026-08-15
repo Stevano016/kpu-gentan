@@ -22,6 +22,7 @@ class Dpt extends Model
         'status_hadir',
         'waktu_checkin',
         'qr_payload',
+        'jenis_pemilih',
     ];
 
     protected $casts = [

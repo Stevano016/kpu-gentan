@@ -44,6 +44,8 @@ class _HomeScreenState extends State<HomeScreen> {
   // Dashboard stats
   int _totalDptCount = 0;
   int _hadirDptCount = 0;
+  int _totalDpkCount = 0;
+  int _hadirDpkCount = 0;
   double _hadirPercentage = 0.0;
 
   @override
@@ -69,13 +71,22 @@ class _HomeScreenState extends State<HomeScreen> {
 
   Future<void> _loadDptStats() async {
     final dptList = await _storage.getCachedDptList();
-    final total = dptList.length;
-    final hadir = dptList.where((e) => e['status_hadir'] == true || e['status_hadir'] == 1 || e['status_hadir'] == '1').length;
-    final percentage = total > 0 ? (hadir / total) * 100 : 0.0;
+    
+    final totalDpt = dptList.where((e) => e['jenis_pemilih'] == 'dpt' || e['jenis_pemilih'] == null).length;
+    final totalDpk = dptList.where((e) => e['jenis_pemilih'] == 'dpk').length;
+    final totalAll = totalDpt + totalDpk;
+
+    final hadirDpt = dptList.where((e) => (e['jenis_pemilih'] == 'dpt' || e['jenis_pemilih'] == null) && (e['status_hadir'] == true || e['status_hadir'] == 1 || e['status_hadir'] == '1')).length;
+    final hadirDpk = dptList.where((e) => e['jenis_pemilih'] == 'dpk' && (e['status_hadir'] == true || e['status_hadir'] == 1 || e['status_hadir'] == '1')).length;
+    final hadirAll = hadirDpt + hadirDpk;
+
+    final percentage = totalAll > 0 ? (hadirAll / totalAll) * 100 : 0.0;
 
     setState(() {
-      _totalDptCount = total;
-      _hadirDptCount = hadir;
+      _totalDptCount = totalDpt;
+      _totalDpkCount = totalDpk;
+      _hadirDptCount = hadirDpt;
+      _hadirDpkCount = hadirDpk;
       _hadirPercentage = percentage;
     });
   }
@@ -362,7 +373,7 @@ class _HomeScreenState extends State<HomeScreen> {
           ),
           const SizedBox(height: 20),
 
-          // Grid Rows for Total and Checked-In DPT
+          // Grid Rows for Total and Checked-In
           Row(
             children: [
               Expanded(
@@ -386,13 +397,13 @@ class _HomeScreenState extends State<HomeScreen> {
                           child: Icon(Icons.people, color: tealColor),
                         ),
                         const SizedBox(height: 12),
-                        const Text('DPT Terdaftar', style: TextStyle(color: Colors.grey, fontSize: 12)),
+                        const Text('Total Pemilih', style: TextStyle(color: Colors.grey, fontSize: 12)),
                         const SizedBox(height: 4),
                         Text(
-                          '$_totalDptCount',
+                          '${_totalDptCount + _totalDpkCount}',
                           style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 24, color: Color(0xFF1F2937)),
                         ),
-                        const Text('Pemilih', style: TextStyle(color: Colors.grey, fontSize: 10)),
+                        Text('DPT: $_totalDptCount | DPK: $_totalDpkCount', style: const TextStyle(color: Colors.grey, fontSize: 10)),
                       ],
                     ),
                   ),
@@ -420,13 +431,13 @@ class _HomeScreenState extends State<HomeScreen> {
                           child: const Icon(Icons.check_circle, color: Colors.blue),
                         ),
                         const SizedBox(height: 12),
-                        const Text('DPT Hadir (Absen)', style: TextStyle(color: Colors.grey, fontSize: 12)),
+                        const Text('Kehadiran (Check-In)', style: TextStyle(color: Colors.grey, fontSize: 12)),
                         const SizedBox(height: 4),
                         Text(
-                          '$_hadirDptCount',
+                          '${_hadirDptCount + _hadirDpkCount}',
                           style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 24, color: Color(0xFF1F2937)),
                         ),
-                        const Text('Sudah Check-in', style: TextStyle(color: Colors.grey, fontSize: 10)),
+                        Text('DPT: $_hadirDptCount | DPK: $_hadirDpkCount', style: const TextStyle(color: Colors.grey, fontSize: 10)),
                       ],
                     ),
                   ),
@@ -459,7 +470,9 @@ class _HomeScreenState extends State<HomeScreen> {
                         width: 130,
                         height: 130,
                         child: CircularProgressIndicator(
-                          value: _totalDptCount > 0 ? (_hadirDptCount / _totalDptCount) : 0,
+                          value: (_totalDptCount + _totalDpkCount) > 0 
+                              ? ((_hadirDptCount + _hadirDpkCount) / (_totalDptCount + _totalDpkCount)) 
+                              : 0,
                           strokeWidth: 12,
                           backgroundColor: Colors.grey[200],
                           valueColor: AlwaysStoppedAnimation<Color>(tealColor),
@@ -480,7 +493,7 @@ class _HomeScreenState extends State<HomeScreen> {
                   ),
                   const SizedBox(height: 24),
                   Text(
-                    '$_hadirDptCount dari $_totalDptCount DPT telah menggunakan hak pilih.',
+                    '${_hadirDptCount + _hadirDpkCount} dari ${_totalDptCount + _totalDpkCount} pemilih telah menggunakan hak pilih.',
                     textAlign: TextAlign.center,
                     style: const TextStyle(fontSize: 12, color: Colors.grey),
                   ),
