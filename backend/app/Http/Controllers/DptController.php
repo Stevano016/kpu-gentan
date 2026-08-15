@@ -161,17 +161,45 @@ class DptController extends Controller
         }
 
         $headers = array_map('trim', $csvData[0]);
-        // Expect headers to contain: NIK, Nama, No_TPS
-        // We will find positions
-        $nikIdx = array_search('NIK', $headers);
-        $namaIdx = array_search('Nama', $headers);
-        $tpsIdx = array_search('No_TPS', $headers);
+        
+        // Robust Column Headers Scanner (Case-Insensitive)
+        $nikIdx = false;
+        $namaIdx = false;
+        $tpsIdx = false;
 
-        if ($nikIdx === false || $namaIdx === false || $tpsIdx === false) {
-            // Fallback to order if headers are exact 0, 1, 2
-            $nikIdx = 0;
+        foreach ($headers as $idx => $h) {
+            $hUpper = strtoupper(trim($h));
+            // Match NIK
+            if ($nikIdx === false && in_array($hUpper, ['NIK', 'NOMOR NIK', 'NO_NIK', 'NO. NIK', 'NOMOR_INDUK'])) {
+                $nikIdx = $idx;
+            }
+            // Match Name (Nama / NAMA_LGKP)
+            if ($namaIdx === false && in_array($hUpper, ['NAMA_LGKP', 'NAMA', 'NAMA LENGKAP', 'NAMA_LENGKAP', 'NAMA_LGKP_KET'])) {
+                $namaIdx = $idx;
+            }
+            // Match TPS
+            if ($tpsIdx === false && (in_array($hUpper, ['NO_TPS', 'TPS', 'NOMOR_TPS', 'NO TPS', 'NOMOR TPS', 'TPS_ID']) || str_contains($hUpper, 'TPS'))) {
+                $tpsIdx = $idx;
+            }
+        }
+
+        // Fallbacks if not found by exact string names
+        if ($nikIdx === false) {
+            $nikIdx = 0; 
+        }
+        if ($namaIdx === false) {
             $namaIdx = 1;
-            $tpsIdx = 2;
+        }
+
+        // Fallback TPS Name from Filename
+        $fallbackTpsName = null;
+        if ($tpsIdx === false) {
+            $fileName = $file->getClientOriginalName();
+            if (preg_match('/\b\d+\b/', $fileName, $matches)) {
+                $fallbackTpsName = "TPS " . str_pad($matches[0], 2, '0', STR_PAD_LEFT);
+            } else {
+                $fallbackTpsName = "TPS 01";
+            }
         }
 
         $rows = array_slice($csvData, 1);
@@ -186,14 +214,27 @@ class DptController extends Controller
         DB::beginTransaction();
         try {
             foreach ($rows as $index => $row) {
-                if (count($row) < 3) {
-                    $errors[] = "Baris " . ($index + 2) . ": Data tidak lengkap.";
+                // Skip empty or corrupted lines
+                if (empty($row) || (count($row) === 1 && empty($row[0]))) {
+                    continue;
+                }
+
+                if (!isset($row[$nikIdx]) || !isset($row[$namaIdx])) {
+                    $errors[] = "Baris " . ($index + 2) . ": Kolom NIK atau Nama tidak ditemukan di baris data.";
                     continue;
                 }
 
                 $nik = trim($row[$nikIdx]);
                 $nama = trim($row[$namaIdx]);
-                $tpsVal = trim($row[$tpsIdx]);
+                
+                // Get TPS value
+                $tpsVal = '';
+                if ($tpsIdx !== false && isset($row[$tpsIdx])) {
+                    $tpsVal = trim($row[$tpsIdx]);
+                }
+                if (empty($tpsVal)) {
+                    $tpsVal = $fallbackTpsName;
+                }
 
                 if (strlen($nik) !== 16 || !is_numeric($nik)) {
                     $errors[] = "Baris " . ($index + 2) . ": NIK harus 16 digit angka. NIK: {$nik}";

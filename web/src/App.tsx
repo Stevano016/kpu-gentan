@@ -1389,9 +1389,10 @@ export default function App() {
                 <p style={{ fontWeight: '700', marginBottom: '8px' }}>Aturan Format File CSV:</p>
                 <ul style={{ marginLeft: '16px' }}>
                   <li>File harus memiliki baris header di awal.</li>
-                  <li>Wajib memuat kolom: <strong>NIK</strong>, <strong>Nama</strong>, <strong>No_TPS</strong>.</li>
+                  <li>Wajib memuat kolom: <strong>NIK</strong> dan <strong>NAMA_LGKP</strong> (atau <strong>Nama</strong>).</li>
+                  <li>Mendukung pemetaan kolom opsional seperti <strong>NO_TPS</strong> atau <strong>TPS</strong>.</li>
+                  <li>Jika kolom TPS tidak ditemukan, sistem otomatis mengidentifikasinya dari nama berkas (contoh: <code>tps_02.csv</code> akan otomatis masuk ke TPS 02) atau default ke <strong>TPS 01</strong>.</li>
                   <li><strong>NIK</strong> harus bernilai tepat 16 digit angka.</li>
-                  <li>Kolom <strong>No_TPS</strong> bisa berupa angka (contoh: 1) atau nama TPS (contoh: TPS 01). Sistem otomatis mendeteksi dan membuat TPS jika belum ada di database.</li>
                 </ul>
               </div>
 
