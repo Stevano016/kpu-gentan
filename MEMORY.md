@@ -8,7 +8,7 @@ This file captures the active state, environment variables, completed tasks, and
 
 - **Laravel Backend API (`/backend`)**: Running at `http://192.168.11.9:8000`. Updated `TpsController::index` to use constrained relation counts `dpt as hadir_count` to fetch real-time check-in counts per TPS without N+1 queries.
 - **Web Dashboard (`/web`)**: Running at `http://localhost:5173` (network: `http://192.168.11.9:5173`). Updated TPS list and monitoring table to display "Kehadiran (Hadir)" and "% Kehadiran" metrics.
-- **Mobile Client (`/mobile`)**: Analyzer is 100% clean (`No issues found!`). Refactored `HomeScreen` tab layout to support dynamic tabs based on access level. Added a brand new "Dashboard KPPS" tab as Tab 0 for users with full access (`_kppsRole == 'full'`), featuring registered DPT, checked-in DPT, and a circular partisipation progress bar.
+- **Mobile Client (`/mobile`)**: Analyzer is 100% clean (`No issues found!`). Changed app display name to **"Gentara"** and resampled raw PNG into high-quality Android mipmap launcher icons. Added a dynamic TPS Quick Count Results display card to the KPPS dashboard. Fixed layout overflow bug in card headers and added button loaders for Simpan Draft action.
 
 ---
 
@@ -23,6 +23,8 @@ This file captures the active state, environment variables, completed tasks, and
 - **15 Aug 2026**: Integrated QR download & printing buttons on web client. Redesigned Edit voter modal to include side-by-side QR preview. Configured voter creation success screen with immediate QR display.
 - **15 Aug 2026**: Fixed Flutter sync bug by updating `isOnline` to check reachability of local PC IP (`192.168.11.9:8000`), allowing offline sync in local Wi-Fi sandboxes. Added auto-refresh of DPT cache if scanned NIK is not found locally.
 - **15 Aug 2026**: Refactored `HomeScreen` state and views on Flutter to add a dynamic Dashboard tab for full access role. Implemented local calculation of Total DPT, Hadir DPT, and percentage. Added check-in metrics and attendance rate percentage in the web TPS table and optimized the backend query.
+- **15 Aug 2026**: Renamed Android app to "Gentara", replaced all Android mipmap launcher icons with high-quality resampled `1786782031433.png`, and added a real-time Quick Count Results card with progress bars to the KPPS dashboard.
+- **15 Aug 2026**: Fixed RenderFlex layout overflow in Quick Count input field headers and dashboard cards. Introduced stateful `_syncAction` to display button loaders during the "Simpan Draft" and "Submit Final" processes.
 
 ---
 
