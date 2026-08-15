@@ -106,15 +106,20 @@ class DatabaseSeeder extends Seeder
             ['nik' => '3311030303030005', 'nama' => 'Ganjar Pranowo', 'tps_id' => 3],
         ];
 
+        $index = 1;
         foreach ($dpts as $d) {
+            $suffix = str_pad($index, 4, '0', STR_PAD_LEFT);
+            $idPemilih = 'USH-GTN-026' . $suffix;
             Dpt::create([
                 'nik' => $d['nik'],
                 'nama' => $d['nama'],
                 'tps_id' => $d['tps_id'],
                 'status_hadir' => false,
                 'waktu_checkin' => null,
-                'qr_payload' => 'KPPSGENTAN-' . $d['nik'],
+                'id_pemilih' => $idPemilih,
+                'qr_payload' => $idPemilih,
             ]);
+            $index++;
         }
     }
 }

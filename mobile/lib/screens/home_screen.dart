@@ -127,10 +127,11 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   // Action: Search Voter by NIK
-  Future<void> _searchVoter(String nik) async {
-    if (nik.length != 16) {
+  Future<void> _searchVoter(String query) async {
+    final searchVal = query.trim().toUpperCase();
+    if (!searchVal.startsWith('USH-GTN-026')) {
       setState(() {
-        _validationMessage = 'NIK harus 16 digit';
+        _validationMessage = 'Format ID Pemilih salah (Harus diawali USH-GTN-026)';
         _validationSuccess = false;
         _foundVoter = null;
       });
@@ -139,7 +140,7 @@ class _HomeScreenState extends State<HomeScreen> {
 
     List<dynamic> dptList = await _storage.getCachedDptList();
     var voter = dptList.firstWhere(
-      (element) => element['nik'] == nik,
+      (element) => element['id_pemilih'] != null && element['id_pemilih'].toString().toUpperCase() == searchVal,
       orElse: () => null,
     );
 
@@ -147,13 +148,13 @@ class _HomeScreenState extends State<HomeScreen> {
       // If not found locally, check if online and refresh cache in real-time!
       await _checkNetworkStatus();
       if (_isOnline) {
-        _addSyncLog('NIK tidak ditemukan lokal. Mencoba memperbarui DPT dari server...');
+        _addSyncLog('ID Pemilih tidak ditemukan lokal. Mencoba memperbarui DPT dari server...');
         final res = await _api.downloadAndCacheDpt();
         if (res['success'] == true) {
           await _loadDptStats();
           dptList = await _storage.getCachedDptList();
           voter = dptList.firstWhere(
-            (element) => element['nik'] == nik,
+            (element) => element['id_pemilih'] != null && element['id_pemilih'].toString().toUpperCase() == searchVal,
             orElse: () => null,
           );
         }
@@ -166,7 +167,7 @@ class _HomeScreenState extends State<HomeScreen> {
         _validationMessage = null;
       } else {
         _foundVoter = null;
-        _validationMessage = 'NIK tidak ditemukan di DPT TPS ini!';
+        _validationMessage = 'ID Pemilih tidak ditemukan di DPT TPS ini!';
         _validationSuccess = false;
       }
     });
@@ -619,10 +620,9 @@ class _HomeScreenState extends State<HomeScreen> {
               Expanded(
                 child: TextField(
                   controller: _nikSearchController,
-                  keyboardType: TextInputType.number,
-                  maxLength: 16,
+                  keyboardType: TextInputType.text,
                   decoration: InputDecoration(
-                    hintText: 'Masukkan 16-Digit NIK',
+                    hintText: 'Masukkan ID Pemilih (USH-GTN-026...)',
                     border: const OutlineInputBorder(),
                     counterText: '',
                     suffixIcon: IconButton(
@@ -636,11 +636,6 @@ class _HomeScreenState extends State<HomeScreen> {
                       },
                     ),
                   ),
-                  onChanged: (val) {
-                    if (val.length == 16) {
-                      _searchVoter(val);
-                    }
-                  },
                 ),
               ),
               const SizedBox(width: 8),
@@ -729,6 +724,7 @@ class _HomeScreenState extends State<HomeScreen> {
                     const Text('Detail Data Pemilih', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16, color: Color(0xFF374151))),
                     const Divider(height: 24),
                     _buildDetailRow('Nama Lengkap', _foundVoter!['nama']),
+                    _buildDetailRow('ID Pemilih', _foundVoter!['id_pemilih'] ?? '-'),
                     _buildDetailRow('NIK Pemilih', _foundVoter!['nik']),
                     _buildDetailRow('Alokasi TPS', _tpsName),
                     const SizedBox(height: 24),

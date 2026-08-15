@@ -359,8 +359,10 @@ export default function App() {
       });
       if (res.ok) {
         setIsDptModalOpen(false);
+        const json = await res.json();
         const savedNik = dptFormNik;
         const savedNama = dptFormNama;
+        const savedIdPemilih = json.data?.id_pemilih || '';
         const isEditing = editingDpt !== null;
 
         setEditingDpt(null);
@@ -378,6 +380,7 @@ export default function App() {
               setNewVoterSuccess({
                 nik: savedNik,
                 nama: savedNama,
+                id_pemilih: savedIdPemilih,
                 qrcode: qrJson.qrcode
               });
             }
@@ -1115,6 +1118,7 @@ export default function App() {
                   <table>
                     <thead>
                       <tr>
+                        <th>ID Pemilih</th>
                         <th>NIK</th>
                         <th>Nama Pemilih</th>
                         <th>TPS Terdaftar</th>
@@ -1126,6 +1130,7 @@ export default function App() {
                     <tbody>
                       {dptData.data.map((v: any) => (
                         <tr key={v.nik}>
+                          <td style={{ fontFamily: 'monospace', fontWeight: '700', color: 'var(--primary)' }}>{v.id_pemilih}</td>
                           <td style={{ fontFamily: 'monospace', fontWeight: '500' }}>{v.nik}</td>
                           <td style={{ fontWeight: '600' }}>{v.nama}</td>
                           <td>{v.tps?.nama || `TPS ID: ${v.tps_id}`}</td>
@@ -1275,6 +1280,7 @@ export default function App() {
                   <table>
                     <thead>
                       <tr>
+                        <th>ID Pemilih</th>
                         <th>NIK</th>
                         <th>Nama DPK</th>
                         <th>TPS Alokasi</th>
@@ -1286,6 +1292,7 @@ export default function App() {
                     <tbody>
                       {dptData.data.map((v: any) => (
                         <tr key={v.nik}>
+                          <td style={{ fontFamily: 'monospace', fontWeight: '700', color: 'var(--primary)' }}>{v.id_pemilih}</td>
                           <td style={{ fontFamily: 'monospace', fontWeight: '500' }}>{v.nik}</td>
                           <td style={{ fontWeight: '600' }}>{v.nama}</td>
                           <td>{v.tps?.nama || `TPS ID: ${v.tps_id}`}</td>
@@ -1796,7 +1803,8 @@ export default function App() {
               </p>
               <div style={{ marginTop: '16px', padding: '16px', backgroundColor: 'var(--surface-alt)', borderRadius: 'var(--radius-md)' }}>
                 <p style={{ fontWeight: '700', fontSize: '1.05rem', color: 'var(--text)' }}>{newVoterSuccess.nama}</p>
-                <p style={{ fontSize: '0.8rem', fontFamily: 'monospace', color: 'var(--text-muted)', marginTop: '4px' }}>NIK: {newVoterSuccess.nik}</p>
+                <p style={{ fontSize: '0.85rem', fontFamily: 'monospace', fontWeight: '700', color: 'var(--primary)', marginTop: '4px' }}>ID: {newVoterSuccess.id_pemilih}</p>
+                <p style={{ fontSize: '0.8rem', fontFamily: 'monospace', color: 'var(--text-muted)', marginTop: '2px' }}>NIK: {newVoterSuccess.nik}</p>
               </div>
               <div style={{ marginTop: '20px' }}>
                 <img 
@@ -1822,7 +1830,7 @@ export default function App() {
                 onClick={() => {
                   const win = window.open();
                   if (win) {
-                    win.document.write(`<div style="text-align:center;font-family:sans-serif;padding:40px;"><h2>KPPS GENTAN - KARTU PEMILIH</h2><h3>${newVoterSuccess.nama}</h3><img src="${newVoterSuccess.qrcode}" style="width:300px;height:300px;margin-top:20px;"/><p style="margin-top:20px;font-size:14px;color:#666;">Harap bawa kode QR ini saat datang ke TPS untuk check-in.</p></div>`);
+                    win.document.write(`<div style="text-align:center;font-family:sans-serif;padding:40px;"><h2>KPPS GENTAN - KARTU PEMILIH</h2><h3>${newVoterSuccess.nama}</h3><p style="font-family:monospace;font-size:16px;font-weight:bold;margin:4px 0;">ID: ${newVoterSuccess.id_pemilih}</p><p style="font-family:monospace;font-size:14px;color:#555;margin:4px 0;">NIK: ${newVoterSuccess.nik}</p><img src="${newVoterSuccess.qrcode}" style="width:300px;height:300px;margin-top:20px;"/><p style="margin-top:20px;font-size:14px;color:#666;">Harap bawa kode QR ini saat datang ke TPS untuk check-in.</p></div>`);
                     win.print();
                     win.close();
                   }

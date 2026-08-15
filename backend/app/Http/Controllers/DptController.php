@@ -71,13 +71,29 @@ class DptController extends Controller
 
         $jenis = $request->jenis_pemilih ?? 'dpt';
 
+        // Auto-generate the next id_pemilih (format USH-GTN-026xxxx)
+        $latestVoter = Dpt::where('id_pemilih', 'like', 'USH-GTN-026%')
+            ->orderBy('id_pemilih', 'desc')
+            ->first();
+            
+        $nextIndex = 1;
+        if ($latestVoter) {
+            $latestId = $latestVoter->id_pemilih;
+            $suffixStr = substr($latestId, 11);
+            $nextIndex = intval($suffixStr) + 1;
+        }
+        
+        $nextSuffix = str_pad($nextIndex, 4, '0', STR_PAD_LEFT);
+        $idPemilih = 'USH-GTN-026' . $nextSuffix;
+
         $dpt = Dpt::create([
             'nik' => $request->nik,
             'nama' => $request->nama,
             'tps_id' => $request->tps_id,
             'status_hadir' => false,
             'waktu_checkin' => null,
-            'qr_payload' => 'KPPSGENTAN-' . $request->nik,
+            'id_pemilih' => $idPemilih,
+            'qr_payload' => $idPemilih,
             'jenis_pemilih' => $jenis,
         ]);
 
