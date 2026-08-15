@@ -192,7 +192,7 @@ input, select, textarea, button {
 .main-content {
   margin-left: 260px;
   flex-grow: 1;
-  padding: 40px;
+  padding: 0 40px 40px 40px;
   min-width: 0; /* Prevents flex children from stretching */
 }
 
@@ -385,6 +385,12 @@ tr:hover td {
   display: flex;
   justify-content: space-between;
   align-items: center;
+  position: sticky;
+  top: 0;
+  z-index: 90;
+  background-color: var(--background);
+  padding: 24px 0 16px 0;
+  border-bottom: 1px solid var(--border);
   margin-bottom: 28px;
 }
 
@@ -611,9 +617,11 @@ tr:hover td {
     gap: 24px;
   }
   .section-header {
+    position: static;
     flex-direction: column;
     align-items: flex-start;
     gap: 12px;
+    padding: 16px 0;
   }
   .section-header .btn {
     width: 100%;
