@@ -128,6 +128,23 @@ export default function App() {
 
   // Password reset state
   const [isResetModalOpen, setIsResetModalOpen] = useState(false);
+
+  // Custom Confirm Modal State
+  const [confirmModalOpen, setConfirmModalOpen] = useState(false);
+  const [confirmModalTitle, setConfirmModalTitle] = useState('');
+  const [confirmModalMessage, setConfirmModalMessage] = useState('');
+  const [confirmModalCallback, setConfirmModalCallback] = useState<(() => void) | null>(null);
+  const [confirmModalBtnText, setConfirmModalBtnText] = useState('Ya');
+  const [confirmModalDanger, setConfirmModalDanger] = useState(false);
+
+  const showConfirm = (title: string, message: string, onConfirm: () => void, btnText = 'Ya', danger = false) => {
+    setConfirmModalTitle(title);
+    setConfirmModalMessage(message);
+    setConfirmModalCallback(() => onConfirm);
+    setConfirmModalBtnText(btnText);
+    setConfirmModalDanger(danger);
+    setConfirmModalOpen(true);
+  };
   const [resetUser, setResetUser] = useState<any>(null);
   const [resetPasswordVal, setResetPasswordVal] = useState('');
 
@@ -218,13 +235,20 @@ export default function App() {
   };
 
   const handleLogout = async () => {
-    if (!confirm('Apakah Anda yakin ingin keluar dari panel admin Gentara?')) return;
-    try {
-      await fetch(`${API_URL}/logout`, { method: 'POST', headers: getAuthHeader() });
-    } catch {}
-    localStorage.removeItem('token');
-    setToken(null);
-    setUser(null);
+    showConfirm(
+      'Keluar Panel Admin?',
+      'Apakah Anda yakin ingin keluar dari panel admin Gentara?',
+      async () => {
+        try {
+          await fetch(`${API_URL}/logout`, { method: 'POST', headers: getAuthHeader() });
+        } catch {}
+        localStorage.removeItem('token');
+        setToken(null);
+        setUser(null);
+      },
+      'Keluar',
+      true
+    );
   };
 
   const fetchDashboard = async () => {
@@ -416,18 +440,25 @@ export default function App() {
   };
 
   const handleDeleteDpt = async (nik: string) => {
-    if (!confirm('Apakah Anda yakin ingin menghapus pemilih ini?')) return;
-    try {
-      const res = await fetch(`${API_URL}/dpt/${nik}`, {
-        method: 'DELETE',
-        headers: getAuthHeader()
-      });
-      if (res.ok) {
-        fetchDpts();
-      }
-    } catch {
-      alert('Gagal menghubungi server.');
-    }
+    showConfirm(
+      'Hapus Pemilih?',
+      'Apakah Anda yakin ingin menghapus pemilih ini dari database?',
+      async () => {
+        try {
+          const res = await fetch(`${API_URL}/dpt/${nik}`, {
+            method: 'DELETE',
+            headers: getAuthHeader()
+          });
+          if (res.ok) {
+            fetchDpts();
+          }
+        } catch {
+          alert('Gagal menghubungi server.');
+        }
+      },
+      'Hapus',
+      true
+    );
   };
 
   const handleImportCsv = async (e: React.FormEvent) => {
@@ -518,18 +549,25 @@ export default function App() {
   };
 
   const handleDeleteUser = async (id: number) => {
-    if (!confirm('Apakah Anda yakin ingin menghapus akun KPPS ini?')) return;
-    try {
-      const res = await fetch(`${API_URL}/users/${id}`, {
-        method: 'DELETE',
-        headers: getAuthHeader()
-      });
-      if (res.ok) {
-        fetchKppsUsers();
-      }
-    } catch {
-      alert('Gagal menghubungi server.');
-    }
+    showConfirm(
+      'Hapus Akun KPPS?',
+      'Apakah Anda yakin ingin menghapus akun KPPS ini?',
+      async () => {
+        try {
+          const res = await fetch(`${API_URL}/users/${id}`, {
+            method: 'DELETE',
+            headers: getAuthHeader()
+          });
+          if (res.ok) {
+            fetchKppsUsers();
+          }
+        } catch {
+          alert('Gagal menghubungi server.');
+        }
+      },
+      'Hapus',
+      true
+    );
   };
 
   if (!token) {
@@ -1953,6 +1991,41 @@ export default function App() {
             </div>
             <div style={{ marginTop: '12px', borderTop: '1px solid var(--border)', paddingTop: '12px' }}>
               <button type="button" onClick={() => setNewVoterSuccess(null)} className="btn btn-secondary" style={{ width: '100%' }}>Selesai & Tutup</button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Custom Confirm Modal */}
+      {confirmModalOpen && (
+        <div className="modal-overlay" style={{ zIndex: 1100 }}>
+          <div className="modal-content" style={{ maxWidth: '400px', padding: '24px' }}>
+            <h3 className="modal-title" style={{ marginBottom: '12px', fontSize: '1.2rem', fontWeight: '700' }}>
+              {confirmModalTitle}
+            </h3>
+            <p style={{ fontSize: '0.875rem', color: 'var(--text-muted)', marginBottom: '24px', lineHeight: '1.5' }}>
+              {confirmModalMessage}
+            </p>
+            <div className="modal-footer" style={{ display: 'flex', gap: '12px', justifyContent: 'flex-end', marginTop: 0 }}>
+              <button
+                type="button"
+                onClick={() => setConfirmModalOpen(false)}
+                className="btn btn-secondary"
+                style={{ minWidth: '80px', padding: '8px 16px', fontSize: '0.875rem' }}
+              >
+                Batal
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  setConfirmModalOpen(false);
+                  if (confirmModalCallback) confirmModalCallback();
+                }}
+                className={confirmModalDanger ? "btn btn-danger" : "btn btn-primary"}
+                style={{ minWidth: '80px', padding: '8px 16px', fontSize: '0.875rem' }}
+              >
+                {confirmModalBtnText}
+              </button>
             </div>
           </div>
         </div>
