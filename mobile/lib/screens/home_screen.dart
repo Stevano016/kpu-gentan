@@ -473,6 +473,80 @@ class _HomeScreenState extends State<HomeScreen> {
               ),
             ),
           ),
+          const SizedBox(height: 20),
+
+          // Quick Count Results Card
+          Builder(
+            builder: (context) {
+              final qc1 = int.tryParse(_k1Controller.text) ?? 0;
+              final qc2 = int.tryParse(_k2Controller.text) ?? 0;
+              final qc3 = int.tryParse(_k3Controller.text) ?? 0;
+              final qcInvalid = int.tryParse(_invalidController.text) ?? 0;
+              final qcTotal = qc1 + qc2 + qc3 + qcInvalid;
+
+              return Card(
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
+                  side: const BorderSide(color: Color(0xFFE5E7EB)),
+                ),
+                color: Colors.white,
+                child: Padding(
+                  padding: const EdgeInsets.all(20.0),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          const Text(
+                            'Hasil Perolehan Suara TPS',
+                            style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14, color: Color(0xFF374151)),
+                          ),
+                          Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                            decoration: BoxDecoration(
+                              color: _isQcLocked ? const Color(0xFFECFDF5) : const Color(0xFFFEF3C7),
+                              borderRadius: BorderRadius.circular(4),
+                            ),
+                            child: Text(
+                              _qcStatusText.replaceAll(' (Terkunci)', '').replaceAll(' (Belum Submit)', ''),
+                              style: TextStyle(
+                                fontSize: 10,
+                                fontWeight: FontWeight.bold,
+                                color: _isQcLocked ? const Color(0xFF059669) : const Color(0xFFD97706),
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                      const Divider(height: 24),
+                      _buildQuickCountRow('Paslon 01 (Budi - Ami)', qc1, qcTotal, const Color(0xFF0D9488)),
+                      const SizedBox(height: 12),
+                      _buildQuickCountRow('Paslon 02 (Candra - Dodi)', qc2, qcTotal, Colors.blue),
+                      const SizedBox(height: 12),
+                      _buildQuickCountRow('Paslon 03 (Eka - Fani)', qc3, qcTotal, Colors.orange),
+                      const SizedBox(height: 12),
+                      _buildQuickCountRow('Suara Tidak Sah', qcInvalid, qcTotal, Colors.grey),
+                      const Divider(height: 24),
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          const Text(
+                            'Total Suara Masuk',
+                            style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13, color: Color(0xFF374151)),
+                          ),
+                          Text(
+                            '$qcTotal suara',
+                            style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14, color: Color(0xFF111827)),
+                          ),
+                        ],
+                      ),
+                    ],
+                  ),
+                ),
+              );
+            }
+          ),
         ],
       ),
     );
@@ -1029,6 +1103,35 @@ class _HomeScreenState extends State<HomeScreen> {
               contentPadding: EdgeInsets.symmetric(vertical: 8),
               border: OutlineInputBorder(),
             ),
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildQuickCountRow(String label, int votes, int total, Color color) {
+    final double percentage = total > 0 ? (votes / total) : 0.0;
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            Text(label, style: const TextStyle(fontSize: 12, color: Color(0xFF4B5563))),
+            Text(
+              '$votes suara (${(percentage * 100).toStringAsFixed(1)}%)',
+              style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 12, color: Color(0xFF1F2937)),
+            ),
+          ],
+        ),
+        const SizedBox(height: 6),
+        ClipRRect(
+          borderRadius: BorderRadius.circular(4),
+          child: LinearProgressIndicator(
+            value: percentage,
+            minHeight: 8,
+            backgroundColor: const Color(0xFFF3F4F6),
+            valueColor: AlwaysStoppedAnimation<Color>(color),
           ),
         ),
       ],
