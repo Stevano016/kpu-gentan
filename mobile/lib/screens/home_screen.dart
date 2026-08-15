@@ -39,6 +39,7 @@ class _HomeScreenState extends State<HomeScreen> {
   // Tab 3: Logs and Telemetry
   final List<String> _syncLogs = [];
   bool _syncingInProgress = false;
+  String? _syncAction;
 
   // Dashboard stats
   int _totalDptCount = 0;
@@ -195,14 +196,25 @@ class _HomeScreenState extends State<HomeScreen> {
     final k3 = int.tryParse(_k3Controller.text) ?? 0;
     final invalid = int.tryParse(_invalidController.text) ?? 0;
 
+    // Sanitize input values in textfields
+    _k1Controller.text = k1.toString();
+    _k2Controller.text = k2.toString();
+    _k3Controller.text = k3.toString();
+    _invalidController.text = invalid.toString();
+
+    // Dismiss keyboard
+    FocusScope.of(context).unfocus();
+
     setState(() {
       _syncingInProgress = true;
+      _syncAction = status;
     });
 
     final res = await _api.submitQuickCount(k1, k2, k3, invalid, status);
     
     setState(() {
       _syncingInProgress = false;
+      _syncAction = null;
       _isQcLocked = status == 'final';
       _qcStatusText = status == 'final' ? 'FINAL (Terkunci)' : 'DRAFT (Belum Submit)';
     });
@@ -226,6 +238,7 @@ class _HomeScreenState extends State<HomeScreen> {
   Future<void> _triggerSync() async {
     setState(() {
       _syncingInProgress = true;
+      _syncAction = 'sync';
     });
     _addSyncLog('Memulai sinkronisasi data...');
 
@@ -233,6 +246,7 @@ class _HomeScreenState extends State<HomeScreen> {
     if (!_isOnline) {
       setState(() {
         _syncingInProgress = false;
+        _syncAction = null;
       });
       _addSyncLog('Gagal sync: Device offline.');
       if (!mounted) return;
@@ -277,6 +291,7 @@ class _HomeScreenState extends State<HomeScreen> {
 
     setState(() {
       _syncingInProgress = false;
+      _syncAction = null;
     });
     _addSyncLog('Sinkronisasi selesai.');
   }
@@ -808,7 +823,16 @@ class _HomeScreenState extends State<HomeScreen> {
                               padding: const EdgeInsets.symmetric(vertical: 14),
                               shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
                             ),
-                            child: const Text('Simpan Draft'),
+                            child: _syncAction == 'draft'
+                                ? const SizedBox(
+                                    width: 16,
+                                    height: 16,
+                                    child: CircularProgressIndicator(
+                                      strokeWidth: 2,
+                                      valueColor: AlwaysStoppedAnimation<Color>(Color(0xFF0D9488)),
+                                    ),
+                                  )
+                                : const Text('Simpan Draft'),
                           ),
                         ),
                         const SizedBox(width: 12),
@@ -844,7 +868,16 @@ class _HomeScreenState extends State<HomeScreen> {
                               padding: const EdgeInsets.symmetric(vertical: 14),
                               shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
                             ),
-                            child: const Text('Submit Final', style: TextStyle(fontWeight: FontWeight.bold)),
+                            child: _syncAction == 'final'
+                                ? const SizedBox(
+                                    width: 16,
+                                    height: 16,
+                                    child: CircularProgressIndicator(
+                                      strokeWidth: 2,
+                                      valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                                    ),
+                                  )
+                                : const Text('Submit Final', style: TextStyle(fontWeight: FontWeight.bold)),
                           ),
                         ),
                       ],
@@ -1091,7 +1124,15 @@ class _HomeScreenState extends State<HomeScreen> {
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
-        Text(label, style: const TextStyle(fontWeight: FontWeight.w500)),
+        Expanded(
+          child: Text(
+            label,
+            style: const TextStyle(fontWeight: FontWeight.w500),
+            maxLines: 2,
+            overflow: TextOverflow.ellipsis,
+          ),
+        ),
+        const SizedBox(width: 12),
         SizedBox(
           width: 100,
           child: TextField(
