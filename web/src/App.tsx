@@ -264,8 +264,9 @@ function AppContent() {
   // Real-time updates via WebSocket
   useEffect(() => {
     if (!token) return;
+    const wsProtocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
     const wsHost = window.location.hostname || 'localhost';
-    const ws = new WebSocket(`ws://${wsHost}:8080`);
+    const ws = new WebSocket(`${wsProtocol}//${wsHost}:8080`);
 
     ws.onopen = () => {
       console.log('Terhubung ke WebSocket Server untuk real-time update.');

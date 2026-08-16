@@ -1,4 +1,5 @@
-export const API_URL = 'http://localhost:8000/api';
+const isLocal = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
+export const API_URL = isLocal ? 'http://localhost:8000/api' : `${window.location.origin}/api`;
 
 export const getAuthHeaders = (token: string | null) => ({
   'Authorization': `Bearer ${token}`,
