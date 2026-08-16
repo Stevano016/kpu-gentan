@@ -7,12 +7,32 @@ interface DptModalProps {
   editingDpt: any;
   dptFormNik: string;
   setDptFormNik: (val: string) => void;
+  dptFormNkk: string;
+  setDptFormNkk: (val: string) => void;
   dptFormNama: string;
   setDptFormNama: (val: string) => void;
   dptFormTps: string;
   setDptFormTps: (val: string) => void;
   dptFormJenis: string;
   setDptFormJenis: (val: string) => void;
+  dptFormUmur: string;
+  setDptFormUmur: (val: string) => void;
+  dptFormStatusKawin: string;
+  setDptFormStatusKawin: (val: string) => void;
+  dptFormJenisKelamin: string;
+  setDptFormJenisKelamin: (val: string) => void;
+  dptFormAlamat: string;
+  setDptFormAlamat: (val: string) => void;
+  dptFormRt: string;
+  setDptFormRt: (val: string) => void;
+  dptFormRw: string;
+  setDptFormRw: (val: string) => void;
+  dptFormPekerjaan: string;
+  setDptFormPekerjaan: (val: string) => void;
+  dptFormDisabilitas: string;
+  setDptFormDisabilitas: (val: string) => void;
+  dptFormKeterangan: string;
+  setDptFormKeterangan: (val: string) => void;
   tpsList: any[];
   editingQrCode: string | null;
   downloadQrCode: (base64: string, name: string) => void;
@@ -25,12 +45,32 @@ export const DptModal: React.FC<DptModalProps> = ({
   editingDpt,
   dptFormNik,
   setDptFormNik,
+  dptFormNkk,
+  setDptFormNkk,
   dptFormNama,
   setDptFormNama,
   dptFormTps,
   setDptFormTps,
   dptFormJenis,
   setDptFormJenis,
+  dptFormUmur,
+  setDptFormUmur,
+  dptFormStatusKawin,
+  setDptFormStatusKawin,
+  dptFormJenisKelamin,
+  setDptFormJenisKelamin,
+  dptFormAlamat,
+  setDptFormAlamat,
+  dptFormRt,
+  setDptFormRt,
+  dptFormRw,
+  setDptFormRw,
+  dptFormPekerjaan,
+  setDptFormPekerjaan,
+  dptFormDisabilitas,
+  setDptFormDisabilitas,
+  dptFormKeterangan,
+  setDptFormKeterangan,
   tpsList,
   editingQrCode,
   downloadQrCode,
@@ -40,15 +80,16 @@ export const DptModal: React.FC<DptModalProps> = ({
 
   return (
     <div className="modal-overlay">
-      <div className="modal-content">
+      <div className="modal-content" style={{ width: '680px', maxWidth: '95%' }}>
         <div className="modal-header">
           <h2 className="modal-title">{editingDpt ? 'Edit Data Pemilih' : 'Tambah Pemilih Baru'}</h2>
           <button onClick={onClose} className="modal-close"><Icons.Close /></button>
         </div>
         <form onSubmit={onSubmit}>
           <div style={{ display: 'flex', gap: '24px', flexWrap: 'wrap' }}>
-            <div style={{ flex: 1, minWidth: '240px' }}>
-              <div className="form-group">
+            <div style={{ flex: 1, minWidth: '280px', display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px 16px' }}>
+              
+              <div className="form-group" style={{ gridColumn: 'span 1', marginBottom: 0 }}>
                 <label className="form-label">NIK (16 Digit)</label>
                 <input
                   type="text"
@@ -57,12 +98,26 @@ export const DptModal: React.FC<DptModalProps> = ({
                   maxLength={16}
                   minLength={16}
                   disabled={!!editingDpt}
-                  placeholder="Masukkan 16 digit NIK"
+                  placeholder="NIK 16 Digit"
                   value={dptFormNik}
                   onChange={e => setDptFormNik(e.target.value.replace(/\D/g, ''))}
                 />
               </div>
-              <div className="form-group">
+
+              <div className="form-group" style={{ gridColumn: 'span 1', marginBottom: 0 }}>
+                <label className="form-label">NKK (16 Digit)</label>
+                <input
+                  type="text"
+                  className="form-control"
+                  maxLength={16}
+                  minLength={16}
+                  placeholder="NKK 16 Digit"
+                  value={dptFormNkk}
+                  onChange={e => setDptFormNkk(e.target.value.replace(/\D/g, ''))}
+                />
+              </div>
+
+              <div className="form-group" style={{ gridColumn: 'span 2', marginBottom: 0 }}>
                 <label className="form-label">Nama Lengkap</label>
                 <input
                   type="text"
@@ -73,7 +128,8 @@ export const DptModal: React.FC<DptModalProps> = ({
                   onChange={e => setDptFormNama(e.target.value)}
                 />
               </div>
-              <div className="form-group">
+
+              <div className="form-group" style={{ gridColumn: 'span 1', marginBottom: 0 }}>
                 <label className="form-label">Jenis Pemilih</label>
                 <select
                   className="form-control"
@@ -83,9 +139,12 @@ export const DptModal: React.FC<DptModalProps> = ({
                 >
                   <option value="dpt">DPT — Daftar Pemilih Tetap</option>
                   <option value="dpk">DPK — Daftar Pemilih Khusus</option>
+                  <option value="dps">DPS — Daftar Pemilih Sementara</option>
+                  <option value="dptb">DPTb — Daftar Pemilih Tambahan</option>
                 </select>
               </div>
-              <div className="form-group">
+
+              <div className="form-group" style={{ gridColumn: 'span 1', marginBottom: 0 }}>
                 <label className="form-label">Alokasi TPS</label>
                 <select
                   className="form-control"
@@ -99,6 +158,112 @@ export const DptModal: React.FC<DptModalProps> = ({
                   ))}
                 </select>
               </div>
+
+              <div className="form-group" style={{ gridColumn: 'span 1', marginBottom: 0 }}>
+                <label className="form-label">Umur</label>
+                <input
+                  type="text"
+                  className="form-control"
+                  placeholder="Contoh: 32"
+                  value={dptFormUmur}
+                  onChange={e => setDptFormUmur(e.target.value.replace(/\D/g, ''))}
+                />
+              </div>
+
+              <div className="form-group" style={{ gridColumn: 'span 1', marginBottom: 0 }}>
+                <label className="form-label">Jenis Kelamin (L/P)</label>
+                <select
+                  className="form-control"
+                  value={dptFormJenisKelamin}
+                  onChange={e => setDptFormJenisKelamin(e.target.value)}
+                >
+                  <option value="">-- Pilih L/P --</option>
+                  <option value="LAKI-LAKI">Laki-laki</option>
+                  <option value="PEREMPUAN">Perempuan</option>
+                </select>
+              </div>
+
+              <div className="form-group" style={{ gridColumn: 'span 1', marginBottom: 0 }}>
+                <label className="form-label">Status Perkawinan</label>
+                <select
+                  className="form-control"
+                  value={dptFormStatusKawin}
+                  onChange={e => setDptFormStatusKawin(e.target.value)}
+                >
+                  <option value="">-- Pilih Status --</option>
+                  <option value="BELUM KAWIN">Belum Kawin</option>
+                  <option value="KAWIN">Kawin</option>
+                  <option value="CERAI HIDUP">Cerai Hidup</option>
+                  <option value="CERAI MATI">Cerai Mati</option>
+                </select>
+              </div>
+
+              <div className="form-group" style={{ gridColumn: 'span 1', marginBottom: 0 }}>
+                <label className="form-label">Pekerjaan</label>
+                <input
+                  type="text"
+                  className="form-control"
+                  placeholder="Contoh: WIRASWASTA"
+                  value={dptFormPekerjaan}
+                  onChange={e => setDptFormPekerjaan(e.target.value)}
+                />
+              </div>
+
+              <div className="form-group" style={{ gridColumn: 'span 2', marginBottom: 0 }}>
+                <label className="form-label">Alamat</label>
+                <input
+                  type="text"
+                  className="form-control"
+                  placeholder="Contoh: GENTAN CITRA INDAH"
+                  value={dptFormAlamat}
+                  onChange={e => setDptFormAlamat(e.target.value)}
+                />
+              </div>
+
+              <div className="form-group" style={{ gridColumn: 'span 1', marginBottom: 0 }}>
+                <label className="form-label">RT</label>
+                <input
+                  type="text"
+                  className="form-control"
+                  placeholder="Contoh: 001"
+                  value={dptFormRt}
+                  onChange={e => setDptFormRt(e.target.value)}
+                />
+              </div>
+
+              <div className="form-group" style={{ gridColumn: 'span 1', marginBottom: 0 }}>
+                <label className="form-label">RW</label>
+                <input
+                  type="text"
+                  className="form-control"
+                  placeholder="Contoh: 014"
+                  value={dptFormRw}
+                  onChange={e => setDptFormRw(e.target.value)}
+                />
+              </div>
+
+              <div className="form-group" style={{ gridColumn: 'span 1', marginBottom: 0 }}>
+                <label className="form-label">Disabilitas</label>
+                <input
+                  type="text"
+                  className="form-control"
+                  placeholder="Contoh: - (jika tidak ada)"
+                  value={dptFormDisabilitas}
+                  onChange={e => setDptFormDisabilitas(e.target.value)}
+                />
+              </div>
+
+              <div className="form-group" style={{ gridColumn: 'span 1', marginBottom: 0 }}>
+                <label className="form-label">Keterangan</label>
+                <input
+                  type="text"
+                  className="form-control"
+                  placeholder="Keterangan tambahan"
+                  value={dptFormKeterangan}
+                  onChange={e => setDptFormKeterangan(e.target.value)}
+                />
+              </div>
+
             </div>
 
             {editingDpt && (

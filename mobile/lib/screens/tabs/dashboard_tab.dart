@@ -5,8 +5,12 @@ class DashboardTab extends StatelessWidget {
   final String tpsName;
   final int totalDptCount;
   final int totalDpkCount;
+  final int totalDpsCount;
+  final int totalDptbCount;
   final int hadirDptCount;
   final int hadirDpkCount;
+  final int hadirDpsCount;
+  final int hadirDptbCount;
   final double hadirPercentage;
   final bool isQcLocked;
   final String qcStatusText;
@@ -21,8 +25,12 @@ class DashboardTab extends StatelessWidget {
     required this.tpsName,
     required this.totalDptCount,
     required this.totalDpkCount,
+    required this.totalDpsCount,
+    required this.totalDptbCount,
     required this.hadirDptCount,
     required this.hadirDpkCount,
+    required this.hadirDpsCount,
+    required this.hadirDptbCount,
     required this.hadirPercentage,
     required this.isQcLocked,
     required this.qcStatusText,
@@ -36,8 +44,8 @@ class DashboardTab extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     const tealColor = Color(0xFF0D9488);
-    final totalVoters = totalDptCount + totalDpkCount;
-    final totalHadir = hadirDptCount + hadirDpkCount;
+    final totalVoters = totalDptCount + totalDpkCount + totalDpsCount + totalDptbCount;
+    final totalHadir = hadirDptCount + hadirDpkCount + hadirDpsCount + hadirDptbCount;
 
     return SingleChildScrollView(
       padding: const EdgeInsets.all(20.0),
@@ -110,7 +118,7 @@ class DashboardTab extends StatelessWidget {
                           '$totalVoters',
                           style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 24, color: Color(0xFF1F2937)),
                         ),
-                        Text('DPT: $totalDptCount | DPK: $totalDpkCount', style: const TextStyle(color: Colors.grey, fontSize: 10)),
+                        Text('DPT: $totalDptCount | DPK: $totalDpkCount | DPS: $totalDpsCount | DPTb: $totalDptbCount', style: const TextStyle(color: Colors.grey, fontSize: 8)),
                       ],
                     ),
                   ),
@@ -144,7 +152,7 @@ class DashboardTab extends StatelessWidget {
                           '$totalHadir',
                           style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 24, color: Color(0xFF1F2937)),
                         ),
-                        Text('DPT: $hadirDptCount | DPK: $hadirDpkCount', style: const TextStyle(color: Colors.grey, fontSize: 10)),
+                        Text('DPT: $hadirDptCount | DPK: $hadirDpkCount | DPS: $hadirDpsCount | DPTb: $hadirDptbCount', style: const TextStyle(color: Colors.grey, fontSize: 8)),
                       ],
                     ),
                   ),

@@ -53,6 +53,10 @@ class _HomeScreenState extends State<HomeScreen> {
   int _hadirDptCount = 0;
   int _totalDpkCount = 0;
   int _hadirDpkCount = 0;
+  int _totalDpsCount = 0;
+  int _hadirDpsCount = 0;
+  int _totalDptbCount = 0;
+  int _hadirDptbCount = 0;
   double _hadirPercentage = 0.0;
   List<dynamic> _paslons = [];
 
@@ -179,19 +183,27 @@ class _HomeScreenState extends State<HomeScreen> {
     
     final totalDpt = dptList.where((e) => e['jenis_pemilih'] == 'dpt' || e['jenis_pemilih'] == null).length;
     final totalDpk = dptList.where((e) => e['jenis_pemilih'] == 'dpk').length;
-    final totalAll = totalDpt + totalDpk;
+    final totalDps = dptList.where((e) => e['jenis_pemilih'] == 'dps').length;
+    final totalDptb = dptList.where((e) => e['jenis_pemilih'] == 'dptb').length;
+    final totalAll = totalDpt + totalDpk + totalDps + totalDptb;
 
     final hadirDpt = dptList.where((e) => (e['jenis_pemilih'] == 'dpt' || e['jenis_pemilih'] == null) && (e['status_hadir'] == true || e['status_hadir'] == 1 || e['status_hadir'] == '1')).length;
     final hadirDpk = dptList.where((e) => e['jenis_pemilih'] == 'dpk' && (e['status_hadir'] == true || e['status_hadir'] == 1 || e['status_hadir'] == '1')).length;
-    final hadirAll = hadirDpt + hadirDpk;
+    final hadirDps = dptList.where((e) => e['jenis_pemilih'] == 'dps' && (e['status_hadir'] == true || e['status_hadir'] == 1 || e['status_hadir'] == '1')).length;
+    final hadirDptb = dptList.where((e) => e['jenis_pemilih'] == 'dptb' && (e['status_hadir'] == true || e['status_hadir'] == 1 || e['status_hadir'] == '1')).length;
+    final hadirAll = hadirDpt + hadirDpk + hadirDps + hadirDptb;
 
     final percentage = totalAll > 0 ? (hadirAll / totalAll) * 100 : 0.0;
 
     setState(() {
       _totalDptCount = totalDpt;
       _totalDpkCount = totalDpk;
+      _totalDpsCount = totalDps;
+      _totalDptbCount = totalDptb;
       _hadirDptCount = hadirDpt;
       _hadirDpkCount = hadirDpk;
+      _hadirDpsCount = hadirDps;
+      _hadirDptbCount = hadirDptb;
       _hadirPercentage = percentage;
     });
   }
@@ -340,6 +352,31 @@ class _HomeScreenState extends State<HomeScreen> {
 
     // Dismiss keyboard
     FocusScope.of(context).unfocus();
+
+    // Validation: total votes cannot exceed total registered voters and actual attendance
+    final totalPemilih = _totalDptCount + _totalDpkCount + _totalDpsCount + _totalDptbCount;
+    final totalKehadiran = _hadirDptCount + _hadirDpkCount + _hadirDpsCount + _hadirDptbCount;
+    final totalSuaraInput = k1 + k2 + k3 + invalid;
+
+    if (totalSuaraInput > totalPemilih) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Error: Total suara ($totalSuaraInput) tidak boleh melebihi Total Pemilih ($totalPemilih).'),
+          backgroundColor: Colors.red[600],
+        ),
+      );
+      return;
+    }
+
+    if (totalSuaraInput > totalKehadiran) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Error: Total suara ($totalSuaraInput) tidak boleh melebihi Kehadiran/Check-In ($totalKehadiran).'),
+          backgroundColor: Colors.red[600],
+        ),
+      );
+      return;
+    }
 
     setState(() {
       _syncingInProgress = true;
@@ -547,8 +584,12 @@ class _HomeScreenState extends State<HomeScreen> {
       tpsName: _tpsName,
       totalDptCount: _totalDptCount,
       totalDpkCount: _totalDpkCount,
+      totalDpsCount: _totalDpsCount,
+      totalDptbCount: _totalDptbCount,
       hadirDptCount: _hadirDptCount,
       hadirDpkCount: _hadirDpkCount,
+      hadirDpsCount: _hadirDpsCount,
+      hadirDptbCount: _hadirDptbCount,
       hadirPercentage: _hadirPercentage,
       isQcLocked: _isQcLocked,
       qcStatusText: _qcStatusText,

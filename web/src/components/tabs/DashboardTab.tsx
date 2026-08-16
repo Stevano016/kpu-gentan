@@ -46,12 +46,12 @@ export const DashboardTab: React.FC<DashboardTabProps> = ({
             <div className="card">
               <div className="card-title">Total Pemilih (Voters)</div>
               <div className="card-value">{dashboardData.stats.total_pemilih}</div>
-              <div className="card-subtext">DPT: {dashboardData.stats.total_dpt} | DPK: {dashboardData.stats.total_dpk}</div>
+              <div className="card-subtext">DPT: {dashboardData.stats.total_dpt} | DPK: {dashboardData.stats.total_dpk} | DPS: {dashboardData.stats.total_dps} | DPTb: {dashboardData.stats.total_dptb}</div>
             </div>
             <div className="card">
               <div className="card-title">Kehadiran (Check-In)</div>
               <div className="card-value">{dashboardData.stats.total_hadir}</div>
-              <div className="card-subtext">DPT: {dashboardData.stats.total_hadir_dpt} | DPK: {dashboardData.stats.total_hadir_dpk} ({dashboardData.stats.persentase_kehadiran}%)</div>
+              <div className="card-subtext">DPT: {dashboardData.stats.total_hadir_dpt} | DPK: {dashboardData.stats.total_hadir_dpk} | DPS: {dashboardData.stats.total_hadir_dps} | DPTb: {dashboardData.stats.total_hadir_dptb} ({dashboardData.stats.persentase_kehadiran}%)</div>
             </div>
             <div className="card">
               <div className="card-title">TPS Sudah Kirim QC</div>
@@ -151,7 +151,7 @@ export const DashboardTab: React.FC<DashboardTabProps> = ({
                 <div style={{ marginTop: '24px', display: 'flex', flexWrap: 'wrap', justifyContent: 'center', gap: '16px', fontSize: '0.875rem' }}>
                   <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                     <span style={{ width: '12px', height: '12px', borderRadius: '50%', backgroundColor: 'var(--primary)' }}></span>
-                    <span>Hadir: {dashboardData.stats.total_hadir} (DPT: {dashboardData.stats.total_hadir_dpt} | DPK: {dashboardData.stats.total_hadir_dpk})</span>
+                    <span>Hadir: {dashboardData.stats.total_hadir} (DPT: {dashboardData.stats.total_hadir_dpt} | DPK: {dashboardData.stats.total_hadir_dpk} | DPS: {dashboardData.stats.total_hadir_dps} | DPTb: {dashboardData.stats.total_hadir_dptb})</span>
                   </div>
                   <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                     <span style={{ width: '12px', height: '12px', borderRadius: '50%', backgroundColor: 'var(--border)' }}></span>
@@ -170,8 +170,10 @@ export const DashboardTab: React.FC<DashboardTabProps> = ({
                 <tr>
                   <th>Nama TPS</th>
                   <th>Wilayah</th>
-                  <th>Total DPT</th>
-                  <th>Total DPK</th>
+                  <th>DPT</th>
+                  <th>DPK</th>
+                  <th>DPS</th>
+                  <th>DPTb</th>
                   <th>Total Pemilih</th>
                   <th>Hadir (Check-In)</th>
                   <th>% Kehadiran</th>
@@ -180,31 +182,35 @@ export const DashboardTab: React.FC<DashboardTabProps> = ({
                 </tr>
               </thead>
               <tbody>
-                {dashboardData.tps_list.map((t: any) => (
-                  <tr key={t.id}>
-                    <td style={{ fontWeight: '600' }}>{t.nama}</td>
-                    <td>{t.wilayah}</td>
-                    <td>{t.total_dpt}</td>
-                    <td>{t.total_dpk}</td>
-                    <td>{t.total_dpt + t.total_dpk}</td>
-                    <td>
-                      {t.hadir}
-                      <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>
-                        DPT: {t.hadir_dpt} | DPK: {t.hadir_dpk}
-                      </div>
-                    </td>
-                    <td>
-                      {t.total_dpt + t.total_dpk > 0 ? `${roundVal((t.hadir / (t.total_dpt + t.total_dpk)) * 100)}%` : '0%'}
-                    </td>
-                    <td>
-                      {t.quick_count_status === 'final' ? (
-                        <span className="badge badge-success">Final (Terkunci)</span>
-                      ) : t.quick_count_status === 'draft' ? (
-                        <span className="badge badge-warning">Draft (Belum Submit)</span>
-                      ) : (
-                        <span className="badge badge-danger">Belum Input</span>
-                      )}
-                    </td>
+                {dashboardData.tps_list.map((t: any) => {
+                  const totalVoters = t.total_dpt + t.total_dpk + t.total_dps + t.total_dptb;
+                  return (
+                    <tr key={t.id}>
+                      <td style={{ fontWeight: '600' }}>{t.nama}</td>
+                      <td>{t.wilayah}</td>
+                      <td>{t.total_dpt}</td>
+                      <td>{t.total_dpk}</td>
+                      <td>{t.total_dps}</td>
+                      <td>{t.total_dptb}</td>
+                      <td>{totalVoters}</td>
+                      <td>
+                        {t.hadir}
+                        <div style={{ fontSize: '0.70rem', color: 'var(--text-muted)' }}>
+                          DPT:{t.hadir_dpt}|DPK:{t.hadir_dpk}|DPS:{t.hadir_dps}|DPTb:{t.hadir_dptb}
+                        </div>
+                      </td>
+                      <td>
+                        {totalVoters > 0 ? `${roundVal((t.hadir / totalVoters) * 100)}%` : '0%'}
+                      </td>
+                      <td>
+                        {t.quick_count_status === 'final' ? (
+                          <span className="badge badge-success">Final (Terkunci)</span>
+                        ) : t.quick_count_status === 'draft' ? (
+                          <span className="badge badge-warning">Draft (Belum Submit)</span>
+                        ) : (
+                          <span className="badge badge-danger">Belum Input</span>
+                        )}
+                      </td>
                     <td>
                       <button 
                         onClick={() => {
@@ -218,7 +224,8 @@ export const DashboardTab: React.FC<DashboardTabProps> = ({
                       </button>
                     </td>
                   </tr>
-                ))}
+                );
+              })}
               </tbody>
             </table>
           </div>

@@ -175,6 +175,30 @@ class SyncController extends Controller
             ], 422);
         }
 
+        // Server-side validation: total votes cannot exceed total registered voters and check-in counts
+        $tps = \App\Models\Tps::findOrFail($tpsId);
+        $totalDpt = $tps->total_dpt;
+        $totalDpk = \App\Models\Dpt::where('tps_id', $tpsId)->where('jenis_pemilih', 'dpk')->count();
+        $totalPemilih = $totalDpt + $totalDpk;
+
+        $totalHadir = \App\Models\Dpt::where('tps_id', $tpsId)->where('status_hadir', true)->count();
+
+        $inputTotalSuara = intval($request->kandidat_1) + intval($request->kandidat_2) + intval($request->kandidat_3) + intval($request->suara_tidak_sah);
+
+        if ($inputTotalSuara > $totalPemilih) {
+            return response()->json([
+                'status' => 'error',
+                'message' => "Jumlah total suara ({$inputTotalSuara}) tidak boleh melebihi Total Pemilih ({$totalPemilih}) di TPS ini."
+            ], 422);
+        }
+
+        if ($inputTotalSuara > $totalHadir) {
+            return response()->json([
+                'status' => 'error',
+                'message' => "Jumlah total suara ({$inputTotalSuara}) tidak boleh melebihi Kehadiran / Check-In ({$totalHadir}) di TPS ini."
+            ], 422);
+        }
+
         $qc = QuickCount::find($tpsId);
 
         if ($qc && $qc->status === 'final') {

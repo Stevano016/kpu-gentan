@@ -17,6 +17,7 @@ class Dpt extends Model
 
     protected $fillable = [
         'nik',
+        'nkk',
         'nama',
         'tps_id',
         'status_hadir',
@@ -24,6 +25,15 @@ class Dpt extends Model
         'qr_payload',
         'jenis_pemilih',
         'id_pemilih',
+        'umur',
+        'status_kawin',
+        'jenis_kelamin',
+        'alamat',
+        'rt',
+        'rw',
+        'pekerjaan',
+        'disabilitas',
+        'keterangan',
     ];
 
     protected $casts = [

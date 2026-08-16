@@ -160,7 +160,16 @@ class ValidasiTab extends StatelessWidget {
                     _buildDetailRow('Nama Lengkap', foundVoter!['nama']),
                     _buildDetailRow('ID Pemilih', foundVoter!['id_pemilih'] ?? '-'),
                     _buildDetailRow('NIK Pemilih', foundVoter!['nik']),
+                    _buildDetailRow('NKK Pemilih', foundVoter!['nkk'] ?? '-'),
                     _buildDetailRow('Alokasi TPS', tpsName),
+                    _buildDetailRow('Umur', foundVoter!['umur'] != null ? '${foundVoter!['umur']} Tahun' : '-'),
+                    _buildDetailRow('Jenis Kelamin', foundVoter!['jenis_kelamin'] ?? '-'),
+                    _buildDetailRow('Status Kawin', foundVoter!['status_kawin'] ?? '-'),
+                    _buildDetailRow('Pekerjaan', foundVoter!['pekerjaan'] ?? '-'),
+                    _buildDetailRow('Alamat', foundVoter!['alamat'] ?? '-'),
+                    _buildDetailRow('RT / RW', 'RT ${foundVoter!['rt'] ?? '-'} / RW ${foundVoter!['rw'] ?? '-'}'),
+                    _buildDetailRow('Disabilitas', foundVoter!['disabilitas'] ?? '-'),
+                    _buildDetailRow('Keterangan', foundVoter!['keterangan'] ?? '-'),
                     const SizedBox(height: 24),
 
                     if (foundVoter!['status_hadir'] == true || foundVoter!['status_hadir'] == 1 || foundVoter!['status_hadir'] == '1') ...[

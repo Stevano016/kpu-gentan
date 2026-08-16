@@ -43,9 +43,19 @@ class DptController extends Controller
     {
         $validator = Validator::make($request->all(), [
             'nik' => 'required|string|size:16|unique:dpt,nik',
+            'nkk' => 'nullable|string|size:16',
             'nama' => 'required|string|max:255',
             'tps_id' => 'required|exists:tps,id',
-            'jenis_pemilih' => 'nullable|string|in:dpt,dpk',
+            'jenis_pemilih' => 'nullable|string|in:dpt,dpk,dps,dptb',
+            'umur' => 'nullable|integer|min:0',
+            'status_kawin' => 'nullable|string|max:50',
+            'jenis_kelamin' => 'nullable|string|max:20',
+            'alamat' => 'nullable|string|max:255',
+            'rt' => 'nullable|string|max:10',
+            'rw' => 'nullable|string|max:10',
+            'pekerjaan' => 'nullable|string|max:100',
+            'disabilitas' => 'nullable|string|max:100',
+            'keterangan' => 'nullable|string|max:255',
         ]);
 
         if ($validator->fails()) {
@@ -74,6 +84,7 @@ class DptController extends Controller
 
         $dpt = Dpt::create([
             'nik' => $request->nik,
+            'nkk' => $request->nkk,
             'nama' => $request->nama,
             'tps_id' => $request->tps_id,
             'status_hadir' => false,
@@ -81,10 +92,19 @@ class DptController extends Controller
             'id_pemilih' => $idPemilih,
             'qr_payload' => $idPemilih,
             'jenis_pemilih' => $jenis,
+            'umur' => $request->umur,
+            'status_kawin' => $request->status_kawin,
+            'jenis_kelamin' => $request->jenis_kelamin,
+            'alamat' => $request->alamat,
+            'rt' => $request->rt,
+            'rw' => $request->rw,
+            'pekerjaan' => $request->pekerjaan,
+            'disabilitas' => $request->disabilitas,
+            'keterangan' => $request->keterangan,
         ]);
 
-        // Increment total_dpt in TPS only if voter is DPT
-        if ($jenis === 'dpt') {
+        // Increment total_dpt in TPS only if voter is DPT/DPS/DPTb
+        if (in_array($jenis, ['dpt', 'dps', 'dptb'])) {
             Tps::where('id', $request->tps_id)->increment('total_dpt');
         }
 
@@ -102,10 +122,20 @@ class DptController extends Controller
         $dpt = Dpt::where('nik', $nik)->firstOrFail();
 
         $validator = Validator::make($request->all(), [
+            'nkk' => 'nullable|string|size:16',
             'nama' => 'required|string|max:255',
             'tps_id' => 'required|exists:tps,id',
             'status_hadir' => 'boolean',
-            'jenis_pemilih' => 'nullable|string|in:dpt,dpk',
+            'jenis_pemilih' => 'nullable|string|in:dpt,dpk,dps,dptb',
+            'umur' => 'nullable|integer|min:0',
+            'status_kawin' => 'nullable|string|max:50',
+            'jenis_kelamin' => 'nullable|string|max:20',
+            'alamat' => 'nullable|string|max:255',
+            'rt' => 'nullable|string|max:10',
+            'rw' => 'nullable|string|max:10',
+            'pekerjaan' => 'nullable|string|max:100',
+            'disabilitas' => 'nullable|string|max:100',
+            'keterangan' => 'nullable|string|max:255',
         ]);
 
         if ($validator->fails()) {
@@ -120,19 +150,27 @@ class DptController extends Controller
         $oldJenis = $dpt->jenis_pemilih;
         $newJenis = $request->jenis_pemilih ?? $dpt->jenis_pemilih;
 
-        $dpt->update([
+        $updateData = [
             'nama' => $request->nama,
             'tps_id' => $newTpsId,
             'status_hadir' => $request->status_hadir ?? $dpt->status_hadir,
             'waktu_checkin' => ($request->status_hadir && !$dpt->status_hadir) ? now() : ($request->status_hadir ? $dpt->waktu_checkin : null),
             'jenis_pemilih' => $newJenis,
-        ]);
+        ];
+
+        foreach (['nkk', 'umur', 'status_kawin', 'jenis_kelamin', 'alamat', 'rt', 'rw', 'pekerjaan', 'disabilitas', 'keterangan'] as $field) {
+            if ($request->has($field)) {
+                $updateData[$field] = $request->input($field);
+            }
+        }
+
+        $dpt->update($updateData);
 
         // Adjust TPS total_dpt if TPS or voter type changed
-        if ($oldJenis === 'dpt') {
+        if (in_array($oldJenis, ['dpt', 'dps', 'dptb'])) {
             Tps::where('id', $oldTpsId)->decrement('total_dpt');
         }
-        if ($newJenis === 'dpt') {
+        if (in_array($newJenis, ['dpt', 'dps', 'dptb'])) {
             Tps::where('id', $newTpsId)->increment('total_dpt');
         }
 
@@ -155,7 +193,7 @@ class DptController extends Controller
         $oldJenis = $dpt->jenis_pemilih;
         $dpt->delete();
 
-        if ($oldJenis === 'dpt') {
+        if (in_array($oldJenis, ['dpt', 'dps', 'dptb'])) {
             Tps::where('id', $tpsId)->decrement('total_dpt');
         }
 

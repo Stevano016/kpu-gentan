@@ -104,9 +104,19 @@ function AppContent() {
   const [isDptModalOpen, setIsDptModalOpen] = useState(false);
   const [editingDpt, setEditingDpt] = useState<any>(null);
   const [dptFormNik, setDptFormNik] = useState('');
+  const [dptFormNkk, setDptFormNkk] = useState('');
   const [dptFormNama, setDptFormNama] = useState('');
   const [dptFormTps, setDptFormTps] = useState('');
   const [dptFormJenis, setDptFormJenis] = useState('dpt');
+  const [dptFormUmur, setDptFormUmur] = useState('');
+  const [dptFormStatusKawin, setDptFormStatusKawin] = useState('');
+  const [dptFormJenisKelamin, setDptFormJenisKelamin] = useState('');
+  const [dptFormAlamat, setDptFormAlamat] = useState('');
+  const [dptFormRt, setDptFormRt] = useState('');
+  const [dptFormRw, setDptFormRw] = useState('');
+  const [dptFormPekerjaan, setDptFormPekerjaan] = useState('');
+  const [dptFormDisabilitas, setDptFormDisabilitas] = useState('');
+  const [dptFormKeterangan, setDptFormKeterangan] = useState('');
   
   // Edit QR and add success states
   const [editingQrCode, setEditingQrCode] = useState<string | null>(null);
@@ -587,9 +597,25 @@ function AppContent() {
     e.preventDefault();
     if (!token) return;
     
-    const payload = editingDpt
-      ? { nama: dptFormNama, tps_id: dptFormTps, jenis_pemilih: dptFormJenis }
-      : { nik: dptFormNik, nama: dptFormNama, tps_id: dptFormTps, jenis_pemilih: dptFormJenis };
+    const payload: any = {
+      nama: dptFormNama,
+      nkk: dptFormNkk || null,
+      tps_id: dptFormTps,
+      jenis_pemilih: dptFormJenis,
+      umur: dptFormUmur ? parseInt(dptFormUmur) : null,
+      status_kawin: dptFormStatusKawin || null,
+      jenis_kelamin: dptFormJenisKelamin || null,
+      alamat: dptFormAlamat || null,
+      rt: dptFormRt || null,
+      rw: dptFormRw || null,
+      pekerjaan: dptFormPekerjaan || null,
+      disabilitas: dptFormDisabilitas || null,
+      keterangan: dptFormKeterangan || null,
+    };
+
+    if (!editingDpt) {
+      payload.nik = dptFormNik;
+    }
 
     try {
       const res = await ApiService.saveDpt(token, payload, editingDpt?.nik);
@@ -603,9 +629,19 @@ function AppContent() {
 
         setEditingDpt(null);
         setDptFormNik('');
+        setDptFormNkk('');
         setDptFormNama('');
         setDptFormTps('');
         setDptFormJenis('dpt');
+        setDptFormUmur('');
+        setDptFormStatusKawin('');
+        setDptFormJenisKelamin('');
+        setDptFormAlamat('');
+        setDptFormRt('');
+        setDptFormRw('');
+        setDptFormPekerjaan('');
+        setDptFormDisabilitas('');
+        setDptFormKeterangan('');
         fetchDpts();
 
         if (isEditing) {
@@ -867,9 +903,19 @@ function AppContent() {
               setIsDptModalOpen={setIsDptModalOpen}
               setEditingDpt={setEditingDpt}
               setDptFormNik={setDptFormNik}
+              setDptFormNkk={setDptFormNkk}
               setDptFormNama={setDptFormNama}
               setDptFormTps={setDptFormTps}
               setDptFormJenis={setDptFormJenis}
+              setDptFormUmur={setDptFormUmur}
+              setDptFormStatusKawin={setDptFormStatusKawin}
+              setDptFormJenisKelamin={setDptFormJenisKelamin}
+              setDptFormAlamat={setDptFormAlamat}
+              setDptFormRt={setDptFormRt}
+              setDptFormRw={setDptFormRw}
+              setDptFormPekerjaan={setDptFormPekerjaan}
+              setDptFormDisabilitas={setDptFormDisabilitas}
+              setDptFormKeterangan={setDptFormKeterangan}
               fetchQrCode={fetchQrCode}
               fetchEditingQr={fetchEditingQr}
               handleDeleteDpt={handleDeleteDpt}
@@ -927,12 +973,32 @@ function AppContent() {
         editingDpt={editingDpt}
         dptFormNik={dptFormNik}
         setDptFormNik={setDptFormNik}
+        dptFormNkk={dptFormNkk}
+        setDptFormNkk={setDptFormNkk}
         dptFormNama={dptFormNama}
         setDptFormNama={setDptFormNama}
         dptFormTps={dptFormTps}
         setDptFormTps={setDptFormTps}
         dptFormJenis={dptFormJenis}
         setDptFormJenis={setDptFormJenis}
+        dptFormUmur={dptFormUmur}
+        setDptFormUmur={setDptFormUmur}
+        dptFormStatusKawin={dptFormStatusKawin}
+        setDptFormStatusKawin={setDptFormStatusKawin}
+        dptFormJenisKelamin={dptFormJenisKelamin}
+        setDptFormJenisKelamin={setDptFormJenisKelamin}
+        dptFormAlamat={dptFormAlamat}
+        setDptFormAlamat={setDptFormAlamat}
+        dptFormRt={dptFormRt}
+        setDptFormRt={setDptFormRt}
+        dptFormRw={dptFormRw}
+        setDptFormRw={setDptFormRw}
+        dptFormPekerjaan={dptFormPekerjaan}
+        setDptFormPekerjaan={setDptFormPekerjaan}
+        dptFormDisabilitas={dptFormDisabilitas}
+        setDptFormDisabilitas={setDptFormDisabilitas}
+        dptFormKeterangan={dptFormKeterangan}
+        setDptFormKeterangan={setDptFormKeterangan}
         tpsList={tpsList}
         editingQrCode={editingQrCode}
         downloadQrCode={downloadQrCode}
