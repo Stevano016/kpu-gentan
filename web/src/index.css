@@ -60,13 +60,19 @@ input, select, textarea, button {
 
 /* App Layout Container */
 .app-container {
+  --sidebar-width: 260px;
   display: flex;
   min-height: 100vh;
 }
 
+/* Mode ciut: sidebar jadi rail ikon supaya konten memakai lebar penuh */
+.app-container.sidebar-collapsed {
+  --sidebar-width: 76px;
+}
+
 /* Sidebar Dashboard */
 .sidebar {
-  width: 260px;
+  width: var(--sidebar-width);
   background-color: var(--surface);
   border-right: 1px solid var(--border);
   padding: 24px;
@@ -74,6 +80,16 @@ input, select, textarea, button {
   flex-direction: column;
   position: fixed;
   height: 100vh;
+  overflow: hidden;
+  transition: width 0.2s cubic-bezier(0.4, 0, 0.2, 1), padding 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.sidebar-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 36px;
 }
 
 .sidebar-brand {
@@ -83,7 +99,99 @@ input, select, textarea, button {
   font-weight: 700;
   font-size: 1.25rem;
   color: var(--primary);
-  margin-bottom: 36px;
+  min-width: 0;
+}
+
+.sidebar-brand span {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.sidebar-toggle {
+  flex-shrink: 0;
+  background: none;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  color: var(--text-muted);
+  cursor: pointer;
+  padding: 6px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: var(--transition);
+}
+
+.sidebar-toggle:hover {
+  background-color: var(--surface-alt);
+  color: var(--text);
+}
+
+.btn-fullscreen {
+  width: 100%;
+  padding: 8px;
+  margin-bottom: 12px;
+  background: none;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  font-weight: 500;
+  font-size: 0.875rem;
+  cursor: pointer;
+  color: var(--text-muted);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  transition: var(--transition);
+}
+
+.btn-fullscreen:hover {
+  background-color: var(--surface-alt);
+  color: var(--text);
+}
+
+/* Sidebar dalam mode ciut (rail ikon) — hanya berlaku di layout desktop,
+   karena pada layar kecil sidebar berubah jadi bar menu horizontal. */
+@media (min-width: 769px) {
+  .sidebar-collapsed .sidebar {
+    padding: 24px 12px;
+  }
+
+  .sidebar-collapsed .sidebar-head {
+    flex-direction: column;
+    gap: 16px;
+    margin-bottom: 24px;
+  }
+
+  .sidebar-collapsed .sidebar-brand span,
+  .sidebar-collapsed .menu-item button span,
+  .sidebar-collapsed .btn-fullscreen span,
+  .sidebar-collapsed .btn-logout span,
+  .sidebar-collapsed .user-info {
+    display: none;
+  }
+
+  .sidebar-collapsed .menu-item button,
+  .sidebar-collapsed .btn-fullscreen,
+  .sidebar-collapsed .btn-logout,
+  .sidebar-collapsed .user-profile {
+    justify-content: center;
+    padding-left: 0;
+    padding-right: 0;
+  }
+
+  .sidebar-collapsed .menu-item button {
+    padding: 12px 0;
+  }
+
+  /* Rail ikon terlalu sempit untuk teks penuh */
+  .sidebar-collapsed .watermark-full {
+    display: none;
+  }
+
+  .sidebar-collapsed .watermark-short {
+    display: inline;
+  }
 }
 
 .sidebar-brand svg, .sidebar-brand img {
@@ -189,12 +297,32 @@ input, select, textarea, button {
   border-color: transparent;
 }
 
+/* Watermark kredit — sengaja kecil & redup agar tidak mengalihkan perhatian */
+.app-watermark {
+  margin-top: 14px;
+  padding-top: 12px;
+  border-top: 1px solid var(--border);
+  text-align: center;
+  font-size: 0.68rem;
+  line-height: 1.4;
+  letter-spacing: 0.02em;
+  color: var(--text-muted);
+  opacity: 0.7;
+  white-space: nowrap;
+  user-select: none;
+}
+
+.watermark-short {
+  display: none;
+}
+
 /* Main Content Area */
 .main-content {
-  margin-left: 260px;
+  margin-left: var(--sidebar-width);
   flex-grow: 1;
   padding: 0 40px 40px 40px;
   min-width: 0; /* Prevents flex children from stretching */
+  transition: margin-left 0.2s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 /* Grid Framework */
@@ -350,6 +478,37 @@ tr:hover td {
   background-color: oklch(0.99 0.005 165 / 0.3);
 }
 
+/* Filter jenis pemilih (DPT / DPK) */
+.jenis-filter {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 20px;
+  flex-wrap: wrap;
+}
+
+.jenis-filter-btn {
+  padding: 8px 16px;
+  border: 1px solid var(--border);
+  background-color: var(--surface);
+  color: var(--text-muted);
+  border-radius: 9999px;
+  font-size: 0.8125rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: var(--transition);
+}
+
+.jenis-filter-btn:hover {
+  background-color: var(--surface-alt);
+  color: var(--text);
+}
+
+.jenis-filter-btn.active {
+  background-color: var(--primary);
+  border-color: var(--primary);
+  color: var(--surface);
+}
+
 /* Status Badges */
 .badge {
   display: inline-flex;
@@ -467,9 +626,20 @@ tr:hover td {
 .login-wrapper {
   min-height: 100vh;
   display: flex;
+  flex-direction: column;
   align-items: center;
   justify-content: center;
   background-color: var(--background);
+  padding: 24px;
+}
+
+.login-watermark {
+  margin-top: 20px;
+  font-size: 0.75rem;
+  color: var(--text-muted);
+  opacity: 0.75;
+  letter-spacing: 0.02em;
+  user-select: none;
 }
 
 .login-card {
@@ -578,9 +748,18 @@ tr:hover td {
     border-bottom: 1px solid var(--border);
     padding: 16px;
   }
-  .sidebar-brand {
+  .app-container.sidebar-collapsed {
+    --sidebar-width: 100%;
+  }
+  .sidebar-head {
     margin-bottom: 16px;
     justify-content: center;
+  }
+  .sidebar-toggle {
+    display: none;
+  }
+  .btn-fullscreen {
+    display: none;
   }
   .sidebar-menu {
     flex-direction: row;

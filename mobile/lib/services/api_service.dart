@@ -66,6 +66,12 @@ class ApiService {
       final json = jsonDecode(response.body);
       if (response.statusCode == 200) {
         final user = json['user'];
+        if (user['role'] != 'kpps') {
+          return {
+            'success': false,
+            'message': 'Akun ini bukan akun KPPS. Akun Sekretariat hanya dapat masuk lewat panel web.'
+          };
+        }
         await _storage.saveSession(
           json['token'],
           user['username'],
@@ -150,6 +156,41 @@ class ApiService {
         }
       } catch (_) {}
       return {'success': false, 'message': 'Gagal menghubungi server (Offline). Menggunakan cache lokal.'};
+    }
+  }
+
+  // Fetch Paslon list from server and cache it locally
+  Future<Map<String, dynamic>> downloadAndCachePaslons() async {
+    final clientUrl = await _getApiUrl();
+    try {
+      final response = await http.get(
+        Uri.parse('$clientUrl/paslon'),
+        headers: _getHeaders(),
+      ).timeout(const Duration(seconds: 8));
+
+      if (response.statusCode == 200) {
+        final json = jsonDecode(response.body);
+        final paslonList = json['data'] as List<dynamic>;
+        await _storage.cachePaslonList(paslonList);
+        return {'success': true, 'count': paslonList.length};
+      } else {
+        return {'success': false, 'message': 'Gagal mengunduh Paslon'};
+      }
+    } catch (e) {
+      try {
+        final response = await http.get(
+          Uri.parse('$fallbackUrl/paslon'),
+          headers: _getHeaders(),
+        ).timeout(const Duration(seconds: 5));
+
+        if (response.statusCode == 200) {
+          final json = jsonDecode(response.body);
+          final paslonList = json['data'] as List<dynamic>;
+          await _storage.cachePaslonList(paslonList);
+          return {'success': true, 'count': paslonList.length};
+        }
+      } catch (_) {}
+      return {'success': false, 'message': 'Gagal menghubungi server. Menggunakan cache lokal.'};
     }
   }
 

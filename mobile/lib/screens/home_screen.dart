@@ -54,6 +54,7 @@ class _HomeScreenState extends State<HomeScreen> {
   int _totalDpkCount = 0;
   int _hadirDpkCount = 0;
   double _hadirPercentage = 0.0;
+  List<dynamic> _paslons = [];
 
   WebSocket? _webSocket;
   Timer? _reconnectTimer;
@@ -82,7 +83,10 @@ class _HomeScreenState extends State<HomeScreen> {
         (message) async {
           try {
             final payload = jsonDecode(message);
-            if (payload['event'] == 'checkin' || payload['event'] == 'update' || payload['event'] == 'quick-count') {
+            if (payload['event'] == 'paslon_updated') {
+              _addSyncLog('Perubahan Paslon terdeteksi. Memperbarui data paslon...');
+              await _refreshPaslonsFromServer();
+            } else if (payload['event'] == 'checkin' || payload['event'] == 'update' || payload['event'] == 'quick-count') {
               _addSyncLog('Real-time update terdeteksi (${payload['event']}). Memperbarui data...');
               await _api.downloadAndCacheDpt();
               await _loadDptStats();
@@ -147,7 +151,27 @@ class _HomeScreenState extends State<HomeScreen> {
     await _loadPendingCount();
     await _loadLocalQuickCount();
     await _loadDptStats();
+    await _loadPaslonList();
     _addSyncLog('Aplikasi dimulai. Sesi: $_tpsName, Akses: ${_kppsRole ?? "full"}');
+    await _refreshPaslonsFromServer();
+  }
+
+  Future<void> _loadPaslonList() async {
+    final paslons = await _storage.getCachedPaslonList();
+    if (!mounted) return;
+    setState(() {
+      _paslons = paslons;
+    });
+  }
+
+  // Ambil daftar paslon terbaru dari server agar label dashboard & quick count
+  // tidak tertinggal ketika sekretariat mengubah data paslon.
+  Future<void> _refreshPaslonsFromServer() async {
+    final res = await _api.downloadAndCachePaslons();
+    if (res['success'] == true) {
+      await _loadPaslonList();
+      _addSyncLog('Daftar Paslon diperbarui (${res['count']} paslon).');
+    }
   }
 
   Future<void> _loadDptStats() async {
@@ -201,6 +225,7 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   void _addSyncLog(String log) {
+    if (!mounted) return;
     final time = DateTime.now().toString().substring(11, 19);
     setState(() {
       _syncLogs.insert(0, '[$time] $log');
@@ -381,6 +406,9 @@ class _HomeScreenState extends State<HomeScreen> {
       _addSyncLog('DPT lokal berhasil diperbarui. Total: ${refreshRes['count']} pemilih.');
     }
 
+    // Fetch fresh Paslons update from server
+    await _refreshPaslonsFromServer();
+
     // 3. Sync Quick Count if draft or pending sync
     final localQc = await _storage.getLocalQuickCount();
     if (localQc != null) {
@@ -528,6 +556,7 @@ class _HomeScreenState extends State<HomeScreen> {
       k2Controller: _k2Controller,
       k3Controller: _k3Controller,
       invalidController: _invalidController,
+      paslons: _paslons,
     );
   }
 
@@ -561,6 +590,7 @@ class _HomeScreenState extends State<HomeScreen> {
       invalidController: _invalidController,
       syncingInProgress: _syncingInProgress,
       syncAction: _syncAction,
+      paslons: _paslons,
       onSubmitDraft: () => _submitQuickCount('draft'),
       onSubmitFinal: () {
         _showCustomConfirmDialog(
@@ -676,17 +706,41 @@ class _HomeScreenState extends State<HomeScreen> {
         index: currentIndex,
         children: tabs,
       ),
-      bottomNavigationBar: BottomNavigationBar(
-        currentIndex: currentIndex,
-        onTap: (index) {
-          setState(() {
-            _selectedIndex = index;
-          });
-        },
-        selectedItemColor: tealColor,
-        unselectedItemColor: Colors.grey,
-        type: BottomNavigationBarType.fixed,
-        items: navItems,
+      bottomNavigationBar: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          // Watermark kredit — tipis dan redup agar tidak mengganggu konten
+          Container(
+            width: double.infinity,
+            padding: const EdgeInsets.symmetric(vertical: 5),
+            decoration: const BoxDecoration(
+              color: Color(0xFFF9FAFB),
+              border: Border(top: BorderSide(color: Color(0xFFE5E7EB))),
+            ),
+            child: const Text(
+              'Support by KKN-7 USH 2026',
+              textAlign: TextAlign.center,
+              style: TextStyle(
+                fontSize: 10,
+                color: Color(0xFF9CA3AF),
+                letterSpacing: 0.2,
+                fontWeight: FontWeight.w500,
+              ),
+            ),
+          ),
+          BottomNavigationBar(
+            currentIndex: currentIndex,
+            onTap: (index) {
+              setState(() {
+                _selectedIndex = index;
+              });
+            },
+            selectedItemColor: tealColor,
+            unselectedItemColor: Colors.grey,
+            type: BottomNavigationBarType.fixed,
+            items: navItems,
+          ),
+        ],
       ),
     );
   }

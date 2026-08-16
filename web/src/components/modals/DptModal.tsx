@@ -11,6 +11,8 @@ interface DptModalProps {
   setDptFormNama: (val: string) => void;
   dptFormTps: string;
   setDptFormTps: (val: string) => void;
+  dptFormJenis: string;
+  setDptFormJenis: (val: string) => void;
   tpsList: any[];
   editingQrCode: string | null;
   downloadQrCode: (base64: string, name: string) => void;
@@ -27,6 +29,8 @@ export const DptModal: React.FC<DptModalProps> = ({
   setDptFormNama,
   dptFormTps,
   setDptFormTps,
+  dptFormJenis,
+  setDptFormJenis,
   tpsList,
   editingQrCode,
   downloadQrCode,
@@ -68,6 +72,18 @@ export const DptModal: React.FC<DptModalProps> = ({
                   value={dptFormNama}
                   onChange={e => setDptFormNama(e.target.value)}
                 />
+              </div>
+              <div className="form-group">
+                <label className="form-label">Jenis Pemilih</label>
+                <select
+                  className="form-control"
+                  required
+                  value={dptFormJenis}
+                  onChange={e => setDptFormJenis(e.target.value)}
+                >
+                  <option value="dpt">DPT — Daftar Pemilih Tetap</option>
+                  <option value="dpk">DPK — Daftar Pemilih Khusus</option>
+                </select>
               </div>
               <div className="form-group">
                 <label className="form-label">Alokasi TPS</label>

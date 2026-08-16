@@ -47,6 +47,8 @@ class LocalStorageService {
       if (await fileQueue.exists()) await fileQueue.delete();
       final fileQc = await _getFile('quick_count.json');
       if (await fileQc.exists()) await fileQc.delete();
+      final filePaslon = await _getFile('paslon_cache.json');
+      if (await filePaslon.exists()) await filePaslon.delete();
     } catch (_) {}
   }
 
@@ -138,6 +140,23 @@ class LocalStorageService {
       return jsonDecode(contents) as Map<String, dynamic>;
     } catch (_) {
       return null;
+    }
+  }
+
+  // Cache Paslon list
+  Future<void> cachePaslonList(List<dynamic> paslonList) async {
+    final file = await _getFile('paslon_cache.json');
+    await file.writeAsString(jsonEncode(paslonList));
+  }
+
+  Future<List<dynamic>> getCachedPaslonList() async {
+    try {
+      final file = await _getFile('paslon_cache.json');
+      if (!await file.exists()) return [];
+      final contents = await file.readAsString();
+      return jsonDecode(contents) as List<dynamic>;
+    } catch (_) {
+      return [];
     }
   }
 }

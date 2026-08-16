@@ -1,0 +1,16 @@
+# Salin file ini menjadi "key.properties" (tanpa .example) lalu isi sesuai keystore Anda.
+# JANGAN commit key.properties maupun file .jks — keduanya sudah masuk .gitignore.
+#
+# Membuat keystore rilis (jalankan sekali, simpan file .jks baik-baik):
+#
+#   keytool -genkey -v -keystore D:/keys/gentara-release.jks \
+#     -keyalg RSA -keysize 2048 -validity 10000 -alias gentara
+#
+# keytool akan menanyakan password dan identitas penerbit (nama, organisasi, kota, dst).
+# Pakai identitas resmi tim/instansi — data ini menjadi identitas penerbit aplikasi
+# yang dilihat sistem dan pemindai keamanan.
+
+storeFile=D:/keys/gentara-release.jks
+storePassword=ISI_PASSWORD_KEYSTORE
+keyAlias=gentara
+keyPassword=ISI_PASSWORD_KEY

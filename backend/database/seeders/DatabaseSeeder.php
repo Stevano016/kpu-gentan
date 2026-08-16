@@ -15,11 +15,21 @@ class DatabaseSeeder extends Seeder
      */
     public function run(): void
     {
-        // 1. Create Secretariat Admin
+        // 1. Create Secretariat Admin (akses penuh)
         User::create([
             'username' => 'admin',
             'password' => Hash::make('password123'),
             'role' => 'sekretariat',
+            'sekretariat_role' => 'admin',
+            'tps_id' => null,
+        ]);
+
+        // 1b. Create Secretariat Viewer (hanya lihat, tanpa CRUD)
+        User::create([
+            'username' => 'pengawas',
+            'password' => Hash::make('password123'),
+            'role' => 'sekretariat',
+            'sekretariat_role' => 'viewer',
             'tps_id' => null,
         ]);
 

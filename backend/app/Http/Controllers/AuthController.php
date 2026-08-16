@@ -34,6 +34,7 @@ class AuthController extends Controller
                 'username' => $user->username,
                 'role' => $user->role,
                 'kpps_role' => $user->kpps_role,
+                'sekretariat_role' => $user->sekretariat_role,
                 'tps_id' => $user->tps_id,
             ]
         ]);
@@ -58,6 +59,7 @@ class AuthController extends Controller
                 'username' => $request->user()->username,
                 'role' => $request->user()->role,
                 'kpps_role' => $request->user()->kpps_role,
+                'sekretariat_role' => $request->user()->sekretariat_role,
                 'tps_id' => $request->user()->tps_id,
             ]
         ]);

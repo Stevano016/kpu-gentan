@@ -82,6 +82,8 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({
           </button>
         </form>
       </div>
+
+      <p className="login-watermark">Support by KKN-7 USH 2026</p>
     </div>
   );
 };

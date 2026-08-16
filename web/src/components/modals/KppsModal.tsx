@@ -12,6 +12,10 @@ interface KppsModalProps {
   setKppsFormTps: (val: string) => void;
   kppsFormRole: string;
   setKppsFormRole: (val: string) => void;
+  kppsFormAccountType: string;
+  setKppsFormAccountType: (val: string) => void;
+  kppsFormSekretariatRole: string;
+  setKppsFormSekretariatRole: (val: string) => void;
   tpsList: any[];
   onSubmit: (e: React.FormEvent) => void;
 }
@@ -27,30 +31,50 @@ export const KppsModal: React.FC<KppsModalProps> = ({
   setKppsFormTps,
   kppsFormRole,
   setKppsFormRole,
+  kppsFormAccountType,
+  setKppsFormAccountType,
+  kppsFormSekretariatRole,
+  setKppsFormSekretariatRole,
   tpsList,
   onSubmit,
 }) => {
   if (!isOpen) return null;
 
+  const isKpps = kppsFormAccountType === 'kpps';
+
   return (
     <div className="modal-overlay">
       <div className="modal-content">
         <div className="modal-header">
-          <h2 className="modal-title">Buat Akun KPPS Baru</h2>
+          <h2 className="modal-title">Buat Akun Baru</h2>
           <button onClick={onClose} className="modal-close"><Icons.Close /></button>
         </div>
         <form onSubmit={onSubmit}>
+          <div className="form-group">
+            <label className="form-label">Jenis Akun</label>
+            <select
+              className="form-control"
+              required
+              value={kppsFormAccountType}
+              onChange={e => setKppsFormAccountType(e.target.value)}
+            >
+              <option value="kpps">KPPS (Aplikasi Mobile)</option>
+              <option value="sekretariat">Sekretariat (Panel Web)</option>
+            </select>
+          </div>
+
           <div className="form-group">
             <label className="form-label">Username</label>
             <input
               type="text"
               className="form-control"
               required
-              placeholder="Contoh: kpps04"
+              placeholder={isKpps ? 'Contoh: kpps04' : 'Contoh: sekretariat02'}
               value={kppsFormUsername}
               onChange={e => setKppsFormUsername(e.target.value)}
             />
           </div>
+
           <div className="form-group">
             <label className="form-label">Password</label>
             <input
@@ -63,32 +87,56 @@ export const KppsModal: React.FC<KppsModalProps> = ({
               onChange={e => setKppsFormPassword(e.target.value)}
             />
           </div>
-          <div className="form-group">
-            <label className="form-label">Asosiasi TPS</label>
-            <select
-              className="form-control"
-              required
-              value={kppsFormTps}
-              onChange={e => setKppsFormTps(e.target.value)}
-            >
-              <option value="">Pilih TPS...</option>
-              {tpsList.map(t => (
-                <option key={t.id} value={t.id}>{t.nama} ({t.wilayah})</option>
-              ))}
-            </select>
-          </div>
-          <div className="form-group">
-            <label className="form-label">Hak Akses / Peran</label>
-            <select
-              className="form-control"
-              required
-              value={kppsFormRole}
-              onChange={e => setKppsFormRole(e.target.value)}
-            >
-              <option value="full">Validasi & Quick Count (Akses Penuh)</option>
-              <option value="validasi">Hanya Validasi Kehadiran (Check-in)</option>
-            </select>
-          </div>
+
+          {isKpps ? (
+            <>
+              <div className="form-group">
+                <label className="form-label">Asosiasi TPS</label>
+                <select
+                  className="form-control"
+                  required
+                  value={kppsFormTps}
+                  onChange={e => setKppsFormTps(e.target.value)}
+                >
+                  <option value="">Pilih TPS...</option>
+                  {tpsList.map(t => (
+                    <option key={t.id} value={t.id}>{t.nama} ({t.wilayah})</option>
+                  ))}
+                </select>
+              </div>
+              <div className="form-group">
+                <label className="form-label">Hak Akses / Peran</label>
+                <select
+                  className="form-control"
+                  required
+                  value={kppsFormRole}
+                  onChange={e => setKppsFormRole(e.target.value)}
+                >
+                  <option value="full">Validasi &amp; Quick Count (Akses Penuh)</option>
+                  <option value="validasi">Hanya Validasi Kehadiran (Check-in)</option>
+                </select>
+              </div>
+            </>
+          ) : (
+            <div className="form-group">
+              <label className="form-label">Hak Akses Sekretariat</label>
+              <select
+                className="form-control"
+                required
+                value={kppsFormSekretariatRole}
+                onChange={e => setKppsFormSekretariatRole(e.target.value)}
+              >
+                <option value="admin">Admin Sekretariat (Akses Penuh / CRUD)</option>
+                <option value="viewer">Pemantau (Hanya Lihat, Tanpa Ubah Data)</option>
+              </select>
+              <p style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginTop: '6px', lineHeight: 1.5 }}>
+                {kppsFormSekretariatRole === 'admin'
+                  ? 'Dapat menambah, mengubah, dan menghapus seluruh data termasuk membuat akun baru.'
+                  : 'Hanya dapat membuka panel web dan melihat data. Tidak bisa login di aplikasi mobile.'}
+              </p>
+            </div>
+          )}
+
           <div className="modal-footer">
             <button type="button" onClick={onClose} className="btn btn-secondary">Batal</button>
             <button type="submit" className="btn btn-primary">Simpan</button>

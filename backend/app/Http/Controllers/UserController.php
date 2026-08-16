@@ -11,14 +11,19 @@ class UserController extends Controller
 {
     public function index(Request $request)
     {
-        $query = User::with('tps')->where('role', 'kpps');
+        $query = User::with('tps')->orderBy('role')->orderBy('username');
+
+        // Filter opsional: ?role=kpps atau ?role=sekretariat
+        if ($request->filled('role')) {
+            $query->where('role', $request->role);
+        }
 
         if ($request->has('page')) {
             $users = $query->paginate(10);
         } else {
             $users = $query->get();
         }
- 
+
         return response()->json([
             'status' => 'success',
             'data' => $users
@@ -30,8 +35,12 @@ class UserController extends Controller
         $validator = Validator::make($request->all(), [
             'username' => 'required|string|max:100|unique:users,username',
             'password' => 'required|string|min:6',
-            'tps_id' => 'required|exists:tps,id',
+            'role' => 'required|string|in:kpps,sekretariat',
+            // TPS & hak akses hanya relevan untuk akun KPPS
+            'tps_id' => 'required_if:role,kpps|nullable|exists:tps,id',
             'kpps_role' => 'nullable|string|in:validasi,full',
+            // admin = akses penuh, viewer = hanya lihat
+            'sekretariat_role' => 'required_if:role,sekretariat|nullable|string|in:admin,viewer',
         ]);
 
         if ($validator->fails()) {
@@ -41,22 +50,28 @@ class UserController extends Controller
             ], 422);
         }
 
+        $isKpps = $request->role === 'kpps';
+
         $user = User::create([
             'username' => $request->username,
             'password' => Hash::make($request->password),
-            'role' => 'kpps',
-            'kpps_role' => $request->kpps_role ?? 'full',
-            'tps_id' => $request->tps_id,
+            'role' => $request->role,
+            'kpps_role' => $isKpps ? ($request->kpps_role ?? 'full') : null,
+            'sekretariat_role' => $isKpps ? null : $request->sekretariat_role,
+            'tps_id' => $isKpps ? $request->tps_id : null,
         ]);
 
         return response()->json([
             'status' => 'success',
-            'message' => 'Akun KPPS berhasil dibuat.',
+            'message' => $isKpps
+                ? 'Akun KPPS berhasil dibuat.'
+                : 'Akun Sekretariat berhasil dibuat.',
             'data' => [
                 'id' => $user->id,
                 'username' => $user->username,
                 'role' => $user->role,
                 'kpps_role' => $user->kpps_role,
+                'sekretariat_role' => $user->sekretariat_role,
                 'tps_id' => $user->tps_id,
             ]
         ], 201);
@@ -96,6 +111,24 @@ class UserController extends Controller
                 'status' => 'error',
                 'message' => 'Tidak dapat menghapus akun sendiri.'
             ], 400);
+        }
+
+        // Jangan sampai tidak ada admin sekretariat tersisa
+        if ($user->isSekretariatAdmin()) {
+            $remainingAdmins = User::where('role', 'sekretariat')
+                ->where(function ($q) {
+                    $q->where('sekretariat_role', '!=', 'viewer')
+                        ->orWhereNull('sekretariat_role');
+                })
+                ->where('id', '!=', $user->id)
+                ->count();
+
+            if ($remainingAdmins === 0) {
+                return response()->json([
+                    'status' => 'error',
+                    'message' => 'Tidak dapat menghapus admin sekretariat terakhir.'
+                ], 400);
+            }
         }
 
         $user->delete();

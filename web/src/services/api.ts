@@ -41,11 +41,12 @@ export const ApiService = {
     return fetch(`${API_URL}/dashboard/tps/${id}`, { headers: getAuthHeaders(token) });
   },
 
-  async getDpts(token: string, page: number, search = '', tpsId = '', type: 'dpt' | 'dpk' = 'dpt') {
+  // type kosong = tampilkan DPT dan DPK sekaligus
+  async getDpts(token: string, page: number, search = '', tpsId = '', type = '') {
     let url = `${API_URL}/dpt?page=${page}`;
     if (search) url += `&search=${encodeURIComponent(search)}`;
     if (tpsId) url += `&tps_id=${tpsId}`;
-    url += `&jenis_pemilih=${type}`;
+    if (type) url += `&jenis_pemilih=${type}`;
     return fetch(url, { headers: getAuthHeaders(token) });
   },
 
@@ -90,8 +91,10 @@ export const ApiService = {
     });
   },
 
-  async getKppsUsers(token: string, page: number) {
-    return fetch(`${API_URL}/users?page=${page}`, { headers: getAuthHeaders(token) });
+  async getKppsUsers(token: string, page: number, role = '') {
+    let url = `${API_URL}/users?page=${page}`;
+    if (role) url += `&role=${role}`;
+    return fetch(url, { headers: getAuthHeaders(token) });
   },
 
   async createKpps(token: string, payload: any) {

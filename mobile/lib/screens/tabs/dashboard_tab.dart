@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../../utils/paslon_helper.dart';
 
 class DashboardTab extends StatelessWidget {
   final String tpsName;
@@ -13,6 +14,7 @@ class DashboardTab extends StatelessWidget {
   final TextEditingController k2Controller;
   final TextEditingController k3Controller;
   final TextEditingController invalidController;
+  final List<dynamic> paslons;
 
   const DashboardTab({
     super.key,
@@ -28,6 +30,7 @@ class DashboardTab extends StatelessWidget {
     required this.k2Controller,
     required this.k3Controller,
     required this.invalidController,
+    required this.paslons,
   });
 
   @override
@@ -208,11 +211,14 @@ class DashboardTab extends StatelessWidget {
           // Quick Count Results Card
           Builder(
             builder: (context) {
-              final qc1 = int.tryParse(k1Controller.text) ?? 0;
-              final qc2 = int.tryParse(k2Controller.text) ?? 0;
-              final qc3 = int.tryParse(k3Controller.text) ?? 0;
+              final votes = <int, int>{
+                1: int.tryParse(k1Controller.text) ?? 0,
+                2: int.tryParse(k2Controller.text) ?? 0,
+                3: int.tryParse(k3Controller.text) ?? 0,
+              };
               final qcInvalid = int.tryParse(invalidController.text) ?? 0;
-              final qcTotal = qc1 + qc2 + qc3 + qcInvalid;
+              final qcTotal = votes.values.fold(0, (a, b) => a + b) + qcInvalid;
+              final slots = visiblePaslonSlots(paslons, (n) => votes[n] ?? 0);
 
               return Card(
                 shape: RoundedRectangleBorder(
@@ -254,12 +260,15 @@ class DashboardTab extends StatelessWidget {
                         ],
                       ),
                       const Divider(height: 24),
-                      _buildQuickCountRow('Paslon 01 (Budi - Ami)', qc1, qcTotal, const Color(0xFF0D9488)),
-                      const SizedBox(height: 12),
-                      _buildQuickCountRow('Paslon 02 (Candra - Dodi)', qc2, qcTotal, Colors.blue),
-                      const SizedBox(height: 12),
-                      _buildQuickCountRow('Paslon 03 (Eka - Fani)', qc3, qcTotal, Colors.orange),
-                      const SizedBox(height: 12),
+                      for (final nomor in slots) ...[
+                        _buildQuickCountRow(
+                          paslonLabel(paslons, nomor),
+                          votes[nomor] ?? 0,
+                          qcTotal,
+                          paslonColor(nomor),
+                        ),
+                        const SizedBox(height: 12),
+                      ],
                       _buildQuickCountRow('Suara Tidak Sah', qcInvalid, qcTotal, Colors.grey),
                       const Divider(height: 24),
                       Row(
@@ -294,7 +303,15 @@ class DashboardTab extends StatelessWidget {
         Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
-            Text(label, style: const TextStyle(fontSize: 12, color: Color(0xFF4B5563))),
+            Expanded(
+              child: Text(
+                label,
+                style: const TextStyle(fontSize: 12, color: Color(0xFF4B5563)),
+                maxLines: 2,
+                overflow: TextOverflow.ellipsis,
+              ),
+            ),
+            const SizedBox(width: 8),
             Text(
               '$votes suara (${(percentage * 100).toStringAsFixed(1)}%)',
               style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 12, color: Color(0xFF1F2937)),

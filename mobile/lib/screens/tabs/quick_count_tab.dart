@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../../utils/paslon_helper.dart';
 
 class QuickCountTab extends StatelessWidget {
   final String qcStatusText;
@@ -11,6 +12,7 @@ class QuickCountTab extends StatelessWidget {
   final String? syncAction;
   final VoidCallback onSubmitDraft;
   final VoidCallback onSubmitFinal;
+  final List<dynamic> paslons;
 
   const QuickCountTab({
     super.key,
@@ -24,11 +26,23 @@ class QuickCountTab extends StatelessWidget {
     required this.syncAction,
     required this.onSubmitDraft,
     required this.onSubmitFinal,
+    required this.paslons,
   });
 
   @override
   Widget build(BuildContext context) {
     const tealColor = Color(0xFF0D9488);
+    final votes = <int, int>{
+      1: int.tryParse(k1Controller.text) ?? 0,
+      2: int.tryParse(k2Controller.text) ?? 0,
+      3: int.tryParse(k3Controller.text) ?? 0,
+    };
+    final controllers = <int, TextEditingController>{
+      1: k1Controller,
+      2: k2Controller,
+      3: k3Controller,
+    };
+    final slots = visiblePaslonSlots(paslons, (n) => votes[n] ?? 0);
     return SingleChildScrollView(
       padding: const EdgeInsets.all(20.0),
       child: Column(
@@ -75,12 +89,10 @@ class QuickCountTab extends StatelessWidget {
                   ),
                   const Divider(height: 24),
                   
-                  _buildCountInputField('Paslon 01 (Budi - Ami)', k1Controller, isQcLocked),
-                  const SizedBox(height: 12),
-                  _buildCountInputField('Paslon 02 (Candra - Dodi)', k2Controller, isQcLocked),
-                  const SizedBox(height: 12),
-                  _buildCountInputField('Paslon 03 (Eka - Fani)', k3Controller, isQcLocked),
-                  const SizedBox(height: 12),
+                  for (final nomor in slots) ...[
+                    _buildCountInputField(paslonLabel(paslons, nomor), controllers[nomor]!, isQcLocked),
+                    const SizedBox(height: 12),
+                  ],
                   _buildCountInputField('Suara Tidak Sah', invalidController, isQcLocked),
                   
                   const SizedBox(height: 24),

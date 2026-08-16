@@ -15,7 +15,7 @@ class DptController extends Controller
     {
         $query = Dpt::with('tps');
 
-        if ($request->has('search')) {
+        if ($request->filled('search')) {
             $search = $request->search;
             $query->where(function($q) use ($search) {
                 $q->where('nik', 'like', "%{$search}%")
@@ -23,11 +23,11 @@ class DptController extends Controller
             });
         }
 
-        if ($request->has('tps_id')) {
+        if ($request->filled('tps_id')) {
             $query->where('tps_id', $request->tps_id);
         }
 
-        if ($request->has('jenis_pemilih')) {
+        if ($request->filled('jenis_pemilih')) {
             $query->where('jenis_pemilih', $request->jenis_pemilih);
         }
 

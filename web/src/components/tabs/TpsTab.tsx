@@ -9,6 +9,7 @@ interface TpsTabProps {
   setIsTpsModalOpen: (open: boolean) => void;
   setSelectedTpsId: (id: number | null) => void;
   setPage: (page: string) => void;
+  isAdmin: boolean;
 }
 
 export const TpsTab: React.FC<TpsTabProps> = ({
@@ -18,6 +19,7 @@ export const TpsTab: React.FC<TpsTabProps> = ({
   setIsTpsModalOpen,
   setSelectedTpsId,
   setPage,
+  isAdmin,
 }) => {
   return (
     <div>
@@ -26,10 +28,12 @@ export const TpsTab: React.FC<TpsTabProps> = ({
           <h1 className="section-title">Tempat Pemungutan Suara (TPS)</h1>
           <p className="section-desc">Daftar wilayah TPS dan manajemen alur rekapitulasi.</p>
         </div>
-        <button onClick={() => setIsTpsModalOpen(true)} className="btn btn-primary">
-          <Icons.Plus />
-          <span>Tambah TPS</span>
-        </button>
+        {isAdmin && (
+          <button onClick={() => setIsTpsModalOpen(true)} className="btn btn-primary">
+            <Icons.Plus />
+            <span>Tambah TPS</span>
+          </button>
+        )}
       </div>
 
       {tpsPageLoading && <div style={{ fontSize: '0.875rem', color: 'var(--text-muted)', marginBottom: '16px' }}>Memuat data TPS...</div>}

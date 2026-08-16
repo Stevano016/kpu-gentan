@@ -11,6 +11,7 @@ interface PaslonTabProps {
   setNamaKetua: (val: string) => void;
   setNamaWakil: (val: string) => void;
   handleDeletePaslon: (id: number) => Promise<void>;
+  isAdmin: boolean;
 }
 
 export const PaslonTab: React.FC<PaslonTabProps> = ({
@@ -23,6 +24,7 @@ export const PaslonTab: React.FC<PaslonTabProps> = ({
   setNamaKetua,
   setNamaWakil,
   handleDeletePaslon,
+  isAdmin,
 }) => {
   return (
     <div>
@@ -31,20 +33,22 @@ export const PaslonTab: React.FC<PaslonTabProps> = ({
           <h1 className="section-title">Pasangan Calon (Paslon)</h1>
           <p className="section-desc">Kelola kontestan pemilihan umum wilayah Gentan.</p>
         </div>
-        <button
-          onClick={() => {
-            setIsEditing(false);
-            setEditingPaslon(null);
-            setNomorUrut('');
-            setNamaKetua('');
-            setNamaWakil('');
-            setIsModalOpen(true);
-          }}
-          className="btn btn-primary"
-        >
-          <Icons.Plus />
-          <span>Tambah Paslon</span>
-        </button>
+        {isAdmin && (
+          <button
+            onClick={() => {
+              setIsEditing(false);
+              setEditingPaslon(null);
+              setNomorUrut('');
+              setNamaKetua('');
+              setNamaWakil('');
+              setIsModalOpen(true);
+            }}
+            className="btn btn-primary"
+          >
+            <Icons.Plus />
+            <span>Tambah Paslon</span>
+          </button>
+        )}
       </div>
 
       {loading && <div style={{ fontSize: '0.875rem', color: 'var(--text-muted)', marginBottom: '16px' }}>Memuat data pasangan calon...</div>}
@@ -94,6 +98,7 @@ export const PaslonTab: React.FC<PaslonTabProps> = ({
                 </div>
               </div>
 
+              {isAdmin && (
               <div style={{ display: 'flex', gap: '12px', borderTop: '1px solid var(--border)', paddingTop: '16px' }}>
                 <button
                   onClick={() => {
@@ -117,6 +122,7 @@ export const PaslonTab: React.FC<PaslonTabProps> = ({
                   Hapus
                 </button>
               </div>
+              )}
             </div>
           ))}
 

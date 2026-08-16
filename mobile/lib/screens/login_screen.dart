@@ -37,9 +37,10 @@ class _LoginScreenState extends State<LoginScreen> {
     });
 
     if (res['success'] == true) {
-      // Fetch DPT once during login to initialize local cache
+      // Fetch DPT and Paslon once during login to initialize local cache
       await _api.downloadAndCacheDpt();
-      
+      await _api.downloadAndCachePaslons();
+
       if (mounted) {
         Navigator.of(context).pushReplacement(
           MaterialPageRoute(builder: (_) => const HomeScreen()),
@@ -63,7 +64,10 @@ class _LoginScreenState extends State<LoginScreen> {
           padding: const EdgeInsets.all(24.0),
           child: ConstrainedBox(
             constraints: const BoxConstraints(maxWidth: 400),
-            child: Card(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+            Card(
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(16),
                 side: const BorderSide(color: Color(0xFFE5E7EB)),
@@ -220,6 +224,20 @@ class _LoginScreenState extends State<LoginScreen> {
                   ),
                 ),
               ),
+            ),
+                const SizedBox(height: 20),
+                // Watermark kredit di bawah kartu login
+                const Text(
+                  'Support by KKN-7 USH 2026',
+                  textAlign: TextAlign.center,
+                  style: TextStyle(
+                    fontSize: 12,
+                    color: Color(0xFF9CA3AF),
+                    letterSpacing: 0.2,
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
+              ],
             ),
           ),
         ),

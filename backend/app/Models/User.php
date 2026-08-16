@@ -17,6 +17,7 @@ class User extends Authenticatable
         'password',
         'role',
         'kpps_role',
+        'sekretariat_role',
         'tps_id',
     ];
 
@@ -35,5 +36,19 @@ class User extends Authenticatable
     public function tps(): BelongsTo
     {
         return $this->belongsTo(Tps::class, 'tps_id');
+    }
+
+    public function isSekretariat(): bool
+    {
+        return $this->role === 'sekretariat';
+    }
+
+    /**
+     * Sekretariat dengan hak penuh (CRUD + kelola akun).
+     * Nilai null dianggap admin agar akun lama tetap berfungsi.
+     */
+    public function isSekretariatAdmin(): bool
+    {
+        return $this->isSekretariat() && $this->sekretariat_role !== 'viewer';
     }
 }

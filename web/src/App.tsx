@@ -13,14 +13,14 @@ import { ResetPasswordModal } from './components/modals/ResetPasswordModal';
 import { QrViewerModal } from './components/modals/QrViewerModal';
 import { VoterSuccessModal } from './components/modals/VoterSuccessModal';
 import { CustomConfirmModal } from './components/CustomConfirmModal';
+import { CustomAlertModal, type AlertVariant } from './components/CustomAlertModal';
 import { PaslonModal } from './components/modals/PaslonModal';
 
 // Screen Tabs
 import DashboardTab from './components/tabs/DashboardTab';
 import TpsTab from './components/tabs/TpsTab';
 import TpsDetailTab from './components/tabs/TpsDetailTab';
-import DptTab from './components/tabs/DptTab';
-import DpkTab from './components/tabs/DpkTab';
+import PemilihTab from './components/tabs/PemilihTab';
 import KppsTab from './components/tabs/KppsTab';
 import { PaslonTab } from './components/tabs/PaslonTab';
 
@@ -96,6 +96,7 @@ function AppContent() {
   const [dptData, setDptData] = useState<any>(null);
   const [dptSearch, setDptSearch] = useState('');
   const [dptTpsFilter, setDptTpsFilter] = useState('');
+  const [dptJenisFilter, setDptJenisFilter] = useState(''); // '' = semua, 'dpt', 'dpk'
   const [dptPage, setDptPage] = useState(1);
   const [dptLoading, setDptLoading] = useState(false);
   
@@ -105,6 +106,7 @@ function AppContent() {
   const [dptFormNik, setDptFormNik] = useState('');
   const [dptFormNama, setDptFormNama] = useState('');
   const [dptFormTps, setDptFormTps] = useState('');
+  const [dptFormJenis, setDptFormJenis] = useState('dpt');
   
   // Edit QR and add success states
   const [editingQrCode, setEditingQrCode] = useState<string | null>(null);
@@ -132,6 +134,8 @@ function AppContent() {
   const [kppsFormPassword, setKppsFormPassword] = useState('');
   const [kppsFormTps, setKppsFormTps] = useState('');
   const [kppsFormRole, setKppsFormRole] = useState('full'); // full | validasi
+  const [kppsFormAccountType, setKppsFormAccountType] = useState('kpps'); // kpps | sekretariat
+  const [kppsFormSekretariatRole, setKppsFormSekretariatRole] = useState('admin'); // admin | viewer
 
   // Password reset state
   const [isResetModalOpen, setIsResetModalOpen] = useState(false);
@@ -145,6 +149,18 @@ function AppContent() {
   const [confirmModalCallback, setConfirmModalCallback] = useState<(() => void) | null>(null);
   const [confirmModalBtnText, setConfirmModalBtnText] = useState('Ya');
   const [confirmModalDanger, setConfirmModalDanger] = useState(false);
+
+  // Layout: sidebar ciut (rail ikon) + mode layar penuh
+  const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(
+    () => localStorage.getItem('sidebarCollapsed') === '1'
+  );
+  const [isFullscreen, setIsFullscreen] = useState(false);
+
+  // Custom Alert Modal State (pengganti window.alert)
+  const [alertModalOpen, setAlertModalOpen] = useState(false);
+  const [alertModalVariant, setAlertModalVariant] = useState<AlertVariant>('success');
+  const [alertModalTitle, setAlertModalTitle] = useState('');
+  const [alertModalMessage, setAlertModalMessage] = useState('');
 
   // QR Code viewer states
   const [selectedVoterQr, setSelectedVoterQr] = useState<string | null>(null);
@@ -161,6 +177,9 @@ function AppContent() {
   const [paslonNamaKetua, setPaslonNamaKetua] = useState('');
   const [paslonNamaWakil, setPaslonNamaWakil] = useState('');
 
+  // Sekretariat viewer hanya boleh melihat: seluruh aksi tulis disembunyikan
+  const isAdmin = user ? user.sekretariat_role !== 'viewer' : false;
+
   const showConfirm = (title: string, message: string, onConfirm: () => void, btnText = 'Ya', danger = false) => {
     setConfirmModalTitle(title);
     setConfirmModalMessage(message);
@@ -169,6 +188,43 @@ function AppContent() {
     setConfirmModalDanger(danger);
     setConfirmModalOpen(true);
   };
+
+  const showAlert = (variant: AlertVariant, title: string, message: string) => {
+    setAlertModalVariant(variant);
+    setAlertModalTitle(title);
+    setAlertModalMessage(message);
+    setAlertModalOpen(true);
+  };
+
+  const toggleSidebarCollapsed = () => {
+    setIsSidebarCollapsed((prev) => {
+      const next = !prev;
+      localStorage.setItem('sidebarCollapsed', next ? '1' : '0');
+      return next;
+    });
+  };
+
+  const toggleFullscreen = async () => {
+    try {
+      if (document.fullscreenElement) {
+        await document.exitFullscreen();
+      } else {
+        await document.documentElement.requestFullscreen();
+      }
+    } catch {
+      showError('Browser menolak mode layar penuh. Gunakan tombol F11 sebagai gantinya.', 'Layar Penuh Gagal');
+    }
+  };
+
+  // Sinkronkan state saat pengguna keluar fullscreen lewat F11 / Escape
+  useEffect(() => {
+    const onFullscreenChange = () => setIsFullscreen(!!document.fullscreenElement);
+    document.addEventListener('fullscreenchange', onFullscreenChange);
+    return () => document.removeEventListener('fullscreenchange', onFullscreenChange);
+  }, []);
+
+  const showSuccess = (title: string, message: string) => showAlert('success', title, message);
+  const showError = (message: string, title = 'Gagal Menyimpan') => showAlert('error', title, message);
 
   // Fetch logged in profile
   useEffect(() => {
@@ -184,7 +240,7 @@ function AppContent() {
       fetchDashboard();
     } else if (path === '/tps') {
       fetchTpsPageData();
-    } else if (path === '/dpt' || path === '/dpk') {
+    } else if (path === '/pemilih') {
       fetchDpts();
       fetchTpsList();
     } else if (path === '/kpps') {
@@ -193,7 +249,7 @@ function AppContent() {
     } else if (path === '/paslon') {
       fetchPaslons();
     }
-  }, [path, token, dptSearch, dptTpsFilter, dptPage, tpsPage, kppsPage]);
+  }, [path, token, dptSearch, dptTpsFilter, dptJenisFilter, dptPage, tpsPage, kppsPage]);
 
   // Real-time updates via WebSocket
   useEffect(() => {
@@ -225,7 +281,7 @@ function AppContent() {
             if (!isNaN(tpsId)) {
               fetchTpsDetail(tpsId);
             }
-          } else if (path === '/dpt' || path === '/dpk') {
+          } else if (path === '/pemilih') {
             fetchDpts();
           }
         }
@@ -380,13 +436,18 @@ function AppContent() {
       
       const json = await res.json();
       if (res.ok) {
+        const wasEditing = isPaslonEditing;
         setIsPaslonModalOpen(false);
         fetchPaslons();
+        showSuccess(
+          wasEditing ? 'Paslon Diperbarui' : 'Paslon Ditambahkan',
+          `Pasangan calon nomor urut ${payload.nomor_urut} (${payload.nama_ketua} - ${payload.nama_wakil}) berhasil disimpan.`
+        );
       } else {
-        alert(json.message || 'Gagal menyimpan pasangan calon.');
+        showError(json.message || 'Gagal menyimpan pasangan calon.');
       }
     } catch {
-      alert('Gagal menghubungi server.');
+      showError('Gagal menghubungi server.');
     }
   };
 
@@ -402,10 +463,10 @@ function AppContent() {
             fetchPaslons();
           } else {
             const json = await res.json();
-            alert(json.message || 'Gagal menghapus pasangan calon.');
+            showError(json.message || 'Gagal menghapus pasangan calon.', 'Gagal Menghapus');
           }
         } catch {
-          alert('Gagal menghubungi server.');
+          showError('Gagal menghubungi server.', 'Gagal Menghapus');
         }
       },
       'Hapus',
@@ -428,8 +489,7 @@ function AppContent() {
     if (!token) return;
     setDptLoading(true);
     try {
-      const type = path.includes('/dpk') ? 'dpk' : 'dpt';
-      const res = await ApiService.getDpts(token, dptPage, dptSearch, dptTpsFilter, type);
+      const res = await ApiService.getDpts(token, dptPage, dptSearch, dptTpsFilter, dptJenisFilter);
       const json = await res.json();
       if (res.ok) {
         setDptData(json.data);
@@ -448,10 +508,10 @@ function AppContent() {
         setSelectedVoterName(name);
         setIsQrModalOpen(true);
       } else {
-        alert('Gagal mengambil QR Code.');
+        showError('Gagal mengambil QR Code.', 'Gagal Memuat QR');
       }
     } catch {
-      alert('Gagal menghubungi server.');
+      showError('Gagal menghubungi server.', 'Gagal Memuat QR');
     }
   };
 
@@ -508,16 +568,18 @@ function AppContent() {
     try {
       const res = await ApiService.createTps(token, tpsName, tpsRegion);
       if (res.ok) {
+        const savedName = tpsName;
         setIsTpsModalOpen(false);
         setTpsName('');
         setTpsRegion('');
         fetchTpsPageData();
+        showSuccess('TPS Ditambahkan', `${savedName} berhasil disimpan ke daftar TPS.`);
       } else {
         const json = await res.json();
-        alert(json.errors?.nama?.[0] || json.message || 'Gagal membuat TPS.');
+        showError(json.errors?.nama?.[0] || json.message || 'Gagal membuat TPS.');
       }
     } catch {
-      alert('Gagal menghubungi server.');
+      showError('Gagal menghubungi server.');
     }
   };
 
@@ -525,9 +587,9 @@ function AppContent() {
     e.preventDefault();
     if (!token) return;
     
-    const payload = editingDpt 
-      ? { nama: dptFormNama, tps_id: dptFormTps, jenis_pemilih: editingDpt.jenis_pemilih } 
-      : { nik: dptFormNik, nama: dptFormNama, tps_id: dptFormTps, jenis_pemilih: path.includes('/dpk') ? 'dpk' : 'dpt' };
+    const payload = editingDpt
+      ? { nama: dptFormNama, tps_id: dptFormTps, jenis_pemilih: dptFormJenis }
+      : { nik: dptFormNik, nama: dptFormNama, tps_id: dptFormTps, jenis_pemilih: dptFormJenis };
 
     try {
       const res = await ApiService.saveDpt(token, payload, editingDpt?.nik);
@@ -543,9 +605,14 @@ function AppContent() {
         setDptFormNik('');
         setDptFormNama('');
         setDptFormTps('');
+        setDptFormJenis('dpt');
         fetchDpts();
 
-        if (!isEditing) {
+        if (isEditing) {
+          showSuccess('Data Pemilih Diperbarui', `Perubahan data ${savedNama} berhasil disimpan.`);
+        } else {
+          // Pemilih baru: kartu QR sekaligus menjadi konfirmasi keberhasilan.
+          let qrShown = false;
           try {
             const qrRes = await ApiService.getQrCode(token, savedNik);
             const qrJson = await qrRes.json();
@@ -556,15 +623,23 @@ function AppContent() {
                 id_pemilih: savedIdPemilih,
                 qrcode: qrJson.qrcode
               });
+              qrShown = true;
             }
           } catch {}
+
+          if (!qrShown) {
+            showSuccess(
+              'Pemilih Ditambahkan',
+              `${savedNama} berhasil didaftarkan. QR Code belum dapat dimuat — buka kembali lewat tombol QR pada tabel.`
+            );
+          }
         }
       } else {
         const json = await res.json();
-        alert(json.message || 'Gagal menyimpan data.');
+        showError(json.message || 'Gagal menyimpan data.');
       }
     } catch {
-      alert('Gagal menghubungi server.');
+      showError('Gagal menghubungi server.');
     }
   };
 
@@ -578,9 +653,12 @@ function AppContent() {
           const res = await ApiService.deleteDpt(token, nik);
           if (res.ok) {
             fetchDpts();
+          } else {
+            const json = await res.json().catch(() => ({}));
+            showError(json.message || 'Gagal menghapus pemilih.', 'Gagal Menghapus');
           }
         } catch {
-          alert('Gagal menghubungi server.');
+          showError('Gagal menghubungi server.', 'Gagal Menghapus');
         }
       },
       'Hapus',
@@ -616,26 +694,54 @@ function AppContent() {
   const handleCreateKpps = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!token) return;
+
+    const isKppsAccount = kppsFormAccountType === 'kpps';
+    const payload = isKppsAccount
+      ? {
+          username: kppsFormUsername,
+          password: kppsFormPassword,
+          role: 'kpps',
+          tps_id: kppsFormTps,
+          kpps_role: kppsFormRole,
+        }
+      : {
+          username: kppsFormUsername,
+          password: kppsFormPassword,
+          role: 'sekretariat',
+          sekretariat_role: kppsFormSekretariatRole,
+        };
+
     try {
-      const res = await ApiService.createKpps(token, {
-        username: kppsFormUsername,
-        password: kppsFormPassword,
-        tps_id: kppsFormTps,
-        kpps_role: kppsFormRole
-      });
+      const res = await ApiService.createKpps(token, payload);
       if (res.ok) {
+        const savedUsername = kppsFormUsername;
+        const savedSekretariatRole = kppsFormSekretariatRole;
         setIsKppsModalOpen(false);
         setKppsFormUsername('');
         setKppsFormPassword('');
         setKppsFormTps('');
         setKppsFormRole('full');
+        setKppsFormAccountType('kpps');
+        setKppsFormSekretariatRole('admin');
         fetchKppsUsers();
+
+        if (isKppsAccount) {
+          showSuccess('Akun KPPS Dibuat', `Akun "${savedUsername}" berhasil disimpan dan siap digunakan di aplikasi mobile.`);
+        } else {
+          showSuccess(
+            'Akun Sekretariat Dibuat',
+            savedSekretariatRole === 'admin'
+              ? `Akun "${savedUsername}" berhasil disimpan dengan hak akses penuh di panel web.`
+              : `Akun "${savedUsername}" berhasil disimpan dengan hak lihat saja di panel web.`
+          );
+        }
       } else {
         const json = await res.json();
-        alert(json.message || 'Gagal membuat akun KPPS.');
+        const firstError = json.errors ? (Object.values(json.errors)[0] as string[])?.[0] : null;
+        showError(firstError || json.message || 'Gagal membuat akun.');
       }
     } catch {
-      alert('Gagal menghubungi server.');
+      showError('Gagal menghubungi server.');
     }
   };
 
@@ -645,16 +751,17 @@ function AppContent() {
     try {
       const res = await ApiService.resetKppsPassword(token, resetUser.id, resetPasswordVal);
       if (res.ok) {
+        const targetUsername = resetUser.username;
         setIsResetModalOpen(false);
         setResetUser(null);
         setResetPasswordVal('');
-        alert('Password berhasil direset.');
+        showSuccess('Password Direset', `Password baru untuk akun "${targetUsername}" berhasil disimpan.`);
       } else {
         const json = await res.json();
-        alert(json.message || 'Gagal reset password.');
+        showError(json.message || 'Gagal reset password.');
       }
     } catch {
-      alert('Gagal menghubungi server.');
+      showError('Gagal menghubungi server.');
     }
   };
 
@@ -668,9 +775,12 @@ function AppContent() {
           const res = await ApiService.deleteKpps(token, id);
           if (res.ok) {
             fetchKppsUsers();
+          } else {
+            const json = await res.json().catch(() => ({}));
+            showError(json.message || 'Gagal menghapus akun KPPS.', 'Gagal Menghapus');
           }
         } catch {
-          alert('Gagal menghubungi server.');
+          showError('Gagal menghubungi server.', 'Gagal Menghapus');
         }
       },
       'Hapus',
@@ -698,12 +808,16 @@ function AppContent() {
   }
 
   return (
-    <div className="app-container">
+    <div className={`app-container${isSidebarCollapsed ? ' sidebar-collapsed' : ''}`}>
       <Sidebar
         path={path}
         user={user}
         navigate={navigate}
         handleLogout={handleLogout}
+        isCollapsed={isSidebarCollapsed}
+        toggleCollapsed={toggleSidebarCollapsed}
+        isFullscreen={isFullscreen}
+        toggleFullscreen={toggleFullscreen}
       />
 
       {/* Main Content Area */}
@@ -727,6 +841,7 @@ function AppContent() {
               setIsTpsModalOpen={setIsTpsModalOpen}
               setSelectedTpsId={(id) => navigate(`/tps/${id}`)}
               setPage={(p) => navigate('/' + p)}
+              isAdmin={isAdmin}
             />
           } />
           <Route path="/tps/:id" element={
@@ -736,14 +851,16 @@ function AppContent() {
               navigate={navigate}
             />
           } />
-          <Route path="/dpt" element={
-            <DptTab
+          <Route path="/pemilih" element={
+            <PemilihTab
               dptData={dptData}
               dptLoading={dptLoading}
               dptSearch={dptSearch}
               setDptSearch={setDptSearch}
               dptTpsFilter={dptTpsFilter}
               setDptTpsFilter={setDptTpsFilter}
+              dptJenisFilter={dptJenisFilter}
+              setDptJenisFilter={setDptJenisFilter}
               setDptPage={setDptPage}
               tpsList={tpsList}
               setIsImportModalOpen={setIsImportModalOpen}
@@ -752,31 +869,16 @@ function AppContent() {
               setDptFormNik={setDptFormNik}
               setDptFormNama={setDptFormNama}
               setDptFormTps={setDptFormTps}
+              setDptFormJenis={setDptFormJenis}
               fetchQrCode={fetchQrCode}
               fetchEditingQr={fetchEditingQr}
               handleDeleteDpt={handleDeleteDpt}
+              isAdmin={isAdmin}
             />
           } />
-          <Route path="/dpk" element={
-            <DpkTab
-              dptData={dptData}
-              dptLoading={dptLoading}
-              dptSearch={dptSearch}
-              setDptSearch={setDptSearch}
-              dptTpsFilter={dptTpsFilter}
-              setDptTpsFilter={setDptTpsFilter}
-              setDptPage={setDptPage}
-              tpsList={tpsList}
-              setIsDptModalOpen={setIsDptModalOpen}
-              setEditingDpt={setEditingDpt}
-              setDptFormNik={setDptFormNik}
-              setDptFormNama={setDptFormNama}
-              setDptFormTps={setDptFormTps}
-              fetchQrCode={fetchQrCode}
-              fetchEditingQr={fetchEditingQr}
-              handleDeleteDpt={handleDeleteDpt}
-            />
-          } />
+          {/* Rute lama diarahkan ke menu gabungan agar bookmark tetap berfungsi */}
+          <Route path="/dpt" element={<Navigate to="/pemilih" replace />} />
+          <Route path="/dpk" element={<Navigate to="/pemilih" replace />} />
           <Route path="/kpps" element={
             <KppsTab
               kppsUsers={kppsUsers}
@@ -787,6 +889,8 @@ function AppContent() {
               setResetPasswordVal={setResetPasswordVal}
               setIsResetModalOpen={setIsResetModalOpen}
               handleDeleteUser={handleDeleteUser}
+              isAdmin={isAdmin}
+              currentUserId={user?.id}
             />
           } />
           <Route path="/paslon" element={
@@ -800,6 +904,7 @@ function AppContent() {
               setNamaKetua={setPaslonNamaKetua}
               setNamaWakil={setPaslonNamaWakil}
               handleDeletePaslon={handleDeletePaslon}
+              isAdmin={isAdmin}
             />
           } />
           <Route path="*" element={<Navigate to="/dashboard" replace />} />
@@ -826,6 +931,8 @@ function AppContent() {
         setDptFormNama={setDptFormNama}
         dptFormTps={dptFormTps}
         setDptFormTps={setDptFormTps}
+        dptFormJenis={dptFormJenis}
+        setDptFormJenis={setDptFormJenis}
         tpsList={tpsList}
         editingQrCode={editingQrCode}
         downloadQrCode={downloadQrCode}
@@ -857,6 +964,10 @@ function AppContent() {
         setKppsFormTps={setKppsFormTps}
         kppsFormRole={kppsFormRole}
         setKppsFormRole={setKppsFormRole}
+        kppsFormAccountType={kppsFormAccountType}
+        setKppsFormAccountType={setKppsFormAccountType}
+        kppsFormSekretariatRole={kppsFormSekretariatRole}
+        setKppsFormSekretariatRole={setKppsFormSekretariatRole}
         tpsList={tpsList}
         onSubmit={handleCreateKpps}
       />
@@ -911,6 +1022,15 @@ function AppContent() {
         }}
         btnText={confirmModalBtnText}
         isDanger={confirmModalDanger}
+      />
+
+      <CustomAlertModal
+        isOpen={alertModalOpen}
+        variant={alertModalVariant}
+        title={alertModalTitle}
+        message={alertModalMessage}
+        onClose={() => setAlertModalOpen(false)}
+        btnText={alertModalVariant === 'success' ? 'Selesai' : 'Tutup'}
       />
     </div>
   );
