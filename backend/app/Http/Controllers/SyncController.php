@@ -53,7 +53,17 @@ class SyncController extends Controller
     public function syncCheckins(Request $request)
     {
         $this->checkKpps($request);
-        $tpsId = $request->user()->tps_id;
+        
+        $tpsId = $request->user()->role === 'kpps' 
+            ? $request->user()->tps_id 
+            : $request->input('tps_id');
+
+        if (!$tpsId) {
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Parameter tps_id diperlukan untuk sinkronisasi.'
+            ], 400);
+        }
 
         $validator = Validator::make($request->all(), [
             'checkins' => 'required|array',
@@ -118,6 +128,7 @@ class SyncController extends Controller
             ]);
 
             DB::commit();
+            \App\Utils\Broadcaster::trigger('checkin', ['tps_id' => $tpsId]);
         } catch (\Exception $e) {
             DB::rollBack();
             return response()->json([
@@ -136,7 +147,17 @@ class SyncController extends Controller
     public function submitQuickCount(Request $request)
     {
         $this->checkKpps($request);
-        $tpsId = $request->user()->tps_id;
+        
+        $tpsId = $request->user()->role === 'kpps' 
+            ? $request->user()->tps_id 
+            : $request->input('tps_id');
+
+        if (!$tpsId) {
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Parameter tps_id diperlukan untuk menyimpan hasil suara.'
+            ], 400);
+        }
 
         $validator = Validator::make($request->all(), [
             'kandidat_1' => 'required|integer|min:0',
@@ -191,6 +212,7 @@ class SyncController extends Controller
             ]);
 
             DB::commit();
+            \App\Utils\Broadcaster::trigger('quick-count', ['tps_id' => $tpsId]);
         } catch (\Exception $e) {
             DB::rollBack();
             return response()->json([

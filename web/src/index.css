@@ -86,9 +86,10 @@ input, select, textarea, button {
   margin-bottom: 36px;
 }
 
-.sidebar-brand svg {
-  width: 28px;
-  height: 28px;
+.sidebar-brand svg, .sidebar-brand img {
+  width: 32px;
+  height: 32px;
+  object-fit: contain;
 }
 
 .sidebar-menu {
@@ -489,10 +490,10 @@ tr:hover td {
   text-align: center;
 }
 
-.login-logo svg {
-  width: 48px;
-  height: 48px;
-  color: var(--primary);
+.login-logo svg, .login-logo img {
+  width: 100px;
+  height: 100px;
+  object-fit: contain;
   margin-bottom: 12px;
 }
 

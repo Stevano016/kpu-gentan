@@ -9,20 +9,8 @@ use Illuminate\Support\Facades\Validator;
 
 class UserController extends Controller
 {
-    private function checkSecretariat(Request $request)
-    {
-        if ($request->user()->role !== 'sekretariat') {
-            abort(response()->json([
-                'status' => 'error',
-                'message' => 'Akses ditolak. Hanya Sekretariat yang diizinkan.'
-            ], 403));
-        }
-    }
-
     public function index(Request $request)
     {
-        $this->checkSecretariat($request);
- 
         $query = User::with('tps')->where('role', 'kpps');
 
         if ($request->has('page')) {
@@ -39,8 +27,6 @@ class UserController extends Controller
 
     public function store(Request $request)
     {
-        $this->checkSecretariat($request);
-
         $validator = Validator::make($request->all(), [
             'username' => 'required|string|max:100|unique:users,username',
             'password' => 'required|string|min:6',
@@ -78,8 +64,6 @@ class UserController extends Controller
 
     public function resetPassword(Request $request, $id)
     {
-        $this->checkSecretariat($request);
-
         $user = User::findOrFail($id);
 
         $validator = Validator::make($request->all(), [
@@ -105,8 +89,6 @@ class UserController extends Controller
 
     public function destroy(Request $request, $id)
     {
-        $this->checkSecretariat($request);
-
         $user = User::findOrFail($id);
         
         if ($user->id === $request->user()->id) {

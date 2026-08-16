@@ -10,20 +10,8 @@ use Illuminate\Http\Request;
 
 class DashboardController extends Controller
 {
-    private function checkSecretariat(Request $request)
-    {
-        if ($request->user()->role !== 'sekretariat') {
-            abort(response()->json([
-                'status' => 'error',
-                'message' => 'Akses ditolak. Hanya Sekretariat yang diizinkan.'
-            ], 403));
-        }
-    }
-
     public function getSummary(Request $request)
     {
-        $this->checkSecretariat($request);
-
         // Core stats
         $totalTps = Tps::count();
         
@@ -37,15 +25,11 @@ class DashboardController extends Controller
         
         // Quick Count status
         $totalSubmittedQc = QuickCount::where('status', 'final')->count();
-        $totalDraftQc = QuickCount::where('status', 'draft')->count();
 
         // Quick Count votes aggregates
         $qcAggregates = QuickCount::where('status', 'final')
             ->selectRaw('SUM(kandidat_1) as kandidat_1, SUM(kandidat_2) as kandidat_2, SUM(kandidat_3) as kandidat_3, SUM(suara_tidak_sah) as suara_tidak_sah')
             ->first();
-
-        // Sync statistics
-        $pendingSyncLogs = SyncLog::count(); // Simple count of sync log history
 
         // List of all TPS with stats (optimized using withCount to prevent N+1 queries)
         $tpsList = Tps::with(['quickCount'])
@@ -114,8 +98,6 @@ class DashboardController extends Controller
 
     public function getTpsDetails(Request $request, $id)
     {
-        $this->checkSecretariat($request);
-
         $tps = Tps::with(['quickCount', 'users'])->findOrFail($id);
 
         $voters = Dpt::where('tps_id', $id)

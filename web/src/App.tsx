@@ -1,71 +1,75 @@
 import React, { useState, useEffect } from 'react';
+import { BrowserRouter, Routes, Route, Navigate, useNavigate, useParams, useLocation } from 'react-router-dom';
+import { ApiService } from './services/api';
 
-// API Base URL
-const API_URL = 'http://localhost:8000/api';
+// Shared Layouts & Modals
+import { LoginScreen } from './components/LoginScreen';
+import { Sidebar } from './components/Sidebar';
+import { TpsModal } from './components/modals/TpsModal';
+import { DptModal } from './components/modals/DptModal';
+import { ImportCsvModal } from './components/modals/ImportCsvModal';
+import { KppsModal } from './components/modals/KppsModal';
+import { ResetPasswordModal } from './components/modals/ResetPasswordModal';
+import { QrViewerModal } from './components/modals/QrViewerModal';
+import { VoterSuccessModal } from './components/modals/VoterSuccessModal';
+import { CustomConfirmModal } from './components/CustomConfirmModal';
 
-// Professional SVG Icons
-const Icons = {
-  Vote: () => (
-    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" style={{ width: '20px', height: '20px' }}>
-      <path strokeLinecap="round" strokeLinejoin="round" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-    </svg>
-  ),
-  Dashboard: () => (
-    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" style={{ width: '20px', height: '20px' }}>
-      <path strokeLinecap="round" strokeLinejoin="round" d="M4 6a2 2 0 012-2h2a2 2 0 012 2v4a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v4a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zM14 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z" />
-    </svg>
-  ),
-  Tps: () => (
-    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" style={{ width: '20px', height: '20px' }}>
-      <path strokeLinecap="round" strokeLinejoin="round" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
-    </svg>
-  ),
-  Voters: () => (
-    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" style={{ width: '20px', height: '20px' }}>
-      <path strokeLinecap="round" strokeLinejoin="round" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
-    </svg>
-  ),
-  Users: () => (
-    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" style={{ width: '20px', height: '20px' }}>
-      <path strokeLinecap="round" strokeLinejoin="round" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z" />
-    </svg>
-  ),
-  Logout: () => (
-    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" style={{ width: '20px', height: '20px' }}>
-      <path strokeLinecap="round" strokeLinejoin="round" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
-    </svg>
-  ),
-  Plus: () => (
-    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" style={{ width: '20px', height: '20px' }}>
-      <path strokeLinecap="round" strokeLinejoin="round" d="M12 4v16m8-8H4" />
-    </svg>
-  ),
-  Search: () => (
-    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" style={{ width: '20px', height: '20px' }}>
-      <path strokeLinecap="round" strokeLinejoin="round" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-    </svg>
-  ),
-  Close: () => (
-    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" style={{ width: '20px', height: '20px' }}>
-      <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
-    </svg>
-  ),
-  Upload: () => (
-    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" style={{ width: '20px', height: '20px' }}>
-      <path strokeLinecap="round" strokeLinejoin="round" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" />
-    </svg>
-  ),
-  Refresh: () => (
-    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" style={{ width: '20px', height: '20px' }}>
-      <path strokeLinecap="round" strokeLinejoin="round" d="M4 4v5h.582m15.356 2A8.001 8.001 0 1121.21 8H18.5" />
-    </svg>
-  )
-};
+// Screen Tabs
+import DashboardTab from './components/tabs/DashboardTab';
+import TpsTab from './components/tabs/TpsTab';
+import TpsDetailTab from './components/tabs/TpsDetailTab';
+import DptTab from './components/tabs/DptTab';
+import DpkTab from './components/tabs/DpkTab';
+import KppsTab from './components/tabs/KppsTab';
 
 export default function App() {
+  return (
+    <BrowserRouter>
+      <AppContent />
+    </BrowserRouter>
+  );
+}
+
+function TpsDetailRoute({ 
+  fetchTpsDetail, 
+  tpsDetailData, 
+  navigate 
+}: { 
+  fetchTpsDetail: (id: number) => void; 
+  tpsDetailData: any; 
+  navigate: any;
+}) {
+  const { id } = useParams<{ id: string }>();
+
+  useEffect(() => {
+    if (id) {
+      fetchTpsDetail(parseInt(id, 10));
+    }
+  }, [id]);
+
+  if (!tpsDetailData) {
+    return (
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100%', color: 'var(--text-muted)' }}>
+        Memuat detail TPS...
+      </div>
+    );
+  }
+
+  return (
+    <TpsDetailTab
+      tpsDetailData={tpsDetailData}
+      setPage={() => navigate('/tps')}
+    />
+  );
+}
+
+function AppContent() {
+  const navigate = useNavigate();
+  const location = useLocation();
+  const path = location.pathname;
+
   const [token, setToken] = useState<string | null>(localStorage.getItem('token'));
   const [user, setUser] = useState<any>(null);
-  const [page, setPage] = useState<string>('dashboard'); // dashboard | dpt | kpps | tps | tps-detail
   
   // Auth Form State
   const [username, setUsername] = useState('');
@@ -79,7 +83,6 @@ export default function App() {
 
   // TPS Data
   const [tpsList, setTpsList] = useState<any[]>([]);
-  const [selectedTpsId, setSelectedTpsId] = useState<number | null>(null);
   const [tpsDetailData, setTpsDetailData] = useState<any>(null);
   
   // TPS Form
@@ -112,7 +115,7 @@ export default function App() {
   const [importLoading, setImportLoading] = useState(false);
 
   // KPPS Accounts Data
-  const [kppsUsers, setKppsUsers] = useState<any>(null); // Change kppsUsers to hold the paginated object
+  const [kppsUsers, setKppsUsers] = useState<any>(null);
   const [kppsPage, setKppsPage] = useState(1);
   const [kppsLoading, setKppsLoading] = useState(false);
 
@@ -120,6 +123,8 @@ export default function App() {
   const [tpsPage, setTpsPage] = useState(1);
   const [tpsPageData, setTpsPageData] = useState<any>(null);
   const [tpsPageLoading, setTpsPageLoading] = useState(false);
+  
+  // KPPS Form
   const [isKppsModalOpen, setIsKppsModalOpen] = useState(false);
   const [kppsFormUsername, setKppsFormUsername] = useState('');
   const [kppsFormPassword, setKppsFormPassword] = useState('');
@@ -128,6 +133,8 @@ export default function App() {
 
   // Password reset state
   const [isResetModalOpen, setIsResetModalOpen] = useState(false);
+  const [resetUser, setResetUser] = useState<any>(null);
+  const [resetPasswordVal, setResetPasswordVal] = useState('');
 
   // Custom Confirm Modal State
   const [confirmModalOpen, setConfirmModalOpen] = useState(false);
@@ -137,6 +144,11 @@ export default function App() {
   const [confirmModalBtnText, setConfirmModalBtnText] = useState('Ya');
   const [confirmModalDanger, setConfirmModalDanger] = useState(false);
 
+  // QR Code viewer states
+  const [selectedVoterQr, setSelectedVoterQr] = useState<string | null>(null);
+  const [selectedVoterName, setSelectedVoterName] = useState<string>('');
+  const [isQrModalOpen, setIsQrModalOpen] = useState(false);
+
   const showConfirm = (title: string, message: string, onConfirm: () => void, btnText = 'Ya', danger = false) => {
     setConfirmModalTitle(title);
     setConfirmModalMessage(message);
@@ -145,13 +157,6 @@ export default function App() {
     setConfirmModalDanger(danger);
     setConfirmModalOpen(true);
   };
-  const [resetUser, setResetUser] = useState<any>(null);
-  const [resetPasswordVal, setResetPasswordVal] = useState('');
-
-  // QR Code viewer states
-  const [selectedVoterQr, setSelectedVoterQr] = useState<string | null>(null);
-  const [selectedVoterName, setSelectedVoterName] = useState<string>('');
-  const [isQrModalOpen, setIsQrModalOpen] = useState(false);
 
   // Fetch logged in profile
   useEffect(() => {
@@ -160,62 +165,100 @@ export default function App() {
     }
   }, [token]);
 
-  // Load section-specific data
+  // Load section-specific data based on URL path
   useEffect(() => {
     if (!token) return;
-    if (page === 'dashboard') {
+    if (path === '/' || path === '/dashboard') {
       fetchDashboard();
-    } else if (page === 'tps') {
+    } else if (path === '/tps') {
       fetchTpsPageData();
-    } else if (page === 'dpt' || page === 'dpk') {
+    } else if (path === '/dpt' || path === '/dpk') {
       fetchDpts();
-      fetchTpsList(); // For filter dropdown
-    } else if (page === 'kpps') {
+      fetchTpsList();
+    } else if (path === '/kpps') {
       fetchKppsUsers();
-      fetchTpsList(); // For creation select
+      fetchTpsList();
     }
-  }, [page, token, dptSearch, dptTpsFilter, dptPage, tpsPage, kppsPage]);
+  }, [path, token, dptSearch, dptTpsFilter, dptPage, tpsPage, kppsPage]);
 
-  // Load single TPS detail if selected
+  // Real-time updates via WebSocket
   useEffect(() => {
-    if (selectedTpsId && page === 'tps-detail') {
-      fetchTpsDetail(selectedTpsId);
-    }
-  }, [selectedTpsId, page]);
+    if (!token) return;
+    const wsHost = window.location.hostname || 'localhost';
+    const ws = new WebSocket(`ws://${wsHost}:8080`);
 
-  const getAuthHeader = () => ({
-    'Authorization': `Bearer ${token}`,
-    'Accept': 'application/json'
-  });
+    ws.onopen = () => {
+      console.log('Terhubung ke WebSocket Server untuk real-time update.');
+    };
+
+    ws.onmessage = (event) => {
+      try {
+        const payload = JSON.parse(event.data);
+        console.log('Menerima WebSocket broadcast:', payload);
+        
+        if (payload.event === 'checkin' || payload.event === 'quick-count' || payload.event === 'update') {
+          if (path === '/' || path === '/dashboard') {
+            fetchDashboard();
+          } else if (path === '/tps') {
+            fetchTpsPageData();
+          } else if (path.startsWith('/tps/')) {
+            const parts = path.split('/');
+            const tpsId = parseInt(parts[parts.length - 1], 10);
+            if (!isNaN(tpsId)) {
+              fetchTpsDetail(tpsId);
+            }
+          } else if (path === '/dpt' || path === '/dpk') {
+            fetchDpts();
+          }
+        }
+      } catch (err) {
+        console.error('Gagal memproses data WebSocket:', err);
+      }
+    };
+
+    ws.onerror = () => {
+      console.warn('Koneksi WebSocket gagal. Mencoba kembali...');
+    };
+
+    ws.onclose = () => {
+      console.log('Koneksi WebSocket terputus.');
+    };
+
+    return () => {
+      ws.close();
+    };
+  }, [path, token]);
 
   const fetchProfile = async () => {
     try {
-      const res = await fetch(`${API_URL}/me`, { headers: getAuthHeader() });
+      const res = await ApiService.getProfile(token!);
       const json = await res.json();
       if (res.ok) {
         setUser(json.user);
         if (json.user.role !== 'sekretariat') {
-          // Reject if a KPPS user logs into the secretariat panel
           setLoginError('Akses Ditolak. Panel ini hanya untuk Sekretariat.');
-          handleLogout();
+          handleLogoutDirect();
         }
       } else {
-        handleLogout();
+        handleLogoutDirect();
       }
     } catch {
-      handleLogout();
+      handleLogoutDirect();
     }
+  };
+
+  const handleLogoutDirect = () => {
+    localStorage.removeItem('token');
+    setToken(null);
+    setUser(null);
+    navigate('/login');
   };
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoginError('');
     try {
-      const res = await fetch(`${API_URL}/login`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
-        body: JSON.stringify({ username, password })
-      });
+      const res = await ApiService.login(username, password);
       const json = await res.json();
       if (res.ok) {
         if (json.user.role !== 'sekretariat') {
@@ -225,7 +268,7 @@ export default function App() {
         localStorage.setItem('token', json.token);
         setToken(json.token);
         setUser(json.user);
-        setPage('dashboard');
+        navigate('/dashboard');
       } else {
         setLoginError(json.errors?.username?.[0] || json.message || 'Login gagal.');
       }
@@ -240,11 +283,9 @@ export default function App() {
       'Apakah Anda yakin ingin keluar dari panel admin Gentara?',
       async () => {
         try {
-          await fetch(`${API_URL}/logout`, { method: 'POST', headers: getAuthHeader() });
+          if (token) await ApiService.logout(token);
         } catch {}
-        localStorage.removeItem('token');
-        setToken(null);
-        setUser(null);
+        handleLogoutDirect();
       },
       'Keluar',
       true
@@ -252,9 +293,10 @@ export default function App() {
   };
 
   const fetchDashboard = async () => {
+    if (!token) return;
     setDashboardLoading(true);
     try {
-      const res = await fetch(`${API_URL}/dashboard/summary`, { headers: getAuthHeader() });
+      const res = await ApiService.getDashboardSummary(token);
       const json = await res.json();
       if (res.ok) {
         setDashboardData(json.data);
@@ -264,8 +306,9 @@ export default function App() {
   };
 
   const fetchTpsList = async () => {
+    if (!token) return;
     try {
-      const res = await fetch(`${API_URL}/tps`, { headers: getAuthHeader() });
+      const res = await ApiService.getTpsList(token);
       const json = await res.json();
       if (res.ok) {
         setTpsList(json.data);
@@ -274,9 +317,10 @@ export default function App() {
   };
 
   const fetchTpsPageData = async () => {
+    if (!token) return;
     setTpsPageLoading(true);
     try {
-      const res = await fetch(`${API_URL}/tps?page=${tpsPage}`, { headers: getAuthHeader() });
+      const res = await ApiService.getTpsPage(token, tpsPage);
       const json = await res.json();
       if (res.ok) {
         setTpsPageData(json.data);
@@ -286,8 +330,9 @@ export default function App() {
   };
 
   const fetchTpsDetail = async (id: number) => {
+    if (!token) return;
     try {
-      const res = await fetch(`${API_URL}/dashboard/tps/${id}`, { headers: getAuthHeader() });
+      const res = await ApiService.getTpsDetail(token, id);
       const json = await res.json();
       if (res.ok) {
         setTpsDetailData(json.data);
@@ -296,18 +341,11 @@ export default function App() {
   };
 
   const fetchDpts = async () => {
+    if (!token) return;
     setDptLoading(true);
     try {
-      let url = `${API_URL}/dpt?page=${dptPage}`;
-      if (dptSearch) url += `&search=${dptSearch}`;
-      if (dptTpsFilter) url += `&tps_id=${dptTpsFilter}`;
-      if (page === 'dpt') {
-        url += `&jenis_pemilih=dpt`;
-      } else if (page === 'dpk') {
-        url += `&jenis_pemilih=dpk`;
-      }
-      
-      const res = await fetch(url, { headers: getAuthHeader() });
+      const type = path.includes('/dpk') ? 'dpk' : 'dpt';
+      const res = await ApiService.getDpts(token, dptPage, dptSearch, dptTpsFilter, type);
       const json = await res.json();
       if (res.ok) {
         setDptData(json.data);
@@ -317,8 +355,9 @@ export default function App() {
   };
 
   const fetchQrCode = async (nik: string, name: string) => {
+    if (!token) return;
     try {
-      const res = await fetch(`${API_URL}/dpt/${nik}/qrcode`, { headers: getAuthHeader() });
+      const res = await ApiService.getQrCode(token, nik);
       const json = await res.json();
       if (res.ok) {
         setSelectedVoterQr(json.qrcode);
@@ -342,9 +381,10 @@ export default function App() {
   };
 
   const fetchEditingQr = async (nik: string) => {
+    if (!token) return;
     setEditingQrCode(null);
     try {
-      const res = await fetch(`${API_URL}/dpt/${nik}/qrcode`, { headers: getAuthHeader() });
+      const res = await ApiService.getQrCode(token, nik);
       const json = await res.json();
       if (res.ok) {
         setEditingQrCode(json.qrcode);
@@ -353,9 +393,10 @@ export default function App() {
   };
 
   const fetchKppsUsers = async () => {
+    if (!token) return;
     setKppsLoading(true);
     try {
-      const res = await fetch(`${API_URL}/users?page=${kppsPage}`, { headers: getAuthHeader() });
+      const res = await ApiService.getKppsUsers(token, kppsPage);
       const json = await res.json();
       if (res.ok) {
         setKppsUsers(json.data);
@@ -364,20 +405,16 @@ export default function App() {
     setKppsLoading(false);
   };
 
-  // CRUD handlers
   const handleCreateTps = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (!token) return;
     try {
-      const res = await fetch(`${API_URL}/tps`, {
-        method: 'POST',
-        headers: { ...getAuthHeader(), 'Content-Type': 'application/json' },
-        body: JSON.stringify({ nama: tpsName, wilayah: tpsRegion })
-      });
+      const res = await ApiService.createTps(token, tpsName, tpsRegion);
       if (res.ok) {
         setIsTpsModalOpen(false);
         setTpsName('');
         setTpsRegion('');
-        fetchTpsList();
+        fetchTpsPageData();
       } else {
         const json = await res.json();
         alert(json.errors?.nama?.[0] || json.message || 'Gagal membuat TPS.');
@@ -389,18 +426,14 @@ export default function App() {
 
   const handleSaveDpt = async (e: React.FormEvent) => {
     e.preventDefault();
-    const url = editingDpt ? `${API_URL}/dpt/${editingDpt.nik}` : `${API_URL}/dpt`;
-    const method = editingDpt ? 'PUT' : 'POST';
+    if (!token) return;
+    
     const payload = editingDpt 
       ? { nama: dptFormNama, tps_id: dptFormTps, jenis_pemilih: editingDpt.jenis_pemilih } 
-      : { nik: dptFormNik, nama: dptFormNama, tps_id: dptFormTps, jenis_pemilih: page === 'dpk' ? 'dpk' : 'dpt' };
+      : { nik: dptFormNik, nama: dptFormNama, tps_id: dptFormTps, jenis_pemilih: path.includes('/dpk') ? 'dpk' : 'dpt' };
 
     try {
-      const res = await fetch(url, {
-        method,
-        headers: { ...getAuthHeader(), 'Content-Type': 'application/json' },
-        body: JSON.stringify(payload)
-      });
+      const res = await ApiService.saveDpt(token, payload, editingDpt?.nik);
       if (res.ok) {
         setIsDptModalOpen(false);
         const json = await res.json();
@@ -416,9 +449,8 @@ export default function App() {
         fetchDpts();
 
         if (!isEditing) {
-          // Fetch QR Code for newly added voter to display success dialog
           try {
-            const qrRes = await fetch(`${API_URL}/dpt/${savedNik}/qrcode`, { headers: getAuthHeader() });
+            const qrRes = await ApiService.getQrCode(token, savedNik);
             const qrJson = await qrRes.json();
             if (qrRes.ok) {
               setNewVoterSuccess({
@@ -444,11 +476,9 @@ export default function App() {
       'Hapus Pemilih?',
       'Apakah Anda yakin ingin menghapus pemilih ini dari database?',
       async () => {
+        if (!token) return;
         try {
-          const res = await fetch(`${API_URL}/dpt/${nik}`, {
-            method: 'DELETE',
-            headers: getAuthHeader()
-          });
+          const res = await ApiService.deleteDpt(token, nik);
           if (res.ok) {
             fetchDpts();
           }
@@ -463,22 +493,12 @@ export default function App() {
 
   const handleImportCsv = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!importFile) return;
+    if (!importFile || !token) return;
     setImportLoading(true);
     setImportStatus(null);
-    
-    const formData = new FormData();
-    formData.append('file', importFile);
 
     try {
-      const res = await fetch(`${API_URL}/dpt/import`, {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${token}`
-          // No content-type headers, fetch sets multipart/form-data boundary automatically
-        },
-        body: formData
-      });
+      const res = await ApiService.importCsv(token, importFile);
       const json = await res.json();
       if (res.ok) {
         setImportStatus({
@@ -498,16 +518,13 @@ export default function App() {
 
   const handleCreateKpps = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (!token) return;
     try {
-      const res = await fetch(`${API_URL}/users`, {
-        method: 'POST',
-        headers: { ...getAuthHeader(), 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          username: kppsFormUsername,
-          password: kppsFormPassword,
-          tps_id: kppsFormTps,
-          kpps_role: kppsFormRole
-        })
+      const res = await ApiService.createKpps(token, {
+        username: kppsFormUsername,
+        password: kppsFormPassword,
+        tps_id: kppsFormTps,
+        kpps_role: kppsFormRole
       });
       if (res.ok) {
         setIsKppsModalOpen(false);
@@ -525,15 +542,11 @@ export default function App() {
     }
   };
 
-  const handleResetPassword = async (e: React.FormEvent) => {
+  const handleResetKppsPassword = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!resetUser) return;
+    if (!resetUser || !token) return;
     try {
-      const res = await fetch(`${API_URL}/users/${resetUser.id}/reset-password`, {
-        method: 'POST',
-        headers: { ...getAuthHeader(), 'Content-Type': 'application/json' },
-        body: JSON.stringify({ password: resetPasswordVal })
-      });
+      const res = await ApiService.resetKppsPassword(token, resetUser.id, resetPasswordVal);
       if (res.ok) {
         setIsResetModalOpen(false);
         setResetUser(null);
@@ -553,11 +566,9 @@ export default function App() {
       'Hapus Akun KPPS?',
       'Apakah Anda yakin ingin menghapus akun KPPS ini?',
       async () => {
+        if (!token) return;
         try {
-          const res = await fetch(`${API_URL}/users/${id}`, {
-            method: 'DELETE',
-            headers: getAuthHeader()
-          });
+          const res = await ApiService.deleteKpps(token, id);
           if (res.ok) {
             fetchKppsUsers();
           }
@@ -572,1469 +583,212 @@ export default function App() {
 
   if (!token) {
     return (
-      <div className="login-wrapper">
-        <div className="login-card">
-          <div className="login-logo">
-            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2.5} stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" d="M9 12.75L11.25 15 15 9.75M21 12c0 1.268-.63 2.39-1.593 3.068a3.745 3.745 0 01-1.043 3.296 3.745 3.745 0 01-3.296 1.043A3.745 3.745 0 0112 21c-1.268 0-2.39-.63-3.068-1.593a3.746 3.746 0 01-3.296-1.043 3.745 3.745 0 01-1.043-3.296A3.745 3.745 0 013 12c0-1.268.63-2.39 1.593-3.068a3.745 3.745 0 011.043-3.296 3.746 3.746 0 013.296-1.043A3.746 3.746 0 0112 3c1.268 0 2.39.63 3.068 1.593a3.746 3.746 0 013.296 1.043 3.746 3.746 0 011.043 3.296A3.745 3.745 0 0121 12z" />
-            </svg>
-            <h1>GENTARA</h1>
-            <p>Panel Sekretariat</p>
-          </div>
-
-          <form onSubmit={handleLogin}>
-            {loginError && (
-              <div style={{ backgroundColor: 'var(--danger-light)', color: 'var(--danger)', padding: '12px', borderRadius: 'var(--radius-sm)', fontSize: '0.875rem', marginBottom: '20px', fontWeight: '500' }}>
-                {loginError}
-              </div>
-            )}
-            <div className="form-group">
-              <label className="form-label">Username</label>
-              <input
-                type="text"
-                className="form-control"
-                required
-                value={username}
-                onChange={e => setUsername(e.target.value)}
-                placeholder="Masukkan username"
-              />
-            </div>
-            <div className="form-group">
-              <label className="form-label">Password</label>
-              <div style={{ position: 'relative' }}>
-                <input
-                  type={showPassword ? 'text' : 'password'}
-                  className="form-control"
-                  style={{ paddingRight: '40px' }}
-                  required
-                  value={password}
-                  onChange={e => setPassword(e.target.value)}
-                  placeholder="Masukkan password"
-                />
-                <button
-                  type="button"
-                  onClick={() => setShowPassword(prev => !prev)}
-                  style={{
-                    position: 'absolute',
-                    right: '12px',
-                    top: '50%',
-                    transform: 'translateY(-50%)',
-                    background: 'none',
-                    border: 'none',
-                    cursor: 'pointer',
-                    color: 'var(--text-muted)',
-                    display: 'flex',
-                    alignItems: 'center',
-                    padding: 0
-                  }}
-                >
-                  {showPassword ? (
-                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.8} stroke="currentColor" style={{ width: '20px', height: '20px' }}>
-                      <path strokeLinecap="round" strokeLinejoin="round" d="M3.98 8.223A10.477 10.477 0 001.934 12C3.226 16.338 7.244 19.5 12 19.5c.993 0 1.953-.138 2.863-.395M6.228 6.228A10.45 10.45 0 0112 4.5c4.756 0 8.773 3.162 10.065 7.498a10.523 10.523 0 01-4.293 5.774M6.228 6.228L3 3m3.228 3.228l3.65 3.65m7.894 7.894L21 21m-3.228-3.228l-3.65-3.65m0 0a3 3 0 10-4.243-4.243m4.242 4.242L9.88 9.88" />
-                    </svg>
-                  ) : (
-                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.8} stroke="currentColor" style={{ width: '20px', height: '20px' }}>
-                      <path strokeLinecap="round" strokeLinejoin="round" d="M2.036 12.322a1.012 1.012 0 010-.639C3.423 7.51 7.36 4.5 12 4.5c4.638 0 8.573 3.007 9.963 7.178.07.207.07.431 0 .639C20.577 16.49 16.64 19.5 12 19.5c-4.638 0-8.573-3.007-9.963-7.178z" />
-                      <path strokeLinecap="round" strokeLinejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-                    </svg>
-                  )}
-                </button>
-              </div>
-            </div>
-            <button type="submit" className="btn btn-primary" style={{ width: '100%', marginTop: '8px' }}>
-              Masuk
-            </button>
-          </form>
-        </div>
-      </div>
+      <Routes>
+        <Route path="*" element={
+          <LoginScreen 
+            handleLogin={handleLogin}
+            username={username}
+            setUsername={setUsername}
+            password={password}
+            setPassword={setPassword}
+            loginError={loginError}
+            showPassword={showPassword}
+            setShowPassword={setShowPassword}
+          />
+        } />
+      </Routes>
     );
   }
 
   return (
     <div className="app-container">
-      {/* Sidebar */}
-      <aside className="sidebar">
-        <div className="sidebar-brand">
-          <Icons.Vote />
-          <span>GENTARA</span>
-        </div>
-
-        <nav style={{ flexGrow: 1 }}>
-          <ul className="sidebar-menu">
-            <li className={`menu-item ${page === 'dashboard' ? 'active' : ''}`}>
-              <button onClick={() => setPage('dashboard')}>
-                <Icons.Dashboard />
-                <span>Dashboard Monitor</span>
-              </button>
-            </li>
-            <li className={`menu-item ${page === 'tps' || page === 'tps-detail' ? 'active' : ''}`}>
-              <button onClick={() => setPage('tps')}>
-                <Icons.Tps />
-                <span>TPS & Monitoring</span>
-              </button>
-            </li>
-            <li className={`menu-item ${page === 'dpt' ? 'active' : ''}`}>
-              <button onClick={() => setPage('dpt')}>
-                <Icons.Voters />
-                <span>Data Pemilih (DPT)</span>
-              </button>
-            </li>
-            <li className={`menu-item ${page === 'dpk' ? 'active' : ''}`}>
-              <button onClick={() => setPage('dpk')}>
-                <Icons.Voters />
-                <span>Pemilih Khusus (DPK)</span>
-              </button>
-            </li>
-            <li className={`menu-item ${page === 'kpps' ? 'active' : ''}`}>
-              <button onClick={() => setPage('kpps')}>
-                <Icons.Users />
-                <span>Akun KPPS</span>
-              </button>
-            </li>
-          </ul>
-        </nav>
-
-        <div className="sidebar-footer">
-          <div className="user-profile">
-            <div className="avatar">
-              {user?.username?.substring(0, 2).toUpperCase() || 'S'}
-            </div>
-            <div className="user-info">
-              <span className="username">{user?.username}</span>
-              <span className="role-badge">{user?.role}</span>
-            </div>
-          </div>
-          <button onClick={handleLogout} className="btn-logout">
-            <Icons.Logout />
-            <span>Keluar</span>
-          </button>
-        </div>
-      </aside>
+      <Sidebar
+        path={path}
+        user={user}
+        navigate={navigate}
+        handleLogout={handleLogout}
+      />
 
       {/* Main Content Area */}
       <main className="main-content">
-        
-        {/* PAGE 1: DASHBOARD */}
-        {page === 'dashboard' && (
-          <div>
-            <div className="section-header">
-              <div>
-                <h1 className="section-title">Dashboard Umum</h1>
-                <p className="section-desc">Statistik real-time kehadiran pemilih dan quick count suara.</p>
-              </div>
-              <button onClick={fetchDashboard} disabled={dashboardLoading} className="btn btn-secondary">
-                <Icons.Refresh />
-                <span>Segarkan</span>
-              </button>
-            </div>
-
-            {dashboardLoading && <div style={{ fontSize: '0.875rem', color: 'var(--text-muted)', marginBottom: '16px' }}>Memuat data...</div>}
-
-            {dashboardData && (
-              <>
-                {/* Aggregate Widgets */}
-                <div className="grid-cols-4">
-                  <div className="card">
-                    <div className="card-title">Total Pemilih (Voters)</div>
-                    <div className="card-value">{dashboardData.stats.total_pemilih}</div>
-                    <div className="card-subtext">DPT: {dashboardData.stats.total_dpt} | DPK: {dashboardData.stats.total_dpk}</div>
-                  </div>
-                  <div className="card">
-                    <div className="card-title">Kehadiran (Check-In)</div>
-                    <div className="card-value">{dashboardData.stats.total_hadir}</div>
-                    <div className="card-subtext">DPT: {dashboardData.stats.total_hadir_dpt} | DPK: {dashboardData.stats.total_hadir_dpk} ({dashboardData.stats.persentase_kehadiran}%)</div>
-                  </div>
-                  <div className="card">
-                    <div className="card-title">TPS Sudah Kirim QC</div>
-                    <div className="card-value">{dashboardData.stats.tps_sudah_lapor_qc}</div>
-                    <div className="card-subtext">Dari {dashboardData.stats.total_tps} total TPS</div>
-                  </div>
-                  <div className="card">
-                    <div className="card-title">TPS Belum Kirim QC</div>
-                    <div className="card-value">{dashboardData.stats.tps_belum_lapor_qc}</div>
-                    <div className="card-subtext">Menunggu submit final KPPS</div>
-                  </div>
-                </div>
-
-                <div className="grid-cols-2">
-                  {/* Quick Count Aggregates */}
-                  <div className="card">
-                    <h2 style={{ fontSize: '1.1rem', fontWeight: '700', marginBottom: '20px' }}>Agregat Quick Count</h2>
-                    <div className="quickcount-stats">
-                      <div>
-                        <div className="quickcount-row">
-                          <span>Kandidat 01</span>
-                          <span>{dashboardData.quick_count_aggregates.kandidat_1} suara</span>
-                        </div>
-                        <div className="quickcount-bar-container">
-                          <div 
-                            className="quickcount-bar" 
-                            style={{ 
-                              width: `${dashboardData.quick_count_aggregates.total_suara_masuk > 0 ? (dashboardData.quick_count_aggregates.kandidat_1 / dashboardData.quick_count_aggregates.total_suara_masuk) * 100 : 0}%`,
-                              backgroundColor: 'oklch(0.60 0.15 200)'
-                            }} 
-                          />
-                        </div>
-                      </div>
-                      <div>
-                        <div className="quickcount-row">
-                          <span>Kandidat 02</span>
-                          <span>{dashboardData.quick_count_aggregates.kandidat_2} suara</span>
-                        </div>
-                        <div className="quickcount-bar-container">
-                          <div 
-                            className="quickcount-bar" 
-                            style={{ 
-                              width: `${dashboardData.quick_count_aggregates.total_suara_masuk > 0 ? (dashboardData.quick_count_aggregates.kandidat_2 / dashboardData.quick_count_aggregates.total_suara_masuk) * 100 : 0}%`,
-                              backgroundColor: 'oklch(0.60 0.15 30)'
-                            }} 
-                          />
-                        </div>
-                      </div>
-                      <div>
-                        <div className="quickcount-row">
-                          <span>Kandidat 03</span>
-                          <span>{dashboardData.quick_count_aggregates.kandidat_3} suara</span>
-                        </div>
-                        <div className="quickcount-bar-container">
-                          <div 
-                            className="quickcount-bar" 
-                            style={{ 
-                              width: `${dashboardData.quick_count_aggregates.total_suara_masuk > 0 ? (dashboardData.quick_count_aggregates.kandidat_3 / dashboardData.quick_count_aggregates.total_suara_masuk) * 100 : 0}%`,
-                              backgroundColor: 'oklch(0.60 0.15 120)'
-                            }} 
-                          />
-                        </div>
-                      </div>
-                      <div style={{ marginTop: '12px', borderTop: '1px solid var(--border)', paddingTop: '16px' }}>
-                        <div className="quickcount-row" style={{ backgroundColor: 'transparent', padding: '4px 0' }}>
-                          <span>Suara Tidak Sah</span>
-                          <span>{dashboardData.quick_count_aggregates.suara_tidak_sah} suara</span>
-                        </div>
-                        <div className="quickcount-row" style={{ backgroundColor: 'transparent', padding: '4px 0', fontWeight: '700', fontSize: '1rem' }}>
-                          <span>Total Suara Masuk</span>
-                          <span>{dashboardData.quick_count_aggregates.total_suara_masuk} suara</span>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* Quick Attendance Monitor */}
-                  <div className="card">
-                    <h2 style={{ fontSize: '1.1rem', fontWeight: '700', marginBottom: '20px' }}>Persentase Kehadiran Wilayah</h2>
-                    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', height: '80%' }}>
-                      <div style={{ position: 'relative', width: '160px', height: '160px', display: 'flex', alignItems: 'center', justifyItems: 'center', justifyContent: 'center' }}>
-                        <svg viewBox="0 0 36 36" style={{ width: '100%', height: '100%', transform: 'rotate(-90deg)' }}>
-                          <path
-                            style={{ stroke: 'var(--border)', fill: 'none', strokeWidth: '3.8' }}
-                            d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831"
-                          />
-                          <path
-                            style={{ stroke: 'var(--primary)', fill: 'none', strokeWidth: '3.8', strokeDasharray: `${dashboardData.stats.persentase_kehadiran}, 100` }}
-                            d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831"
-                          />
-                        </svg>
-                        <div style={{ position: 'absolute', display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
-                          <span style={{ fontSize: '2rem', fontWeight: '800', color: 'var(--text)' }}>{dashboardData.stats.persentase_kehadiran}%</span>
-                          <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)', fontWeight: '600' }}>Kehadiran</span>
-                        </div>
-                      </div>
-                      <div style={{ marginTop: '24px', display: 'flex', flexWrap: 'wrap', justifyContent: 'center', gap: '16px', fontSize: '0.875rem' }}>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                          <span style={{ width: '12px', height: '12px', borderRadius: '50%', backgroundColor: 'var(--primary)' }}></span>
-                          <span>Hadir: {dashboardData.stats.total_hadir} (DPT: {dashboardData.stats.total_hadir_dpt} | DPK: {dashboardData.stats.total_hadir_dpk})</span>
-                        </div>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                          <span style={{ width: '12px', height: '12px', borderRadius: '50%', backgroundColor: 'var(--border)' }}></span>
-                          <span>Belum Hadir: {dashboardData.stats.total_pemilih - dashboardData.stats.total_hadir}</span>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-
-                {/* Dashboard TPS Reporting Table */}
-                <h3 style={{ fontSize: '1.25rem', fontWeight: '700', marginBottom: '16px' }}>Status Laporan per TPS</h3>
-                <div className="table-container">
-                  <table>
-                    <thead>
-                      <tr>
-                        <th>Nama TPS</th>
-                        <th>Wilayah</th>
-                        <th>Total DPT</th>
-                        <th>Total DPK</th>
-                        <th>Total Pemilih</th>
-                        <th>Hadir (Check-In)</th>
-                        <th>% Kehadiran</th>
-                        <th>Status Quick Count</th>
-                        <th>Aksi</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {dashboardData.tps_list.map((t: any) => (
-                        <tr key={t.id}>
-                          <td style={{ fontWeight: '600' }}>{t.nama}</td>
-                          <td>{t.wilayah}</td>
-                          <td>{t.total_dpt}</td>
-                          <td>{t.total_dpk}</td>
-                          <td>{t.total_dpt + t.total_dpk}</td>
-                          <td>
-                            {t.hadir}
-                            <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>
-                              DPT: {t.hadir_dpt} | DPK: {t.hadir_dpk}
-                            </div>
-                          </td>
-                          <td>
-                            {t.total_dpt + t.total_dpk > 0 ? `${roundVal((t.hadir / (t.total_dpt + t.total_dpk)) * 100)}%` : '0%'}
-                          </td>
-                          <td>
-                            {t.quick_count_status === 'final' ? (
-                              <span className="badge badge-success">Final (Terkunci)</span>
-                            ) : t.quick_count_status === 'draft' ? (
-                              <span className="badge badge-warning">Draft (Belum Submit)</span>
-                            ) : (
-                              <span className="badge badge-danger">Belum Input</span>
-                            )}
-                          </td>
-                          <td>
-                            <button 
-                              onClick={() => {
-                                setSelectedTpsId(t.id);
-                                setPage('tps-detail');
-                              }} 
-                              className="btn btn-secondary" 
-                              style={{ padding: '6px 12px', fontSize: '0.8rem' }}
-                            >
-                              Detail Monitor
-                            </button>
-                          </td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
-              </>
-            )}
-          </div>
-        )}
-
-        {/* PAGE 2: TPS LIST */}
-        {page === 'tps' && (
-          <div>
-            <div className="section-header">
-              <div>
-                <h1 className="section-title">Tempat Pemungutan Suara (TPS)</h1>
-                <p className="section-desc">Daftar wilayah TPS dan manajemen alur rekapitulasi.</p>
-              </div>
-              <button onClick={() => setIsTpsModalOpen(true)} className="btn btn-primary">
-                <Icons.Plus />
-                <span>Tambah TPS</span>
-              </button>
-            </div>
-
-            {tpsPageLoading && <div style={{ fontSize: '0.875rem', color: 'var(--text-muted)', marginBottom: '16px' }}>Memuat data TPS...</div>}
-
-            {tpsPageData && (
-              <>
-                <div className="table-container">
-                  <table>
-                    <thead>
-                      <tr>
-                        <th>ID</th>
-                        <th>Nama TPS</th>
-                        <th>Wilayah / Alamat</th>
-                        <th>Jumlah Pemilih (DPT)</th>
-                        <th>Kehadiran (Hadir)</th>
-                        <th>% Kehadiran</th>
-                        <th>Jumlah Akun KPPS</th>
-                        <th>Aksi</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {tpsPageData.data.map((t: any) => (
-                        <tr key={t.id}>
-                          <td>{t.id}</td>
-                          <td style={{ fontWeight: '600' }}>{t.nama}</td>
-                          <td>{t.wilayah}</td>
-                          <td>{t.dpt_count ?? t.total_dpt}</td>
-                          <td>{t.hadir_count ?? 0}</td>
-                          <td>
-                            {t.dpt_count > 0 ? `${roundVal(((t.hadir_count ?? 0) / t.dpt_count) * 100)}%` : '0%'}
-                          </td>
-                          <td>{t.users_count}</td>
-                          <td>
-                            <button
-                              onClick={() => {
-                                setSelectedTpsId(t.id);
-                                setPage('tps-detail');
-                              }}
-                              className="btn btn-secondary"
-                              style={{ padding: '6px 12px', fontSize: '0.8rem' }}
-                            >
-                              Lihat Detail
-                            </button>
-                          </td>
-                        </tr>
-                      ))}
-                      {tpsPageData.data.length === 0 && (
-                        <tr>
-                          <td colSpan={8} style={{ textAlign: 'center', color: 'var(--text-muted)' }}>Belum ada data TPS.</td>
-                        </tr>
-                      )}
-                    </tbody>
-                  </table>
-                </div>
-
-                {/* Pagination */}
-                <div className="pagination">
-                  <span style={{ fontSize: '0.875rem', color: 'var(--text-muted)' }}>
-                    Menampilkan Halaman {tpsPageData.current_page} dari {tpsPageData.last_page} ({tpsPageData.total} TPS)
-                  </span>
-                  <div style={{ display: 'flex', gap: '8px' }}>
-                    <button
-                      disabled={tpsPageData.current_page === 1}
-                      onClick={() => setTpsPage(prev => Math.max(1, prev - 1))}
-                      className="btn btn-secondary"
-                      style={{ padding: '6px 12px', fontSize: '0.8rem' }}
-                    >
-                      Sebelumnya
-                    </button>
-                    <button
-                      disabled={tpsPageData.current_page === tpsPageData.last_page}
-                      onClick={() => setTpsPage(prev => Math.min(tpsPageData.last_page, prev + 1))}
-                      className="btn btn-secondary"
-                      style={{ padding: '6px 12px', fontSize: '0.8rem' }}
-                    >
-                      Selanjutnya
-                    </button>
-                  </div>
-                </div>
-              </>
-            )}
-          </div>
-        )}
-
-        {/* PAGE 2B: TPS DETAIL */}
-        {page === 'tps-detail' && tpsDetailData && (
-          <div>
-            <div style={{ marginBottom: '24px' }}>
-              <button onClick={() => setPage('dashboard')} className="btn btn-secondary" style={{ padding: '6px 12px', fontSize: '0.8rem', marginBottom: '16px' }}>
-                &larr; Kembali ke Dashboard
-              </button>
-              <h1 className="section-title">{tpsDetailData.tps.nama}</h1>
-              <p className="section-desc">Wilayah: {tpsDetailData.tps.wilayah}</p>
-            </div>
-
-            <div className="grid-cols-4">
-              <div className="card">
-                <div className="card-title">Total Pemilih (Voters)</div>
-                <div className="card-value">{tpsDetailData.stats.total_pemilih}</div>
-                <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)', marginTop: '4px', fontWeight: '500' }}>
-                  DPT: {tpsDetailData.stats.total_dpt} | DPK: {tpsDetailData.stats.total_dpk}
-                </div>
-              </div>
-              <div className="card">
-                <div className="card-title">Check-in Hadir</div>
-                <div className="card-value" style={{ color: 'var(--success)' }}>{tpsDetailData.stats.hadir}</div>
-                <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)', marginTop: '4px', fontWeight: '500' }}>
-                  DPT: {tpsDetailData.stats.hadir_dpt} | DPK: {tpsDetailData.stats.hadir_dpk}
-                </div>
-              </div>
-              <div className="card">
-                <div className="card-title">Belum Hadir</div>
-                <div className="card-value" style={{ color: 'var(--text-muted)' }}>{tpsDetailData.stats.tidak_hadir}</div>
-                <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)', marginTop: '4px', fontWeight: '500' }}>
-                  Total pemilih belum absen
-                </div>
-              </div>
-              <div className="card">
-                <div className="card-title">Persentase Kehadiran</div>
-                <div className="card-value">{tpsDetailData.stats.persentase_kehadiran}%</div>
-                <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)', marginTop: '4px', fontWeight: '500' }}>
-                  Dari total pemilih
-                </div>
-              </div>
-            </div>
-
-            <div className="detail-grid">
-              {/* Voter list log */}
-              <div className="card">
-                <h3 style={{ fontWeight: '700', marginBottom: '16px' }}>Log Kehadiran Pemilih</h3>
-                <div style={{ maxHeight: '400px', overflowY: 'auto' }}>
-                  <table>
-                    <thead>
-                      <tr>
-                        <th>NIK</th>
-                        <th>Nama Pemilih</th>
-                        <th>Tipe</th>
-                        <th>Status</th>
-                        <th>Waktu Check-in</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {tpsDetailData.voters.map((v: any) => (
-                        <tr key={v.nik}>
-                          <td>{v.nik}</td>
-                          <td style={{ fontWeight: '500' }}>{v.nama}</td>
-                          <td>
-                            <span className={`badge ${v.jenis_pemilih === 'dpk' ? 'badge-warning' : 'badge-info'}`}>
-                              {v.jenis_pemilih?.toUpperCase() || 'DPT'}
-                            </span>
-                          </td>
-                          <td>
-                            {v.status_hadir ? (
-                              <span className="badge badge-success">Hadir</span>
-                            ) : (
-                              <span className="badge badge-danger">Belum Hadir</span>
-                            )}
-                          </td>
-                          <td style={{ color: 'var(--text-muted)' }}>
-                            {v.waktu_checkin ? new Date(v.waktu_checkin).toLocaleString('id-ID') : '-'}
-                          </td>
-                        </tr>
-                      ))}
-                      {tpsDetailData.voters.length === 0 && (
-                        <tr>
-                          <td colSpan={5} style={{ textAlign: 'center', color: 'var(--text-muted)' }}>Tidak ada data pemilih terdaftar di TPS ini.</td>
-                        </tr>
-                      )}
-                    </tbody>
-                  </table>
-                </div>
-              </div>
-
-              {/* Quick Count and Device logs */}
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
-                <div className="card">
-                  <h3 style={{ fontWeight: '700', marginBottom: '16px' }}>Hasil Quick Count TPS</h3>
-                  {tpsDetailData.quick_count ? (
-                    <div className="quickcount-stats">
-                      <div className="quickcount-row">
-                        <span>Kandidat 01</span>
-                        <span>{tpsDetailData.quick_count.kandidat_1} suara</span>
-                      </div>
-                      <div className="quickcount-row">
-                        <span>Kandidat 02</span>
-                        <span>{tpsDetailData.quick_count.kandidat_2} suara</span>
-                      </div>
-                      <div className="quickcount-row">
-                        <span>Kandidat 03</span>
-                        <span>{tpsDetailData.quick_count.kandidat_3} suara</span>
-                      </div>
-                      <div className="quickcount-row" style={{ borderTop: '1px solid var(--border)', paddingTop: '12px' }}>
-                        <span>Suara Tidak Sah</span>
-                        <span>{tpsDetailData.quick_count.suara_tidak_sah} suara</span>
-                      </div>
-                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '12px' }}>
-                        <span style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>Status Laporan:</span>
-                        {tpsDetailData.quick_count.status === 'final' ? (
-                          <span className="badge badge-success">Final (LOCKED)</span>
-                        ) : (
-                          <span className="badge badge-warning">Draft</span>
-                        )}
-                      </div>
-                    </div>
-                  ) : (
-                    <div style={{ color: 'var(--text-muted)', textAlign: 'center', padding: '20px 0' }}>KPPS belum menginput data Quick Count.</div>
-                  )}
-                </div>
-
-                <div className="card">
-                  <h3 style={{ fontWeight: '700', marginBottom: '16px' }}>Log Sinkronisasi Device KPPS</h3>
-                  <div style={{ maxHeight: '200px', overflowY: 'auto' }}>
-                    {tpsDetailData.recent_syncs.length > 0 ? (
-                      <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
-                        {tpsDetailData.recent_syncs.map((log: any) => (
-                          <div key={log.id} style={{ borderBottom: '1px solid var(--border)', paddingBottom: '8px', fontSize: '0.8rem' }}>
-                            <div style={{ display: 'flex', justifyContent: 'space-between', fontWeight: '600' }}>
-                              <span style={{ color: 'var(--primary)' }}>
-                                {log.action === 'voter_checkin' ? 'Kehadiran Sync' : 'Quick Count Sync'}
-                              </span>
-                              <span style={{ color: 'var(--text-muted)' }}>
-                                {new Date(log.waktu_sync).toLocaleTimeString('id-ID')}
-                              </span>
-                            </div>
-                            <div style={{ color: 'var(--text-muted)', fontSize: '0.75rem', marginTop: '2px' }}>
-                              Device ID: {log.device_id.substring(0, 12)}...
-                            </div>
-                          </div>
-                        ))}
-                      </div>
-                    ) : (
-                      <div style={{ color: 'var(--text-muted)', textAlign: 'center', padding: '10px 0', fontSize: '0.875rem' }}>Belum ada log sync.</div>
-                    )}
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-        )}
-
-        {/* PAGE 3: DPT LIST */}
-        {page === 'dpt' && (
-          <div>
-            <div className="section-header">
-              <div>
-                <h1 className="section-title">Daftar Pemilih Tetap (DPT)</h1>
-                <p className="section-desc">Kelola dan impor seluruh pemilih wilayah Gentan.</p>
-              </div>
-              <div style={{ display: 'flex', gap: '12px' }}>
-                <button onClick={() => setIsImportModalOpen(true)} className="btn btn-secondary">
-                  <Icons.Upload />
-                  <span>Impor CSV Bulk</span>
-                </button>
-                <button onClick={() => {
-                  setEditingDpt(null);
-                  setDptFormNik('');
-                  setDptFormNama('');
-                  setDptFormTps('');
-                  setIsDptModalOpen(true);
-                }} className="btn btn-primary">
-                  <Icons.Plus />
-                  <span>Tambah Pemilih</span>
-                </button>
-              </div>
-            </div>
-
-            {/* Filter & Search Bar */}
-            <div style={{ display: 'flex', gap: '16px', marginBottom: '24px', backgroundColor: 'var(--surface)', padding: '16px', borderRadius: 'var(--radius-md)', border: '1px solid var(--border)', alignItems: 'center' }}>
-              <div style={{ display: 'flex', flexGrow: 1, border: '1px solid var(--border)', borderRadius: 'var(--radius-sm)', padding: '8px 12px', gap: '8px', alignItems: 'center', backgroundColor: 'var(--background)' }}>
-                <Icons.Search />
-                <input
-                  type="text"
-                  placeholder="Cari berdasarkan NIK atau Nama Pemilih..."
-                  style={{ border: 'none', outline: 'none', background: 'none', width: '100%', fontSize: '0.875rem' }}
-                  value={dptSearch}
-                  onChange={e => {
-                    setDptSearch(e.target.value);
-                    setDptPage(1);
-                  }}
-                />
-              </div>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                <label style={{ fontSize: '0.875rem', fontWeight: '600', color: 'var(--text-muted)', whiteSpace: 'nowrap' }}>Filter TPS:</label>
-                <select
-                  className="form-control"
-                  style={{ width: '180px', padding: '8px 12px' }}
-                  value={dptTpsFilter}
-                  onChange={e => {
-                    setDptTpsFilter(e.target.value);
-                    setDptPage(1);
-                  }}
-                >
-                  <option value="">Semua TPS</option>
-                  {tpsList.map(t => (
-                    <option key={t.id} value={t.id}>{t.nama}</option>
-                  ))}
-                </select>
-              </div>
-            </div>
-
-            {dptLoading && <div style={{ fontSize: '0.875rem', color: 'var(--text-muted)', marginBottom: '16px' }}>Memuat data pemilih...</div>}
-
-            {dptData && (
-              <>
-                <div className="table-container">
-                  <table>
-                    <thead>
-                      <tr>
-                        <th>ID Pemilih</th>
-                        <th>NIK</th>
-                        <th>Nama Pemilih</th>
-                        <th>TPS Terdaftar</th>
-                        <th>Kehadiran</th>
-                        <th>Waktu Check-in</th>
-                        <th>Aksi</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {dptData.data.map((v: any) => (
-                        <tr key={v.nik}>
-                          <td style={{ fontFamily: 'monospace', fontWeight: '700', color: 'var(--primary)' }}>{v.id_pemilih}</td>
-                          <td style={{ fontFamily: 'monospace', fontWeight: '500' }}>{v.nik}</td>
-                          <td style={{ fontWeight: '600' }}>{v.nama}</td>
-                          <td>{v.tps?.nama || `TPS ID: ${v.tps_id}`}</td>
-                          <td>
-                            {v.status_hadir ? (
-                              <span className="badge badge-success">Hadir</span>
-                            ) : (
-                              <span className="badge badge-danger">Belum Hadir</span>
-                            )}
-                          </td>
-                          <td style={{ color: 'var(--text-muted)' }}>
-                            {v.waktu_checkin ? new Date(v.waktu_checkin).toLocaleString('id-ID') : '-'}
-                          </td>
-                          <td>
-                            <div style={{ display: 'flex', gap: '8px' }}>
-                              <button
-                                onClick={() => fetchQrCode(v.nik, v.nama)}
-                                className="btn btn-secondary"
-                                style={{ padding: '4px 8px', fontSize: '0.75rem', color: 'var(--primary)' }}
-                              >
-                                Lihat QR
-                              </button>
-                              <button
-                                  onClick={() => {
-                                    setEditingDpt(v);
-                                    setDptFormNik(v.nik);
-                                    setDptFormNama(v.nama);
-                                    setDptFormTps(String(v.tps_id));
-                                    setIsDptModalOpen(true);
-                                    fetchEditingQr(v.nik);
-                                  }}
-                                  className="btn btn-secondary"
-                                  style={{ padding: '4px 8px', fontSize: '0.75rem' }}
-                                >
-                                  Edit
-                                </button>
-                                <button
-                                  onClick={() => handleDeleteDpt(v.nik)}
-                                  className="btn btn-secondary"
-                                  style={{ padding: '4px 8px', fontSize: '0.75rem', color: 'var(--danger)' }}
-                                >
-                                  Hapus
-                                </button>
-                            </div>
-                          </td>
-                        </tr>
-                      ))}
-                      {dptData.data.length === 0 && (
-                        <tr>
-                          <td colSpan={6} style={{ textAlign: 'center', color: 'var(--text-muted)' }}>Tidak ditemukan data pemilih.</td>
-                        </tr>
-                      )}
-                    </tbody>
-                  </table>
-                </div>
-
-                {/* Pagination */}
-                <div className="pagination">
-                  <span style={{ fontSize: '0.875rem', color: 'var(--text-muted)' }}>
-                    Menampilkan Halaman {dptData.current_page} dari {dptData.last_page} ({dptData.total} pemilih)
-                  </span>
-                  <div style={{ display: 'flex', gap: '8px' }}>
-                    <button
-                      disabled={dptData.current_page === 1}
-                      onClick={() => setDptPage(prev => Math.max(1, prev - 1))}
-                      className="btn btn-secondary"
-                      style={{ padding: '6px 12px', fontSize: '0.8rem' }}
-                    >
-                      Sebelumnya
-                    </button>
-                    <button
-                      disabled={dptData.current_page === dptData.last_page}
-                      onClick={() => setDptPage(prev => Math.min(dptData.last_page, prev + 1))}
-                      className="btn btn-secondary"
-                      style={{ padding: '6px 12px', fontSize: '0.8rem' }}
-                    >
-                      Selanjutnya
-                    </button>
-                  </div>
-                </div>
-              </>
-            )}
-          </div>
-        )}
-
-        {/* PAGE 3B: DPK LIST */}
-        {page === 'dpk' && (
-          <div>
-            <div className="section-header">
-              <div>
-                <h1 className="section-title">Daftar Pemilih Khusus (DPK)</h1>
-                <p className="section-desc">Kelola pemilih khusus yang didaftarkan pada hari H pemilihan di TPS masing-masing.</p>
-              </div>
-              <div style={{ display: 'flex', gap: '12px' }}>
-                <button onClick={() => {
-                  setEditingDpt(null);
-                  setDptFormNik('');
-                  setDptFormNama('');
-                  setDptFormTps('');
-                  setIsDptModalOpen(true);
-                }} className="btn btn-primary">
-                  <Icons.Plus />
-                  <span>Tambah DPK</span>
-                </button>
-              </div>
-            </div>
-
-            {/* Filter & Search Bar */}
-            <div style={{ display: 'flex', gap: '16px', marginBottom: '24px', backgroundColor: 'var(--surface)', padding: '16px', borderRadius: 'var(--radius-md)', border: '1px solid var(--border)', alignItems: 'center' }}>
-              <div style={{ display: 'flex', flexGrow: 1, border: '1px solid var(--border)', borderRadius: 'var(--radius-sm)', padding: '8px 12px', gap: '8px', alignItems: 'center', backgroundColor: 'var(--background)' }}>
-                <Icons.Search />
-                <input
-                  type="text"
-                  placeholder="Cari DPK berdasarkan NIK atau Nama..."
-                  style={{ border: 'none', outline: 'none', background: 'none', width: '100%', fontSize: '0.875rem' }}
-                  value={dptSearch}
-                  onChange={e => {
-                    setDptSearch(e.target.value);
-                    setDptPage(1);
-                  }}
-                />
-              </div>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                <label style={{ fontSize: '0.875rem', fontWeight: '600', color: 'var(--text-muted)', whiteSpace: 'nowrap' }}>Filter TPS:</label>
-                <select
-                  className="form-control"
-                  style={{ width: '180px', padding: '8px 12px' }}
-                  value={dptTpsFilter}
-                  onChange={e => {
-                    setDptTpsFilter(e.target.value);
-                    setDptPage(1);
-                  }}
-                >
-                  <option value="">Semua TPS</option>
-                  {tpsList.map(t => (
-                    <option key={t.id} value={t.id}>{t.nama}</option>
-                  ))}
-                </select>
-              </div>
-            </div>
-
-            {dptLoading && <div style={{ fontSize: '0.875rem', color: 'var(--text-muted)', marginBottom: '16px' }}>Memuat data DPK...</div>}
-
-            {dptData && (
-              <>
-                <div className="table-container">
-                  <table>
-                    <thead>
-                      <tr>
-                        <th>ID Pemilih</th>
-                        <th>NIK</th>
-                        <th>Nama DPK</th>
-                        <th>TPS Alokasi</th>
-                        <th>Kehadiran</th>
-                        <th>Waktu Check-in</th>
-                        <th>Aksi</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {dptData.data.map((v: any) => (
-                        <tr key={v.nik}>
-                          <td style={{ fontFamily: 'monospace', fontWeight: '700', color: 'var(--primary)' }}>{v.id_pemilih}</td>
-                          <td style={{ fontFamily: 'monospace', fontWeight: '500' }}>{v.nik}</td>
-                          <td style={{ fontWeight: '600' }}>{v.nama}</td>
-                          <td>{v.tps?.nama || `TPS ID: ${v.tps_id}`}</td>
-                          <td>
-                            {v.status_hadir ? (
-                              <span className="badge badge-success">Hadir</span>
-                            ) : (
-                              <span className="badge badge-danger">Belum Hadir</span>
-                            )}
-                          </td>
-                          <td style={{ color: 'var(--text-muted)' }}>
-                            {v.waktu_checkin ? new Date(v.waktu_checkin).toLocaleString('id-ID') : '-'}
-                          </td>
-                          <td>
-                            <div style={{ display: 'flex', gap: '8px' }}>
-                              <button
-                                onClick={() => fetchQrCode(v.nik, v.nama)}
-                                className="btn btn-secondary"
-                                style={{ padding: '4px 8px', fontSize: '0.75rem', color: 'var(--primary)' }}
-                              >
-                                Lihat QR
-                              </button>
-                              <button
-                                  onClick={() => {
-                                    setEditingDpt(v);
-                                    setDptFormNik(v.nik);
-                                    setDptFormNama(v.nama);
-                                    setDptFormTps(String(v.tps_id));
-                                    setIsDptModalOpen(true);
-                                    fetchEditingQr(v.nik);
-                                  }}
-                                  className="btn btn-secondary"
-                                  style={{ padding: '4px 8px', fontSize: '0.75rem' }}
-                                >
-                                  Edit
-                                </button>
-                                <button
-                                  onClick={() => handleDeleteDpt(v.nik)}
-                                  className="btn btn-secondary"
-                                  style={{ padding: '4px 8px', fontSize: '0.75rem', color: 'var(--danger)' }}
-                                >
-                                  Hapus
-                                </button>
-                            </div>
-                          </td>
-                        </tr>
-                      ))}
-                      {dptData.data.length === 0 && (
-                        <tr>
-                          <td colSpan={6} style={{ textAlign: 'center', color: 'var(--text-muted)' }}>Tidak ditemukan data pemilih DPK.</td>
-                        </tr>
-                      )}
-                    </tbody>
-                  </table>
-                </div>
-
-                {/* Pagination */}
-                <div className="pagination">
-                  <span style={{ fontSize: '0.875rem', color: 'var(--text-muted)' }}>
-                    Menampilkan Halaman {dptData.current_page} dari {dptData.last_page} ({dptData.total} pemilih DPK)
-                  </span>
-                  <div style={{ display: 'flex', gap: '8px' }}>
-                    <button
-                      disabled={dptData.current_page === 1}
-                      onClick={() => setDptPage(prev => Math.max(1, prev - 1))}
-                      className="btn btn-secondary"
-                      style={{ padding: '6px 12px', fontSize: '0.8rem' }}
-                    >
-                      Sebelumnya
-                    </button>
-                    <button
-                      disabled={dptData.current_page === dptData.last_page}
-                      onClick={() => setDptPage(prev => Math.min(dptData.last_page, prev + 1))}
-                      className="btn btn-secondary"
-                      style={{ padding: '6px 12px', fontSize: '0.8rem' }}
-                    >
-                      Selanjutnya
-                    </button>
-                  </div>
-                </div>
-              </>
-            )}
-          </div>
-        )}
-
-        {/* PAGE 4: KPPS ACCOUNTS */}
-        {page === 'kpps' && (
-          <div>
-            <div className="section-header">
-              <div>
-                <h1 className="section-title">Manajemen Akun KPPS</h1>
-                <p className="section-desc">Provision akun KPPS (1 akun per TPS) untuk log in di aplikasi Android lapangan.</p>
-              </div>
-              <button onClick={() => setIsKppsModalOpen(true)} className="btn btn-primary">
-                <Icons.Plus />
-                <span>Buat Akun KPPS</span>
-              </button>
-            </div>
-
-            {kppsLoading && <div style={{ fontSize: '0.875rem', color: 'var(--text-muted)', marginBottom: '16px' }}>Memuat data...</div>}
-
-            {kppsUsers && (
-              <>
-                <div className="table-container">
-                  <table>
-                    <thead>
-                      <tr>
-                        <th>Username</th>
-                        <th>Hak Akses / Peran</th>
-                        <th>Asosiasi TPS</th>
-                        <th>Dibuat Tanggal</th>
-                        <th>Aksi</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {kppsUsers.data.map((u: any) => (
-                        <tr key={u.id}>
-                          <td style={{ fontWeight: '600' }}>{u.username}</td>
-                          <td>
-                            {u.kpps_role === 'validasi' ? (
-                              <span className="badge badge-secondary" style={{ backgroundColor: 'oklch(0.92 0.02 240)', color: 'oklch(0.40 0.10 240)' }}>Hanya Validasi</span>
-                            ) : (
-                              <span className="badge badge-success" style={{ backgroundColor: 'oklch(0.92 0.05 160)', color: 'oklch(0.35 0.15 160)' }}>Validasi & Quick Count</span>
-                            )}
-                          </td>
-                          <td>{u.tps?.nama || 'Tidak Terhubung'}</td>
-                          <td>{new Date(u.created_at).toLocaleString('id-ID')}</td>
-                          <td>
-                            <div style={{ display: 'flex', gap: '8px' }}>
-                              <button
-                                onClick={() => {
-                                  setResetUser(u);
-                                  setResetPasswordVal('');
-                                  setIsResetModalOpen(true);
-                                }}
-                                className="btn btn-secondary"
-                                style={{ padding: '4px 8px', fontSize: '0.75rem' }}
-                              >
-                                Reset Password
-                              </button>
-                              <button
-                                onClick={() => handleDeleteUser(u.id)}
-                                className="btn btn-secondary"
-                                style={{ padding: '4px 8px', fontSize: '0.75rem', color: 'var(--danger)' }}
-                              >
-                                Hapus
-                              </button>
-                            </div>
-                          </td>
-                        </tr>
-                      ))}
-                      {kppsUsers.data.length === 0 && (
-                        <tr>
-                          <td colSpan={5} style={{ textAlign: 'center', color: 'var(--text-muted)' }}>Belum ada akun KPPS terdaftar.</td>
-                        </tr>
-                      )}
-                    </tbody>
-                  </table>
-                </div>
-
-                {/* Pagination */}
-                <div className="pagination">
-                  <span style={{ fontSize: '0.875rem', color: 'var(--text-muted)' }}>
-                    Menampilkan Halaman {kppsUsers.current_page} dari {kppsUsers.last_page} ({kppsUsers.total} akun KPPS)
-                  </span>
-                  <div style={{ display: 'flex', gap: '8px' }}>
-                    <button
-                      disabled={kppsUsers.current_page === 1}
-                      onClick={() => setKppsPage(prev => Math.max(1, prev - 1))}
-                      className="btn btn-secondary"
-                      style={{ padding: '6px 12px', fontSize: '0.8rem' }}
-                    >
-                      Sebelumnya
-                    </button>
-                    <button
-                      disabled={kppsUsers.current_page === kppsUsers.last_page}
-                      onClick={() => setKppsPage(prev => Math.min(kppsUsers.last_page, prev + 1))}
-                      className="btn btn-secondary"
-                      style={{ padding: '6px 12px', fontSize: '0.8rem' }}
-                    >
-                      Selanjutnya
-                    </button>
-                  </div>
-                </div>
-              </>
-            )}
-          </div>
-        )}
-
+        <Routes>
+          <Route path="/" element={<Navigate to="/dashboard" replace />} />
+          <Route path="/dashboard" element={
+            <DashboardTab
+              dashboardData={dashboardData}
+              dashboardLoading={dashboardLoading}
+              fetchDashboard={fetchDashboard}
+              setSelectedTpsId={(id) => navigate(`/tps/${id}`)}
+              setPage={(p) => navigate('/' + p)}
+            />
+          } />
+          <Route path="/tps" element={
+            <TpsTab
+              tpsPageData={tpsPageData}
+              tpsPageLoading={tpsPageLoading}
+              setTpsPage={setTpsPage}
+              setIsTpsModalOpen={setIsTpsModalOpen}
+              setSelectedTpsId={(id) => navigate(`/tps/${id}`)}
+              setPage={(p) => navigate('/' + p)}
+            />
+          } />
+          <Route path="/tps/:id" element={
+            <TpsDetailRoute
+              fetchTpsDetail={fetchTpsDetail}
+              tpsDetailData={tpsDetailData}
+              navigate={navigate}
+            />
+          } />
+          <Route path="/dpt" element={
+            <DptTab
+              dptData={dptData}
+              dptLoading={dptLoading}
+              dptSearch={dptSearch}
+              setDptSearch={setDptSearch}
+              dptTpsFilter={dptTpsFilter}
+              setDptTpsFilter={setDptTpsFilter}
+              setDptPage={setDptPage}
+              tpsList={tpsList}
+              setIsImportModalOpen={setIsImportModalOpen}
+              setIsDptModalOpen={setIsDptModalOpen}
+              setEditingDpt={setEditingDpt}
+              setDptFormNik={setDptFormNik}
+              setDptFormNama={setDptFormNama}
+              setDptFormTps={setDptFormTps}
+              fetchQrCode={fetchQrCode}
+              fetchEditingQr={fetchEditingQr}
+              handleDeleteDpt={handleDeleteDpt}
+            />
+          } />
+          <Route path="/dpk" element={
+            <DpkTab
+              dptData={dptData}
+              dptLoading={dptLoading}
+              dptSearch={dptSearch}
+              setDptSearch={setDptSearch}
+              dptTpsFilter={dptTpsFilter}
+              setDptTpsFilter={setDptTpsFilter}
+              setDptPage={setDptPage}
+              tpsList={tpsList}
+              setIsDptModalOpen={setIsDptModalOpen}
+              setEditingDpt={setEditingDpt}
+              setDptFormNik={setDptFormNik}
+              setDptFormNama={setDptFormNama}
+              setDptFormTps={setDptFormTps}
+              fetchQrCode={fetchQrCode}
+              fetchEditingQr={fetchEditingQr}
+              handleDeleteDpt={handleDeleteDpt}
+            />
+          } />
+          <Route path="/kpps" element={
+            <KppsTab
+              kppsUsers={kppsUsers}
+              kppsLoading={kppsLoading}
+              setKppsPage={setKppsPage}
+              setIsKppsModalOpen={setIsKppsModalOpen}
+              setResetUser={setResetUser}
+              setResetPasswordVal={setResetPasswordVal}
+              setIsResetModalOpen={setIsResetModalOpen}
+              handleDeleteUser={handleDeleteUser}
+            />
+          } />
+          <Route path="*" element={<Navigate to="/dashboard" replace />} />
+        </Routes>
       </main>
 
-      {/* MODAL 1: ADD TPS */}
-      {isTpsModalOpen && (
-        <div className="modal-overlay">
-          <div className="modal-content">
-            <div className="modal-header">
-              <h2 className="modal-title">Tambah TPS Baru</h2>
-              <button onClick={() => setIsTpsModalOpen(false)} className="modal-close"><Icons.Close /></button>
-            </div>
-            <form onSubmit={handleCreateTps}>
-              <div className="form-group">
-                <label className="form-label">Nama TPS</label>
-                <input
-                  type="text"
-                  className="form-control"
-                  required
-                  placeholder="Contoh: TPS 04"
-                  value={tpsName}
-                  onChange={e => setTpsName(e.target.value)}
-                />
-              </div>
-              <div className="form-group">
-                <label className="form-label">Wilayah / Alamat</label>
-                <input
-                  type="text"
-                  className="form-control"
-                  required
-                  placeholder="Contoh: Gentan RT 04 / RW 01"
-                  value={tpsRegion}
-                  onChange={e => setTpsRegion(e.target.value)}
-                />
-              </div>
-              <div className="modal-footer">
-                <button type="button" onClick={() => setIsTpsModalOpen(false)} className="btn btn-secondary">Batal</button>
-                <button type="submit" className="btn btn-primary">Simpan</button>
-              </div>
-            </form>
-          </div>
-        </div>
-      )}
+      <TpsModal
+        isOpen={isTpsModalOpen}
+        onClose={() => setIsTpsModalOpen(false)}
+        tpsName={tpsName}
+        setTpsName={setTpsName}
+        tpsRegion={tpsRegion}
+        setTpsRegion={setTpsRegion}
+        onSubmit={handleCreateTps}
+      />
 
-      {/* MODAL 2: ADD/EDIT DPT */}
-      {isDptModalOpen && (
-        <div className="modal-overlay">
-          <div className="modal-content">
-            <div className="modal-header">
-              <h2 className="modal-title">{editingDpt ? 'Edit Data Pemilih' : 'Tambah Pemilih Baru'}</h2>
-              <button onClick={() => setIsDptModalOpen(false)} className="modal-close"><Icons.Close /></button>
-            </div>
-            <form onSubmit={handleSaveDpt}>
-              <div style={{ display: 'flex', gap: '24px', flexWrap: 'wrap' }}>
-                <div style={{ flex: 1, minWidth: '240px' }}>
-                  <div className="form-group">
-                    <label className="form-label">NIK (16 Digit)</label>
-                    <input
-                      type="text"
-                      className="form-control"
-                      required
-                      maxLength={16}
-                      minLength={16}
-                      disabled={!!editingDpt}
-                      placeholder="Masukkan 16 digit NIK"
-                      value={dptFormNik}
-                      onChange={e => setDptFormNik(e.target.value.replace(/\D/g, ''))}
-                    />
-                  </div>
-                  <div className="form-group">
-                    <label className="form-label">Nama Lengkap</label>
-                    <input
-                      type="text"
-                      className="form-control"
-                      required
-                      placeholder="Masukkan nama lengkap pemilih"
-                      value={dptFormNama}
-                      onChange={e => setDptFormNama(e.target.value)}
-                    />
-                  </div>
-                  <div className="form-group">
-                    <label className="form-label">Alokasi TPS</label>
-                    <select
-                      className="form-control"
-                      required
-                      value={dptFormTps}
-                      onChange={e => setDptFormTps(e.target.value)}
-                    >
-                      <option value="">Pilih TPS...</option>
-                      {tpsList.map(t => (
-                        <option key={t.id} value={t.id}>{t.nama} ({t.wilayah})</option>
-                      ))}
-                    </select>
-                  </div>
-                </div>
+      <DptModal
+        isOpen={isDptModalOpen}
+        onClose={() => setIsDptModalOpen(false)}
+        editingDpt={editingDpt}
+        dptFormNik={dptFormNik}
+        setDptFormNik={setDptFormNik}
+        dptFormNama={dptFormNama}
+        setDptFormNama={setDptFormNama}
+        dptFormTps={dptFormTps}
+        setDptFormTps={setDptFormTps}
+        tpsList={tpsList}
+        editingQrCode={editingQrCode}
+        downloadQrCode={downloadQrCode}
+        onSubmit={handleSaveDpt}
+      />
 
-                {editingDpt && (
-                  <div style={{ width: '200px', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', borderLeft: '1px solid var(--border)', paddingLeft: '24px' }}>
-                    <label className="form-label" style={{ textAlign: 'center', width: '100%', fontWeight: '600', marginBottom: '12px' }}>QR Code Pemilih</label>
-                    {editingQrCode ? (
-                      <>
-                        <img src={editingQrCode} alt="Voter QR" style={{ width: '140px', height: '140px', display: 'block', marginBottom: '12px', border: '1px solid var(--border)', borderRadius: 'var(--radius-sm)', padding: '4px' }} />
-                        <button 
-                          type="button" 
-                          onClick={() => downloadQrCode(editingQrCode, dptFormNama)}
-                          className="btn btn-secondary" 
-                          style={{ fontSize: '0.75rem', width: '100%', padding: '6px 8px', color: 'var(--primary)' }}
-                        >
-                          Unduh QR
-                        </button>
-                      </>
-                    ) : (
-                      <p style={{ fontSize: '0.875rem', color: 'var(--text-muted)' }}>Memuat QR...</p>
-                    )}
-                  </div>
-                )}
-              </div>
-              <div className="modal-footer" style={{ marginTop: '24px', borderTop: '1px solid var(--border)', paddingTop: '16px' }}>
-                <button type="button" onClick={() => setIsDptModalOpen(false)} className="btn btn-secondary">Batal</button>
-                <button type="submit" className="btn btn-primary">Simpan</button>
-              </div>
-            </form>
-          </div>
-        </div>
-      )}
+      <ImportCsvModal
+        isOpen={isImportModalOpen}
+        onClose={() => {
+          setIsImportModalOpen(false);
+          setImportStatus(null);
+          setImportFile(null);
+        }}
+        importFile={importFile}
+        setImportFile={setImportFile}
+        importStatus={importStatus}
+        importLoading={importLoading}
+        onSubmit={handleImportCsv}
+      />
 
-      {/* MODAL 3: IMPORT DPT CSV */}
-      {isImportModalOpen && (
-        <div className="modal-overlay">
-          <div className="modal-content" style={{ width: '600px' }}>
-            <div className="modal-header">
-              <h2 className="modal-title">Bulk Import DPT via CSV</h2>
-              <button onClick={() => {
-                setIsImportModalOpen(false);
-                setImportStatus(null);
-                setImportFile(null);
-              }} className="modal-close"><Icons.Close /></button>
-            </div>
-            <form onSubmit={handleImportCsv}>
-              <div style={{ backgroundColor: 'var(--surface-alt)', padding: '16px', borderRadius: 'var(--radius-md)', fontSize: '0.8rem', color: 'var(--text-muted)', marginBottom: '20px' }}>
-                <p style={{ fontWeight: '700', marginBottom: '8px' }}>Aturan Format File CSV:</p>
-                <ul style={{ marginLeft: '16px' }}>
-                  <li>File harus memiliki baris header di awal.</li>
-                  <li>Wajib memuat kolom: <strong>NIK</strong> dan <strong>NAMA_LGKP</strong> (atau <strong>Nama</strong>).</li>
-                  <li>Mendukung pemetaan kolom opsional seperti <strong>NO_TPS</strong> atau <strong>TPS</strong>.</li>
-                  <li>Jika kolom TPS tidak ditemukan, sistem otomatis mengidentifikasinya dari nama berkas (contoh: <code>tps_02.csv</code> akan otomatis masuk ke TPS 02) atau default ke <strong>TPS 01</strong>.</li>
-                  <li><strong>NIK</strong> harus bernilai tepat 16 digit angka.</li>
-                </ul>
-              </div>
+      <KppsModal
+        isOpen={isKppsModalOpen}
+        onClose={() => setIsKppsModalOpen(false)}
+        kppsFormUsername={kppsFormUsername}
+        setKppsFormUsername={setKppsFormUsername}
+        kppsFormPassword={kppsFormPassword}
+        setKppsFormPassword={setKppsFormPassword}
+        kppsFormTps={kppsFormTps}
+        setKppsFormTps={setKppsFormTps}
+        kppsFormRole={kppsFormRole}
+        setKppsFormRole={setKppsFormRole}
+        tpsList={tpsList}
+        onSubmit={handleCreateKpps}
+      />
 
-              <div className="form-group">
-                <label className="form-label">Pilih File CSV</label>
-                <input
-                  type="file"
-                  accept=".csv,.txt"
-                  className="form-control"
-                  required
-                  onChange={e => setImportFile(e.target.files?.[0] || null)}
-                />
-              </div>
+      <ResetPasswordModal
+        isOpen={isResetModalOpen}
+        onClose={() => setIsResetModalOpen(false)}
+        resetUser={resetUser}
+        resetPasswordVal={resetPasswordVal}
+        setResetPasswordVal={setResetPasswordVal}
+        onSubmit={handleResetKppsPassword}
+      />
 
-              {importStatus && (
-                <div style={{ maxHeight: '200px', overflowY: 'auto', marginBottom: '20px', padding: '12px', borderRadius: 'var(--radius-sm)', fontSize: '0.85rem', ... (importStatus.success ? { backgroundColor: 'var(--success-light)', color: 'var(--success)' } : { backgroundColor: 'var(--danger-light)', color: 'var(--danger)' }) }}>
-                  {importStatus.success && <p style={{ fontWeight: '700' }}>{importStatus.success}</p>}
-                  {importStatus.errors && importStatus.errors.length > 0 && (
-                    <div>
-                      <p style={{ fontWeight: '700' }}>Detail Log Masalah / Error:</p>
-                      <ul style={{ marginLeft: '12px', marginTop: '4px' }}>
-                        {importStatus.errors.map((err, i) => <li key={i}>{err}</li>)}
-                      </ul>
-                    </div>
-                  )}
-                </div>
-              )}
+      <QrViewerModal
+        isOpen={isQrModalOpen}
+        onClose={() => {
+          setIsQrModalOpen(false);
+          setSelectedVoterQr(null);
+        }}
+        selectedVoterQr={selectedVoterQr}
+        selectedVoterName={selectedVoterName}
+        downloadQrCode={downloadQrCode}
+      />
 
-              <div className="modal-footer">
-                <button type="button" onClick={() => {
-                  setIsImportModalOpen(false);
-                  setImportStatus(null);
-                  setImportFile(null);
-                }} className="btn btn-secondary" disabled={importLoading}>Tutup</button>
-                <button type="submit" className="btn btn-primary" disabled={!importFile || importLoading}>
-                  {importLoading ? 'Memproses...' : 'Mulai Unggah & Impor'}
-                </button>
-              </div>
-            </form>
-          </div>
-        </div>
-      )}
+      <VoterSuccessModal
+        newVoterSuccess={newVoterSuccess}
+        onClose={() => setNewVoterSuccess(null)}
+        downloadQrCode={downloadQrCode}
+      />
 
-      {/* MODAL 4: CREATE KPPS USER */}
-      {isKppsModalOpen && (
-        <div className="modal-overlay">
-          <div className="modal-content">
-            <div className="modal-header">
-              <h2 className="modal-title">Buat Akun KPPS Baru</h2>
-              <button onClick={() => setIsKppsModalOpen(false)} className="modal-close"><Icons.Close /></button>
-            </div>
-            <form onSubmit={handleCreateKpps}>
-              <div className="form-group">
-                <label className="form-label">Username</label>
-                <input
-                  type="text"
-                  className="form-control"
-                  required
-                  placeholder="Contoh: kpps04"
-                  value={kppsFormUsername}
-                  onChange={e => setKppsFormUsername(e.target.value)}
-                />
-              </div>
-              <div className="form-group">
-                <label className="form-label">Password</label>
-                <input
-                  type="password"
-                  className="form-control"
-                  required
-                  minLength={6}
-                  placeholder="Minimal 6 karakter"
-                  value={kppsFormPassword}
-                  onChange={e => setKppsFormPassword(e.target.value)}
-                />
-              </div>
-              <div className="form-group">
-                <label className="form-label">Asosiasi TPS</label>
-                <select
-                  className="form-control"
-                  required
-                  value={kppsFormTps}
-                  onChange={e => setKppsFormTps(e.target.value)}
-                >
-                  <option value="">Pilih TPS...</option>
-                  {tpsList.map(t => (
-                    <option key={t.id} value={t.id}>{t.nama} ({t.wilayah})</option>
-                  ))}
-                </select>
-              </div>
-              <div className="form-group">
-                <label className="form-label">Hak Akses / Peran</label>
-                <select
-                  className="form-control"
-                  required
-                  value={kppsFormRole}
-                  onChange={e => setKppsFormRole(e.target.value)}
-                >
-                  <option value="full">Validasi & Quick Count (Akses Penuh)</option>
-                  <option value="validasi">Hanya Validasi Kehadiran (Check-in)</option>
-                </select>
-              </div>
-              <div className="modal-footer">
-                <button type="button" onClick={() => setIsKppsModalOpen(false)} className="btn btn-secondary">Batal</button>
-                <button type="submit" className="btn btn-primary">Simpan</button>
-              </div>
-            </form>
-          </div>
-        </div>
-      )}
-
-      {/* MODAL 5: RESET PASSWORD */}
-      {isResetModalOpen && (
-        <div className="modal-overlay">
-          <div className="modal-content">
-            <div className="modal-header">
-              <h2 className="modal-title">Reset Password</h2>
-              <button onClick={() => setIsResetModalOpen(false)} className="modal-close"><Icons.Close /></button>
-            </div>
-            <form onSubmit={handleResetPassword}>
-              <p style={{ fontSize: '0.875rem', color: 'var(--text-muted)', marginBottom: '16px' }}>
-                Ganti password untuk akun KPPS: <strong>{resetUser?.username}</strong>
-              </p>
-              <div className="form-group">
-                <label className="form-label">Password Baru</label>
-                <input
-                  type="password"
-                  className="form-control"
-                  required
-                  minLength={6}
-                  placeholder="Masukkan password baru (min 6 karakter)"
-                  value={resetPasswordVal}
-                  onChange={e => setResetPasswordVal(e.target.value)}
-                />
-              </div>
-              <div className="modal-footer">
-                <button type="button" onClick={() => setIsResetModalOpen(false)} className="btn btn-secondary">Batal</button>
-                <button type="submit" className="btn btn-primary">Simpan Password</button>
-              </div>
-            </form>
-          </div>
-        </div>
-      )}
-      {/* MODAL 6: VIEW/PRINT QR CODE */}
-      {isQrModalOpen && (
-        <div className="modal-overlay">
-          <div className="modal-content" style={{ textAlign: 'center', maxWidth: '360px' }}>
-            <div className="modal-header">
-              <h2 className="modal-title">QR Code Pemilih</h2>
-              <button onClick={() => {
-                setIsQrModalOpen(false);
-                setSelectedVoterQr(null);
-              }} className="modal-close"><Icons.Close /></button>
-            </div>
-            <div style={{ marginTop: '16px', marginBottom: '24px' }}>
-              <p style={{ fontWeight: '600', marginBottom: '16px' }}>{selectedVoterName}</p>
-              {selectedVoterQr ? (
-                <img src={selectedVoterQr} alt="QR Code Pemilih" style={{ width: '220px', height: '220px', display: 'block', margin: '0 auto' }} />
-              ) : (
-                <p>Memuat...</p>
-              )}
-              <p style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginTop: '16px' }}>
-                QR Code ini unik dan hanya dapat digunakan sekali untuk memvalidasi kehadiran di TPS.
-              </p>
-            </div>
-            <div className="modal-footer" style={{ justifyContent: 'center', gap: '8px' }}>
-              <button 
-                type="button" 
-                onClick={() => downloadQrCode(selectedVoterQr!, selectedVoterName)} 
-                className="btn btn-secondary"
-              >
-                Unduh Gambar QR
-              </button>
-              <button 
-                type="button" 
-                onClick={() => {
-                  const win = window.open();
-                  if (win) {
-                    win.document.write(`<div style="text-align:center;font-family:sans-serif;padding:40px;"><h2>GENTARA - KARTU PEMILIH</h2><h3>${selectedVoterName}</h3><img src="${selectedVoterQr}" style="width:300px;height:300px;margin-top:20px;"/><p style="margin-top:20px;font-size:14px;color:#666;">Harap bawa kode QR ini saat datang ke TPS untuk check-in.</p></div>`);
-                    win.print();
-                    win.close();
-                  }
-                }} 
-                className="btn btn-primary"
-              >
-                Cetak Kartu QR
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* MODAL 7: ADD DPT SUCCESS AND QR DISPLAY */}
-      {newVoterSuccess && (
-        <div className="modal-overlay">
-          <div className="modal-content" style={{ textAlign: 'center', maxWidth: '380px' }}>
-            <div className="modal-header">
-              <h2 className="modal-title" style={{ color: 'var(--success)' }}>Pemilih Ditambahkan</h2>
-              <button onClick={() => setNewVoterSuccess(null)} className="modal-close"><Icons.Close /></button>
-            </div>
-            <div style={{ marginTop: '16px', marginBottom: '24px' }}>
-              <p style={{ fontSize: '0.875rem', color: 'var(--text-muted)' }}>
-                Pemilih baru telah berhasil didaftarkan ke database.
-              </p>
-              <div style={{ marginTop: '16px', padding: '16px', backgroundColor: 'var(--surface-alt)', borderRadius: 'var(--radius-md)' }}>
-                <p style={{ fontWeight: '700', fontSize: '1.05rem', color: 'var(--text)' }}>{newVoterSuccess.nama}</p>
-                <p style={{ fontSize: '0.85rem', fontFamily: 'monospace', fontWeight: '700', color: 'var(--primary)', marginTop: '4px' }}>ID: {newVoterSuccess.id_pemilih}</p>
-                <p style={{ fontSize: '0.8rem', fontFamily: 'monospace', color: 'var(--text-muted)', marginTop: '2px' }}>NIK: {newVoterSuccess.nik}</p>
-              </div>
-              <div style={{ marginTop: '20px' }}>
-                <img 
-                  src={newVoterSuccess.qrcode} 
-                  alt="QR Code Baru" 
-                  style={{ width: '180px', height: '180px', display: 'block', margin: '0 auto', border: '1px solid var(--border)', borderRadius: 'var(--radius-sm)', padding: '6px' }} 
-                />
-              </div>
-              <p style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginTop: '16px' }}>
-                Harap cetak atau unduh QR Code ini untuk diserahkan kepada pemilih sebagai kartu check-in TPS.
-              </p>
-            </div>
-            <div className="modal-footer" style={{ justifyContent: 'center', gap: '8px' }}>
-              <button 
-                type="button" 
-                onClick={() => downloadQrCode(newVoterSuccess.qrcode, newVoterSuccess.nama)} 
-                className="btn btn-secondary"
-              >
-                Unduh Gambar QR
-              </button>
-              <button 
-                type="button" 
-                onClick={() => {
-                  const win = window.open();
-                  if (win) {
-                    win.document.write(`<div style="text-align:center;font-family:sans-serif;padding:40px;"><h2>GENTARA - KARTU PEMILIH</h2><h3>${newVoterSuccess.nama}</h3><p style="font-family:monospace;font-size:16px;font-weight:bold;margin:4px 0;">ID: ${newVoterSuccess.id_pemilih}</p><p style="font-family:monospace;font-size:14px;color:#555;margin:4px 0;">NIK: ${newVoterSuccess.nik}</p><img src="${newVoterSuccess.qrcode}" style="width:300px;height:300px;margin-top:20px;"/><p style="margin-top:20px;font-size:14px;color:#666;">Harap bawa kode QR ini saat datang ke TPS untuk check-in.</p></div>`);
-                    win.print();
-                    win.close();
-                  }
-                }} 
-                className="btn btn-primary"
-              >
-                Cetak Kartu QR
-              </button>
-            </div>
-            <div style={{ marginTop: '12px', borderTop: '1px solid var(--border)', paddingTop: '12px' }}>
-              <button type="button" onClick={() => setNewVoterSuccess(null)} className="btn btn-secondary" style={{ width: '100%' }}>Selesai & Tutup</button>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* Custom Confirm Modal */}
-      {confirmModalOpen && (
-        <div className="modal-overlay" style={{ zIndex: 1100 }}>
-          <div className="modal-content" style={{ maxWidth: '400px', padding: '24px' }}>
-            <h3 className="modal-title" style={{ marginBottom: '12px', fontSize: '1.2rem', fontWeight: '700' }}>
-              {confirmModalTitle}
-            </h3>
-            <p style={{ fontSize: '0.875rem', color: 'var(--text-muted)', marginBottom: '24px', lineHeight: '1.5' }}>
-              {confirmModalMessage}
-            </p>
-            <div className="modal-footer" style={{ display: 'flex', gap: '12px', justifyContent: 'flex-end', marginTop: 0 }}>
-              <button
-                type="button"
-                onClick={() => setConfirmModalOpen(false)}
-                className="btn btn-secondary"
-                style={{ minWidth: '80px', padding: '8px 16px', fontSize: '0.875rem' }}
-              >
-                Batal
-              </button>
-              <button
-                type="button"
-                onClick={() => {
-                  setConfirmModalOpen(false);
-                  if (confirmModalCallback) confirmModalCallback();
-                }}
-                className={confirmModalDanger ? "btn btn-danger" : "btn btn-primary"}
-                style={{ minWidth: '80px', padding: '8px 16px', fontSize: '0.875rem' }}
-              >
-                {confirmModalBtnText}
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
+      <CustomConfirmModal
+        isOpen={confirmModalOpen}
+        title={confirmModalTitle}
+        message={confirmModalMessage}
+        onCancel={() => setConfirmModalOpen(false)}
+        onConfirm={() => {
+          setConfirmModalOpen(false);
+          if (confirmModalCallback) confirmModalCallback();
+        }}
+        btnText={confirmModalBtnText}
+        isDanger={confirmModalDanger}
+      />
     </div>
   );
-}
-
-// Utility rounding
-function roundVal(v: number) {
-  return Math.round(v * 100) / 100;
 }

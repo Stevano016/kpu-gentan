@@ -1,8 +1,15 @@
+import 'dart:io';
+import 'dart:async';
+import 'dart:convert';
 import 'package:flutter/material.dart';
 import '../services/api_service.dart';
 import '../services/local_storage_service.dart';
 import 'login_screen.dart';
 import 'scanner_screen.dart';
+import 'tabs/dashboard_tab.dart';
+import 'tabs/validasi_tab.dart';
+import 'tabs/quick_count_tab.dart';
+import 'tabs/status_sync_tab.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -48,11 +55,85 @@ class _HomeScreenState extends State<HomeScreen> {
   int _hadirDpkCount = 0;
   double _hadirPercentage = 0.0;
 
+  WebSocket? _webSocket;
+  Timer? _reconnectTimer;
+
+  void _connectWebSocket() async {
+    if (_webSocket != null) {
+      _webSocket!.close();
+      _webSocket = null;
+    }
+    _reconnectTimer?.cancel();
+
+    String wsHost = '192.168.11.9';
+    try {
+      final uri = Uri.parse(ApiService.baseUrl);
+      wsHost = uri.host;
+    } catch (_) {}
+
+    final wsUrl = 'ws://$wsHost:8080';
+    _addSyncLog('Menghubungkan ke WebSocket: $wsUrl');
+
+    try {
+      _webSocket = await WebSocket.connect(wsUrl).timeout(const Duration(seconds: 5));
+      _addSyncLog('WebSocket terhubung!');
+
+      _webSocket!.listen(
+        (message) async {
+          try {
+            final payload = jsonDecode(message);
+            if (payload['event'] == 'checkin' || payload['event'] == 'update' || payload['event'] == 'quick-count') {
+              _addSyncLog('Real-time update terdeteksi (${payload['event']}). Memperbarui data...');
+              await _api.downloadAndCacheDpt();
+              await _loadDptStats();
+            }
+          } catch (e) {
+            // Abaikan kesalahan parse
+          }
+        },
+        onError: (err) {
+          _addSyncLog('WebSocket Error: $err');
+          _scheduleReconnect();
+        },
+        onDone: () {
+          _addSyncLog('WebSocket Terputus.');
+          _scheduleReconnect();
+        },
+        cancelOnError: true,
+      );
+    } catch (e) {
+      _addSyncLog('Gagal menghubungkan WebSocket. Mencoba kembali...');
+      _scheduleReconnect();
+    }
+  }
+
+  void _scheduleReconnect() {
+    _reconnectTimer?.cancel();
+    _reconnectTimer = Timer(const Duration(seconds: 10), () {
+      if (mounted) {
+        _connectWebSocket();
+      }
+    });
+  }
+
   @override
   void initState() {
     super.initState();
     _initializeData();
     _checkNetworkStatus();
+    _connectWebSocket();
+  }
+
+  @override
+  void dispose() {
+    _webSocket?.close();
+    _reconnectTimer?.cancel();
+    _nikSearchController.dispose();
+    _k1Controller.dispose();
+    _k2Controller.dispose();
+    _k3Controller.dispose();
+    _invalidController.dispose();
+    super.dispose();
   }
 
   Future<void> _initializeData() async {
@@ -416,679 +497,74 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   Widget _buildDashboardTab() {
-    final tealColor = const Color(0xFF0D9488);
-    
-    return SingleChildScrollView(
-      padding: const EdgeInsets.all(20.0),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          // Welcome Card
-          Card(
-            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-            color: const Color(0xFFF0FDF4),
-            elevation: 0,
-            child: Padding(
-              padding: const EdgeInsets.all(20.0),
-              child: Row(
-                children: [
-                  Icon(Icons.how_to_reg, size: 48, color: tealColor),
-                  const SizedBox(width: 16),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          'Halo KPPS $_tpsName',
-                          style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16, color: Color(0xFF166534)),
-                        ),
-                        const SizedBox(height: 4),
-                        const Text(
-                          'Berikut adalah ringkasan kehadiran pemilih di TPS Anda secara real-time.',
-                          style: TextStyle(fontSize: 12, color: Color(0xFF15803D)),
-                        ),
-                      ],
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ),
-          const SizedBox(height: 20),
-
-          // Grid Rows for Total and Checked-In
-          Row(
-            children: [
-              Expanded(
-                child: Card(
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(12),
-                    side: const BorderSide(color: Color(0xFFE5E7EB)),
-                  ),
-                  color: Colors.white,
-                  child: Padding(
-                    padding: const EdgeInsets.all(16.0),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Container(
-                          padding: const EdgeInsets.all(8),
-                          decoration: BoxDecoration(
-                            color: const Color(0xFFECFDF5),
-                            borderRadius: BorderRadius.circular(8),
-                          ),
-                          child: Icon(Icons.people, color: tealColor),
-                        ),
-                        const SizedBox(height: 12),
-                        const Text('Total Pemilih', style: TextStyle(color: Colors.grey, fontSize: 12)),
-                        const SizedBox(height: 4),
-                        Text(
-                          '${_totalDptCount + _totalDpkCount}',
-                          style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 24, color: Color(0xFF1F2937)),
-                        ),
-                        Text('DPT: $_totalDptCount | DPK: $_totalDpkCount', style: const TextStyle(color: Colors.grey, fontSize: 10)),
-                      ],
-                    ),
-                  ),
-                ),
-              ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: Card(
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(12),
-                    side: const BorderSide(color: Color(0xFFE5E7EB)),
-                  ),
-                  color: Colors.white,
-                  child: Padding(
-                    padding: const EdgeInsets.all(16.0),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Container(
-                          padding: const EdgeInsets.all(8),
-                          decoration: BoxDecoration(
-                            color: const Color(0xFFEFF6FF),
-                            borderRadius: BorderRadius.circular(8),
-                          ),
-                          child: const Icon(Icons.check_circle, color: Colors.blue),
-                        ),
-                        const SizedBox(height: 12),
-                        const Text('Kehadiran (Check-In)', style: TextStyle(color: Colors.grey, fontSize: 12)),
-                        const SizedBox(height: 4),
-                        Text(
-                          '${_hadirDptCount + _hadirDpkCount}',
-                          style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 24, color: Color(0xFF1F2937)),
-                        ),
-                        Text('DPT: $_hadirDptCount | DPK: $_hadirDpkCount', style: const TextStyle(color: Colors.grey, fontSize: 10)),
-                      ],
-                    ),
-                  ),
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 20),
-
-          // Progress Circle Card
-          Card(
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(12),
-              side: const BorderSide(color: Color(0xFFE5E7EB)),
-            ),
-            color: Colors.white,
-            child: Padding(
-              padding: const EdgeInsets.all(24.0),
-              child: Column(
-                children: [
-                  const Text(
-                    'Persentase Partisipasi Pemilih',
-                    style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14, color: Color(0xFF374151)),
-                  ),
-                  const SizedBox(height: 24),
-                  Stack(
-                    alignment: Alignment.center,
-                    children: [
-                      SizedBox(
-                        width: 130,
-                        height: 130,
-                        child: CircularProgressIndicator(
-                          value: (_totalDptCount + _totalDpkCount) > 0 
-                              ? ((_hadirDptCount + _hadirDpkCount) / (_totalDptCount + _totalDpkCount)) 
-                              : 0,
-                          strokeWidth: 12,
-                          backgroundColor: Colors.grey[200],
-                          valueColor: AlwaysStoppedAnimation<Color>(tealColor),
-                        ),
-                      ),
-                      Column(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          Text(
-                            '${_hadirPercentage.toStringAsFixed(1)}%',
-                            style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 24, color: Color(0xFF1F2937)),
-                          ),
-                          const SizedBox(height: 2),
-                          const Text('Kehadiran', style: TextStyle(color: Colors.grey, fontSize: 11)),
-                        ],
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 24),
-                  Text(
-                    '${_hadirDptCount + _hadirDpkCount} dari ${_totalDptCount + _totalDpkCount} pemilih telah menggunakan hak pilih.',
-                    textAlign: TextAlign.center,
-                    style: const TextStyle(fontSize: 12, color: Colors.grey),
-                  ),
-                ],
-              ),
-            ),
-          ),
-          const SizedBox(height: 20),
-
-          // Quick Count Results Card
-          Builder(
-            builder: (context) {
-              final qc1 = int.tryParse(_k1Controller.text) ?? 0;
-              final qc2 = int.tryParse(_k2Controller.text) ?? 0;
-              final qc3 = int.tryParse(_k3Controller.text) ?? 0;
-              final qcInvalid = int.tryParse(_invalidController.text) ?? 0;
-              final qcTotal = qc1 + qc2 + qc3 + qcInvalid;
-
-              return Card(
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(12),
-                  side: const BorderSide(color: Color(0xFFE5E7EB)),
-                ),
-                color: Colors.white,
-                child: Padding(
-                  padding: const EdgeInsets.all(20.0),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.stretch,
-                    children: [
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        children: [
-                          const Expanded(
-                            child: Text(
-                              'Hasil Perolehan Suara TPS',
-                              style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14, color: Color(0xFF374151)),
-                              overflow: TextOverflow.ellipsis,
-                            ),
-                          ),
-                          const SizedBox(width: 8),
-                          Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                            decoration: BoxDecoration(
-                              color: _isQcLocked ? const Color(0xFFECFDF5) : const Color(0xFFFEF3C7),
-                              borderRadius: BorderRadius.circular(4),
-                            ),
-                            child: Text(
-                              _qcStatusText.replaceAll(' (Terkunci)', '').replaceAll(' (Belum Submit)', ''),
-                              style: TextStyle(
-                                fontSize: 10,
-                                fontWeight: FontWeight.bold,
-                                color: _isQcLocked ? const Color(0xFF059669) : const Color(0xFFD97706),
-                              ),
-                            ),
-                          ),
-                        ],
-                      ),
-                      const Divider(height: 24),
-                      _buildQuickCountRow('Paslon 01 (Budi - Ami)', qc1, qcTotal, const Color(0xFF0D9488)),
-                      const SizedBox(height: 12),
-                      _buildQuickCountRow('Paslon 02 (Candra - Dodi)', qc2, qcTotal, Colors.blue),
-                      const SizedBox(height: 12),
-                      _buildQuickCountRow('Paslon 03 (Eka - Fani)', qc3, qcTotal, Colors.orange),
-                      const SizedBox(height: 12),
-                      _buildQuickCountRow('Suara Tidak Sah', qcInvalid, qcTotal, Colors.grey),
-                      const Divider(height: 24),
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        children: [
-                          const Text(
-                            'Total Suara Masuk',
-                            style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13, color: Color(0xFF374151)),
-                          ),
-                          Text(
-                            '$qcTotal suara',
-                            style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14, color: Color(0xFF111827)),
-                          ),
-                        ],
-                      ),
-                    ],
-                  ),
-                ),
-              );
-            }
-          ),
-        ],
-      ),
+    return DashboardTab(
+      tpsName: _tpsName,
+      totalDptCount: _totalDptCount,
+      totalDpkCount: _totalDpkCount,
+      hadirDptCount: _hadirDptCount,
+      hadirDpkCount: _hadirDpkCount,
+      hadirPercentage: _hadirPercentage,
+      isQcLocked: _isQcLocked,
+      qcStatusText: _qcStatusText,
+      k1Controller: _k1Controller,
+      k2Controller: _k2Controller,
+      k3Controller: _k3Controller,
+      invalidController: _invalidController,
     );
   }
 
   Widget _buildValidasiTab() {
-    final tealColor = const Color(0xFF0D9488);
-    return SingleChildScrollView(
-      padding: const EdgeInsets.all(16.0),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          // Scan Trigger Options
-          Row(
-            children: [
-              Expanded(
-                child: ElevatedButton.icon(
-                  onPressed: _openRealCameraScanner,
-                  icon: const Icon(Icons.camera_alt),
-                  label: const Text('Scan QR Pemilih', style: TextStyle(fontWeight: FontWeight.bold)),
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: tealColor,
-                    foregroundColor: Colors.white,
-                    padding: const EdgeInsets.symmetric(vertical: 14),
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-                  ),
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 16),
-          const Center(child: Text('atau cari manual', style: TextStyle(color: Colors.grey, fontSize: 12))),
-          const SizedBox(height: 16),
-
-          // Manual NIK input
-          Row(
-            children: [
-              Expanded(
-                child: TextField(
-                  controller: _nikSearchController,
-                  keyboardType: TextInputType.text,
-                  decoration: InputDecoration(
-                    hintText: 'Masukkan ID Pemilih (USH-GTN-026...)',
-                    border: const OutlineInputBorder(),
-                    counterText: '',
-                    suffixIcon: IconButton(
-                      icon: const Icon(Icons.clear),
-                      onPressed: () {
-                        _nikSearchController.clear();
-                        setState(() {
-                          _foundVoter = null;
-                          _validationMessage = null;
-                        });
-                      },
-                    ),
-                  ),
-                ),
-              ),
-              const SizedBox(width: 8),
-              ElevatedButton(
-                onPressed: () => _searchVoter(_nikSearchController.text),
-                style: ElevatedButton.styleFrom(
-                  padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 16),
-                  backgroundColor: const Color(0xFF1F2937),
-                  foregroundColor: Colors.white,
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-                ),
-                child: const Icon(Icons.search),
-              ),
-            ],
-          ),
-          const SizedBox(height: 24),
-
-          // Validation Results UI
-          if (_validationMessage != null && !_validationSuccess) ...[
-            Card(
-              color: const Color(0xFFFEF2F2),
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(8),
-                side: const BorderSide(color: Color(0xFFFCA5A5)),
-              ),
-              child: Padding(
-                padding: const EdgeInsets.all(16.0),
-                child: Row(
-                  children: [
-                    const Icon(Icons.error_outline, color: Color(0xFFB91C1C)),
-                    const SizedBox(width: 12),
-                    Expanded(
-                      child: Text(
-                        _validationMessage!,
-                        style: const TextStyle(color: Color(0xFFB91C1C), fontWeight: FontWeight.bold),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ),
-          ],
-
-          if (_validationSuccess && _validationMessage != null) ...[
-            Card(
-              color: const Color(0xFFECFDF5),
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(8),
-                side: const BorderSide(color: Color(0xFF6EE7B7)),
-              ),
-              child: Padding(
-                padding: const EdgeInsets.all(16.0),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.stretch,
-                  children: [
-                    const Row(
-                      children: [
-                        Icon(Icons.check_circle_outline, color: Color(0xFF059669)),
-                        SizedBox(width: 12),
-                        Text('VALIDASI BERHASIL', style: TextStyle(color: Color(0xFF059669), fontWeight: FontWeight.bold, fontSize: 16)),
-                      ],
-                    ),
-                    const SizedBox(height: 12),
-                    Text(_validationMessage!, style: const TextStyle(color: Color(0xFF047857), fontSize: 14)),
-                    const SizedBox(height: 8),
-                    const Text('Data tersimpan secara lokal dan siap disinkronkan.', style: TextStyle(color: Color(0xFF065F46), fontSize: 12)),
-                  ],
-                ),
-              ),
-            ),
-          ],
-
-          if (_foundVoter != null) ...[
-            const SizedBox(height: 12),
-            Card(
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(12),
-                side: const BorderSide(color: Color(0xFFE5E7EB)),
-              ),
-              color: Colors.white,
-              child: Padding(
-                padding: const EdgeInsets.all(20.0),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.stretch,
-                  children: [
-                    const Text('Detail Data Pemilih', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16, color: Color(0xFF374151))),
-                    const Divider(height: 24),
-                    _buildDetailRow('Nama Lengkap', _foundVoter!['nama']),
-                    _buildDetailRow('ID Pemilih', _foundVoter!['id_pemilih'] ?? '-'),
-                    _buildDetailRow('NIK Pemilih', _foundVoter!['nik']),
-                    _buildDetailRow('Alokasi TPS', _tpsName),
-                    const SizedBox(height: 24),
-
-                    if (_foundVoter!['status_hadir'] == true) ...[
-                      Container(
-                        padding: const EdgeInsets.all(12),
-                        decoration: BoxDecoration(
-                          color: const Color(0xFFFEF3C7),
-                          border: Border.all(color: const Color(0xFFFCD34D)),
-                          borderRadius: BorderRadius.circular(8),
-                        ),
-                        child: Row(
-                          children: [
-                            const Icon(Icons.warning_amber_rounded, color: Color(0xFFD97706)),
-                            const SizedBox(width: 12),
-                            Expanded(
-                              child: Text(
-                                'PERINGATAN: Pemilih sudah check-in kehadiran pada pukul ${_foundVoter!['waktu_checkin'] != null ? DateTime.parse(_foundVoter!['waktu_checkin']).toLocal().toString().substring(11, 16) : '-'}!',
-                                style: const TextStyle(color: Color(0xFFB45309), fontSize: 12, fontWeight: FontWeight.bold),
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                    ] else ...[
-                      ElevatedButton(
-                        onPressed: _validateCheckin,
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: tealColor,
-                          foregroundColor: Colors.white,
-                          padding: const EdgeInsets.symmetric(vertical: 14),
-                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-                        ),
-                        child: const Text('Konfirmasi Kehadiran Pemilih', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
-                      ),
-                    ]
-                  ],
-                ),
-              ),
-            ),
-          ],
-        ],
-      ),
+    return ValidasiTab(
+      nikSearchController: _nikSearchController,
+      foundVoter: _foundVoter,
+      validationMessage: _validationMessage,
+      validationSuccess: _validationSuccess,
+      tpsName: _tpsName,
+      onScanQR: _openRealCameraScanner,
+      onSearch: (value) => _searchVoter(value),
+      onCheckin: _validateCheckin,
+      onClear: () {
+        _nikSearchController.clear();
+        setState(() {
+          _foundVoter = null;
+          _validationMessage = null;
+        });
+      },
     );
   }
 
   Widget _buildQuickCountTab() {
-    final tealColor = const Color(0xFF0D9488);
-    return SingleChildScrollView(
-      padding: const EdgeInsets.all(20.0),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          Card(
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(12),
-              side: const BorderSide(color: Color(0xFFE5E7EB)),
-            ),
-            color: Colors.white,
-            child: Padding(
-              padding: const EdgeInsets.all(20.0),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: [
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      const Expanded(
-                        child: Text(
-                          'Input Perolehan Suara',
-                          style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16, color: Color(0xFF374151)),
-                          overflow: TextOverflow.ellipsis,
-                        ),
-                      ),
-                      const SizedBox(width: 8),
-                      Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                        decoration: BoxDecoration(
-                          color: _isQcLocked ? const Color(0xFFF3F4F6) : const Color(0xFFFEF3C7),
-                          borderRadius: BorderRadius.circular(4),
-                        ),
-                        child: Text(
-                          _qcStatusText.toUpperCase(),
-                          style: TextStyle(
-                            fontSize: 10,
-                            fontWeight: FontWeight.bold,
-                            color: _isQcLocked ? Colors.grey[700] : const Color(0xFFD97706),
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-                  const Divider(height: 24),
-                  
-                  _buildCountInputField('Paslon 01 (Budi - Ami)', _k1Controller, _isQcLocked),
-                  const SizedBox(height: 12),
-                  _buildCountInputField('Paslon 02 (Candra - Dodi)', _k2Controller, _isQcLocked),
-                  const SizedBox(height: 12),
-                  _buildCountInputField('Paslon 03 (Eka - Fani)', _k3Controller, _isQcLocked),
-                  const SizedBox(height: 12),
-                  _buildCountInputField('Suara Tidak Sah', _invalidController, _isQcLocked),
-                  
-                  const SizedBox(height: 24),
-
-                  if (!_isQcLocked) ...[
-                    Row(
-                      children: [
-                        Expanded(
-                          child: OutlinedButton(
-                            onPressed: _syncingInProgress ? null : () => _submitQuickCount('draft'),
-                            style: OutlinedButton.styleFrom(
-                              padding: const EdgeInsets.symmetric(vertical: 14),
-                              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-                            ),
-                            child: _syncAction == 'draft'
-                                ? const SizedBox(
-                                    width: 16,
-                                    height: 16,
-                                    child: CircularProgressIndicator(
-                                      strokeWidth: 2,
-                                      valueColor: AlwaysStoppedAnimation<Color>(Color(0xFF0D9488)),
-                                    ),
-                                  )
-                                : const Text('Simpan Draft'),
-                          ),
-                        ),
-                        const SizedBox(width: 12),
-                        Expanded(
-                          child: ElevatedButton(
-                            onPressed: _syncingInProgress ? null : () {
-                              _showCustomConfirmDialog(
-                                context: context,
-                                title: 'Kunci Hasil Suara?',
-                                message: 'Hasil quick count yang disubmit final akan dikunci dan dikirim ke sekretariat. Anda tidak dapat mengeditnya kembali tanpa reset.',
-                                confirmText: 'Submit Final',
-                                onConfirm: () {
-                                  _submitQuickCount('final');
-                                },
-                              );
-                            },
-                            style: ElevatedButton.styleFrom(
-                              backgroundColor: tealColor,
-                              foregroundColor: Colors.white,
-                              padding: const EdgeInsets.symmetric(vertical: 14),
-                              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-                            ),
-                            child: _syncAction == 'final'
-                                ? const SizedBox(
-                                    width: 16,
-                                    height: 16,
-                                    child: CircularProgressIndicator(
-                                      strokeWidth: 2,
-                                      valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
-                                    ),
-                                  )
-                                : const Text('Submit Final', style: TextStyle(fontWeight: FontWeight.bold)),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ],
-                ],
-              ),
-            ),
-          ),
-        ],
-      ),
+    return QuickCountTab(
+      qcStatusText: _qcStatusText,
+      isQcLocked: _isQcLocked,
+      k1Controller: _k1Controller,
+      k2Controller: _k2Controller,
+      k3Controller: _k3Controller,
+      invalidController: _invalidController,
+      syncingInProgress: _syncingInProgress,
+      syncAction: _syncAction,
+      onSubmitDraft: () => _submitQuickCount('draft'),
+      onSubmitFinal: () {
+        _showCustomConfirmDialog(
+          context: context,
+          title: 'Kunci Hasil Suara?',
+          message: 'Hasil quick count yang disubmit final akan dikunci dan dikirim ke sekretariat. Anda tidak dapat mengeditnya kembali tanpa reset.',
+          confirmText: 'Submit Final',
+          onConfirm: () {
+            _submitQuickCount('final');
+          },
+        );
+      },
     );
   }
 
   Widget _buildStatusSyncTab() {
-    final tealColor = const Color(0xFF0D9488);
-    return Padding(
-      padding: const EdgeInsets.all(20.0),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          // Connectivity & Pending widget
-          Card(
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(12),
-              side: const BorderSide(color: Color(0xFFE5E7EB)),
-            ),
-            color: Colors.white,
-            child: Padding(
-              padding: const EdgeInsets.all(20.0),
-              child: Column(
-                children: [
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      const Text('Konektivitas Device', style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600)),
-                      Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                        decoration: BoxDecoration(
-                          color: _isOnline ? const Color(0xFFECFDF5) : const Color(0xFFFEF2F2),
-                          borderRadius: BorderRadius.circular(4),
-                        ),
-                        child: Text(
-                          _isOnline ? 'ONLINE' : 'OFFLINE',
-                          style: TextStyle(
-                            fontSize: 11,
-                            fontWeight: FontWeight.bold,
-                            color: _isOnline ? const Color(0xFF059669) : const Color(0xFFB91C1C),
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-                  const Divider(height: 24),
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      const Text('Menunggu Sinkronisasi', style: TextStyle(fontSize: 14)),
-                      Text(
-                        '$_pendingCheckinsCount Pemilih',
-                        style: TextStyle(
-                          fontSize: 16,
-                          fontWeight: FontWeight.bold,
-                          color: _pendingCheckinsCount > 0 ? Colors.orange : Colors.grey,
-                        ),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 24),
-                  ElevatedButton.icon(
-                    onPressed: _syncingInProgress ? null : _triggerSync,
-                    icon: _syncingInProgress 
-                        ? const SizedBox(width: 16, height: 16, child: CircularProgressIndicator(strokeWidth: 2, valueColor: AlwaysStoppedAnimation(Colors.white)))
-                        : const Icon(Icons.sync),
-                    label: const Text('Sinkronisasi Data Sekarang', style: TextStyle(fontWeight: FontWeight.bold)),
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: tealColor,
-                      foregroundColor: Colors.white,
-                      padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 24),
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-                      minimumSize: const Size.fromHeight(48),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ),
-          const SizedBox(height: 20),
-
-          // Sync Log Title
-          const Text(
-            'Log Aktivitas Perangkat',
-            style: TextStyle(fontWeight: FontWeight.bold, fontSize: 15, color: Color(0xFF374151)),
-          ),
-          const SizedBox(height: 8),
-
-          // Sync log view
-          Expanded(
-            child: Container(
-              decoration: BoxDecoration(
-                color: const Color(0xFFF9FAFB),
-                border: Border.all(color: const Color(0xFFE5E7EB)),
-                borderRadius: BorderRadius.circular(8),
-              ),
-              padding: const EdgeInsets.all(12),
-              child: ListView.builder(
-                itemCount: _syncLogs.length,
-                itemBuilder: (context, index) {
-                  return Padding(
-                    padding: const EdgeInsets.symmetric(vertical: 4.0),
-                    child: Text(
-                      _syncLogs[index],
-                      style: const TextStyle(
-                        fontFamily: 'monospace',
-                        fontSize: 12,
-                        color: Color(0xFF4B5563),
-                      ),
-                    ),
-                  );
-                },
-              ),
-            ),
-          ),
-        ],
-      ),
+    return StatusSyncTab(
+      isOnline: _isOnline,
+      pendingCheckinsCount: _pendingCheckinsCount,
+      syncingInProgress: _syncingInProgress,
+      syncLogs: _syncLogs,
+      onTriggerSync: _triggerSync,
     );
   }
 
@@ -1138,13 +614,25 @@ class _HomeScreenState extends State<HomeScreen> {
 
     return Scaffold(
       appBar: AppBar(
-        title: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
+        title: Row(
           children: [
-            Text('KPPS GENTAN — $_tpsName', style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 18, color: Colors.white)),
-            Text(
-              _isOnline ? 'Online (Terhubung)' : 'Offline (Mode Lokal)',
-              style: const TextStyle(fontSize: 12, color: Colors.white70),
+            Image.asset(
+              'assets/images/logo.png',
+              height: 36,
+              fit: BoxFit.contain,
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text('KPPS GENTAN — $_tpsName', style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16, color: Colors.white)),
+                  Text(
+                    _isOnline ? 'Online (Terhubung)' : 'Offline (Mode Lokal)',
+                    style: const TextStyle(fontSize: 11, color: Colors.white70),
+                  ),
+                ],
+              ),
             ),
           ],
         ),
@@ -1182,83 +670,6 @@ class _HomeScreenState extends State<HomeScreen> {
         type: BottomNavigationBarType.fixed,
         items: navItems,
       ),
-    );
-  }
-
-  Widget _buildDetailRow(String label, String value) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 6.0),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          SizedBox(
-            width: 120,
-            child: Text(label, style: const TextStyle(color: Colors.grey, fontSize: 13)),
-          ),
-          Expanded(
-            child: Text(value, style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 13, color: Color(0xFF1F2937))),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildCountInputField(String label, TextEditingController controller, bool locked) {
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-      children: [
-        Expanded(
-          child: Text(
-            label,
-            style: const TextStyle(fontWeight: FontWeight.w500),
-            maxLines: 2,
-            overflow: TextOverflow.ellipsis,
-          ),
-        ),
-        const SizedBox(width: 12),
-        SizedBox(
-          width: 100,
-          child: TextField(
-            controller: controller,
-            keyboardType: TextInputType.number,
-            textAlign: TextAlign.center,
-            enabled: !locked,
-            decoration: const InputDecoration(
-              contentPadding: EdgeInsets.symmetric(vertical: 8),
-              border: OutlineInputBorder(),
-            ),
-          ),
-        ),
-      ],
-    );
-  }
-
-  Widget _buildQuickCountRow(String label, int votes, int total, Color color) {
-    final double percentage = total > 0 ? (votes / total) : 0.0;
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.stretch,
-      children: [
-        Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          children: [
-            Text(label, style: const TextStyle(fontSize: 12, color: Color(0xFF4B5563))),
-            Text(
-              '$votes suara (${(percentage * 100).toStringAsFixed(1)}%)',
-              style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 12, color: Color(0xFF1F2937)),
-            ),
-          ],
-        ),
-        const SizedBox(height: 6),
-        ClipRRect(
-          borderRadius: BorderRadius.circular(4),
-          child: LinearProgressIndicator(
-            value: percentage,
-            minHeight: 8,
-            backgroundColor: const Color(0xFFF3F4F6),
-            valueColor: AlwaysStoppedAnimation<Color>(color),
-          ),
-        ),
-      ],
     );
   }
 }

@@ -11,20 +11,8 @@ use chillerlan\QRCode\QRCode;
 
 class DptController extends Controller
 {
-    private function checkSecretariat(Request $request)
-    {
-        if ($request->user()->role !== 'sekretariat') {
-            abort(response()->json([
-                'status' => 'error',
-                'message' => 'Akses ditolak. Hanya Sekretariat yang diizinkan.'
-            ], 403));
-        }
-    }
-
     public function index(Request $request)
     {
-        $this->checkSecretariat($request);
-
         $query = Dpt::with('tps');
 
         if ($request->has('search')) {
@@ -53,8 +41,6 @@ class DptController extends Controller
 
     public function store(Request $request)
     {
-        $this->checkSecretariat($request);
-
         $validator = Validator::make($request->all(), [
             'nik' => 'required|string|size:16|unique:dpt,nik',
             'nama' => 'required|string|max:255',
@@ -102,17 +88,17 @@ class DptController extends Controller
             Tps::where('id', $request->tps_id)->increment('total_dpt');
         }
 
+        \App\Utils\Broadcaster::trigger('update', ['tps_id' => $request->tps_id]);
+
         return response()->json([
             'status' => 'success',
             'message' => 'Pemilih berhasil ditambahkan.',
             'data' => $dpt
-        ], 210); // Laravel expects 201 for Created, let's use 201
+        ], 201);
     }
 
     public function update(Request $request, $nik)
     {
-        $this->checkSecretariat($request);
-
         $dpt = Dpt::where('nik', $nik)->firstOrFail();
 
         $validator = Validator::make($request->all(), [
@@ -150,6 +136,11 @@ class DptController extends Controller
             Tps::where('id', $newTpsId)->increment('total_dpt');
         }
 
+        \App\Utils\Broadcaster::trigger('update', ['tps_id' => $newTpsId]);
+        if ($oldTpsId !== $newTpsId) {
+            \App\Utils\Broadcaster::trigger('update', ['tps_id' => $oldTpsId]);
+        }
+
         return response()->json([
             'status' => 'success',
             'message' => 'Data pemilih berhasil diubah.',
@@ -159,8 +150,6 @@ class DptController extends Controller
 
     public function destroy(Request $request, $nik)
     {
-        $this->checkSecretariat($request);
-
         $dpt = Dpt::where('nik', $nik)->firstOrFail();
         $tpsId = $dpt->tps_id;
         $oldJenis = $dpt->jenis_pemilih;
@@ -170,6 +159,8 @@ class DptController extends Controller
             Tps::where('id', $tpsId)->decrement('total_dpt');
         }
 
+        \App\Utils\Broadcaster::trigger('update', ['tps_id' => $tpsId]);
+
         return response()->json([
             'status' => 'success',
             'message' => 'Pemilih berhasil dihapus.'
@@ -178,8 +169,6 @@ class DptController extends Controller
 
     public function importCsv(Request $request)
     {
-        $this->checkSecretariat($request);
-
         $request->validate([
             'file' => 'required|file|mimes:csv,txt|max:4096',
         ]);
@@ -244,6 +233,18 @@ class DptController extends Controller
         $tpsMap = Tps::all()->pluck('id', 'nama')->toArray();
         $tpsByIdMap = Tps::all()->pluck('id', 'id')->toArray();
         
+        // Get initial starting index for id_pemilih generation (Anti-N+1)
+        $latestVoter = Dpt::where('id_pemilih', 'like', 'USH-GTN-026%')
+            ->orderBy('id_pemilih', 'desc')
+            ->first();
+            
+        $nextIndex = 1;
+        if ($latestVoter) {
+            $latestId = $latestVoter->id_pemilih;
+            $suffixStr = substr($latestId, 11);
+            $nextIndex = intval($suffixStr) + 1;
+        }
+
         $successCount = 0;
         $errors = [];
 
@@ -286,12 +287,9 @@ class DptController extends Controller
 
                 // Find TPS ID
                 $tpsId = null;
-                // Check if tpsVal is numeric or string name
                 if (is_numeric($tpsVal) && isset($tpsByIdMap[(int)$tpsVal])) {
                     $tpsId = (int)$tpsVal;
                 } else {
-                    // Try to match by TPS name
-                    // e.g. "TPS 01" or similar
                     $formattedName = $tpsVal;
                     if (is_numeric($tpsVal)) {
                         $formattedName = "TPS " . str_pad($tpsVal, 2, '0', STR_PAD_LEFT);
@@ -312,11 +310,15 @@ class DptController extends Controller
                         'wilayah' => 'Dibuat otomatis via Import',
                         'total_dpt' => 0
                     ]);
-                    // Refresh maps
                     $tpsMap[$newTpsName] = $newTps->id;
                     $tpsByIdMap[$newTps->id] = $newTps->id;
                     $tpsId = $newTps->id;
                 }
+
+                // Generate incremental id_pemilih safely without querying inside the loop (Anti-N+1)
+                $nextSuffix = str_pad($nextIndex, 4, '0', STR_PAD_LEFT);
+                $idPemilih = 'USH-GTN-026' . $nextSuffix;
+                $nextIndex++;
 
                 Dpt::create([
                     'nik' => $nik,
@@ -324,13 +326,16 @@ class DptController extends Controller
                     'tps_id' => $tpsId,
                     'status_hadir' => false,
                     'waktu_checkin' => null,
-                    'qr_payload' => 'KPPSGENTAN-' . $nik,
+                    'id_pemilih' => $idPemilih,
+                    'qr_payload' => $idPemilih,
+                    'jenis_pemilih' => 'dpt'
                 ]);
 
                 Tps::where('id', $tpsId)->increment('total_dpt');
                 $successCount++;
             }
             DB::commit();
+            \App\Utils\Broadcaster::trigger('update', ['tps_id' => 'all']);
         } catch (\Exception $e) {
             DB::rollBack();
             return response()->json([
@@ -348,18 +353,10 @@ class DptController extends Controller
 
     public function getQrCode(Request $request, $nik)
     {
-        // Accept either kpps or sekretariat to view/generate QR code
-        if ($request->user()->role !== 'sekretariat' && $request->user()->role !== 'kpps') {
-            return response()->json([
-                'status' => 'error',
-                'message' => 'Unauthorized'
-            ], 403);
-        }
-
         $dpt = Dpt::where('nik', $nik)->firstOrFail();
         
         $qrCode = new QRCode();
-        $base64 = $qrCode->render('KPPSGENTAN-' . $dpt->nik);
+        $base64 = $qrCode->render($dpt->qr_payload ?? $dpt->id_pemilih);
 
         return response()->json([
             'status' => 'success',

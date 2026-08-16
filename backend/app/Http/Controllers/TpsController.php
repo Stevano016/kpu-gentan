@@ -8,20 +8,8 @@ use Illuminate\Support\Facades\Validator;
 
 class TpsController extends Controller
 {
-    private function checkSecretariat(Request $request)
-    {
-        if ($request->user()->role !== 'sekretariat') {
-            abort(response()->json([
-                'status' => 'error',
-                'message' => 'Akses ditolak. Hanya Sekretariat yang diizinkan.'
-            ], 403));
-        }
-    }
-
     public function index(Request $request)
     {
-        $this->checkSecretariat($request);
- 
         $query = Tps::withCount([
             'dpt', 
             'users',
@@ -44,8 +32,6 @@ class TpsController extends Controller
 
     public function store(Request $request)
     {
-        $this->checkSecretariat($request);
-
         $validator = Validator::make($request->all(), [
             'nama' => 'required|string|max:100|unique:tps,nama',
             'wilayah' => 'required|string|max:255',
@@ -73,11 +59,8 @@ class TpsController extends Controller
 
     public function show(Request $request, $id)
     {
-        $this->checkSecretariat($request);
-
         $tps = Tps::with(['quickCount', 'users'])->findOrFail($id);
         
-        // Eager load DPT with pagination if needed, but for details let's just return basic info and statistics
         $attendanceCount = $tps->dpt()->where('status_hadir', true)->count();
         $totalDpt = $tps->dpt()->count();
 
