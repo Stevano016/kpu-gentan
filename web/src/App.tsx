@@ -372,9 +372,22 @@ function AppContent() {
   };
 
   const downloadQrCode = (base64Data: string, name: string) => {
+    let extension = 'png';
+    const match = base64Data.match(/^data:image\/([a-zA-Z0-9+.-]+);base64,/);
+    if (match && match[1]) {
+      const mimeSubtype = match[1];
+      if (mimeSubtype.includes('svg')) {
+        extension = 'svg';
+      } else if (mimeSubtype.includes('jpeg') || mimeSubtype.includes('jpg')) {
+        extension = 'jpg';
+      } else if (mimeSubtype.includes('png')) {
+        extension = 'png';
+      }
+    }
+
     const link = document.createElement('a');
     link.href = base64Data;
-    link.download = `QR-${name.replace(/\s+/g, '_')}.png`;
+    link.download = `QR-${name.replace(/\s+/g, '_')}.${extension}`;
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
