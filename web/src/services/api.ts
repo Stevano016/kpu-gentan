@@ -115,5 +115,32 @@ export const ApiService = {
       method: 'DELETE',
       headers: getAuthHeaders(token)
     });
+  },
+
+  async getPaslons(token: string) {
+    return fetch(`${API_URL}/paslon`, { headers: getAuthHeaders(token) });
+  },
+
+  async createPaslon(token: string, payload: any) {
+    return fetch(`${API_URL}/paslon`, {
+      method: 'POST',
+      headers: { ...getAuthHeaders(token), 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload)
+    });
+  },
+
+  async updatePaslon(token: string, id: number, payload: any) {
+    return fetch(`${API_URL}/paslon/${id}`, {
+      method: 'PUT',
+      headers: { ...getAuthHeaders(token), 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload)
+    });
+  },
+
+  async deletePaslon(token: string, id: number) {
+    return fetch(`${API_URL}/paslon/${id}`, {
+      method: 'DELETE',
+      headers: getAuthHeaders(token)
+    });
   }
 };

@@ -53,6 +53,12 @@ export const Sidebar: React.FC<SidebarProps> = ({
               <span>Akun KPPS</span>
             </button>
           </li>
+          <li className={`menu-item ${path === '/paslon' ? 'active' : ''}`}>
+            <button onClick={() => navigate('/paslon')}>
+              <Icons.Users />
+              <span>Pasangan Calon (Paslon)</span>
+            </button>
+          </li>
         </ul>
       </nav>
 

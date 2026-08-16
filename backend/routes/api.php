@@ -7,6 +7,7 @@ use App\Http\Controllers\TpsController;
 use App\Http\Controllers\UserController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\SyncController;
+use App\Http\Controllers\PaslonController;
 
 // Public routes
 Route::post('/login', [AuthController::class, 'login'])->middleware('throttle:login');
@@ -34,6 +35,10 @@ Route::middleware(['auth:sanctum', 'throttle:api'])->group(function () {
         Route::post('/users', [UserController::class, 'store']);
         Route::post('/users/{id}/reset-password', [UserController::class, 'resetPassword']);
         Route::delete('/users/{id}', [UserController::class, 'destroy']);
+
+        Route::post('/paslon', [PaslonController::class, 'store']);
+        Route::put('/paslon/{id}', [PaslonController::class, 'update']);
+        Route::delete('/paslon/{id}', [PaslonController::class, 'destroy']);
     });
 
     // Shared / KPPS routes
@@ -41,4 +46,5 @@ Route::middleware(['auth:sanctum', 'throttle:api'])->group(function () {
     Route::get('/kpps/dpt', [SyncController::class, 'getDpt']);
     Route::post('/kpps/sync/checkin', [SyncController::class, 'syncCheckins']);
     Route::post('/kpps/sync/quick-count', [SyncController::class, 'submitQuickCount']);
+    Route::get('/paslon', [PaslonController::class, 'index']);
 });

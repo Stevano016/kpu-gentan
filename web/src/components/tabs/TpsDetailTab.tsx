@@ -9,6 +9,13 @@ export const TpsDetailTab: React.FC<TpsDetailTabProps> = ({
   tpsDetailData,
   setPage,
 }) => {
+  const getPaslonLabel = (num: number, defaultLabel: string) => {
+    if (!tpsDetailData?.paslons) return defaultLabel;
+    const match = tpsDetailData.paslons.find((p: any) => p.nomor_urut === num);
+    if (!match) return defaultLabel;
+    return `${match.nomor_urut}. ${match.nama_ketua} - ${match.nama_wakil}`;
+  };
+
   return (
     <div>
       <div style={{ marginBottom: '24px' }}>
@@ -104,15 +111,15 @@ export const TpsDetailTab: React.FC<TpsDetailTabProps> = ({
             {tpsDetailData.quick_count ? (
               <div className="quickcount-stats">
                 <div className="quickcount-row">
-                  <span>Kandidat 01</span>
+                  <span>{getPaslonLabel(1, 'Kandidat 01')}</span>
                   <span>{tpsDetailData.quick_count.kandidat_1} suara</span>
                 </div>
                 <div className="quickcount-row">
-                  <span>Kandidat 02</span>
+                  <span>{getPaslonLabel(2, 'Kandidat 02')}</span>
                   <span>{tpsDetailData.quick_count.kandidat_2} suara</span>
                 </div>
                 <div className="quickcount-row">
-                  <span>Kandidat 03</span>
+                  <span>{getPaslonLabel(3, 'Kandidat 03')}</span>
                   <span>{tpsDetailData.quick_count.kandidat_3} suara</span>
                 </div>
                 <div className="quickcount-row" style={{ borderTop: '1px solid var(--border)', paddingTop: '12px' }}>

@@ -1,0 +1,133 @@
+import React from 'react';
+import { Icons } from '../Icons';
+
+interface PaslonTabProps {
+  paslons: any[];
+  loading: boolean;
+  setIsModalOpen: (val: boolean) => void;
+  setIsEditing: (val: boolean) => void;
+  setEditingPaslon: (val: any) => void;
+  setNomorUrut: (val: string) => void;
+  setNamaKetua: (val: string) => void;
+  setNamaWakil: (val: string) => void;
+  handleDeletePaslon: (id: number) => Promise<void>;
+}
+
+export const PaslonTab: React.FC<PaslonTabProps> = ({
+  paslons,
+  loading,
+  setIsModalOpen,
+  setIsEditing,
+  setEditingPaslon,
+  setNomorUrut,
+  setNamaKetua,
+  setNamaWakil,
+  handleDeletePaslon,
+}) => {
+  return (
+    <div>
+      <div className="section-header">
+        <div>
+          <h1 className="section-title">Pasangan Calon (Paslon)</h1>
+          <p className="section-desc">Kelola kontestan pemilihan umum wilayah Gentan.</p>
+        </div>
+        <button
+          onClick={() => {
+            setIsEditing(false);
+            setEditingPaslon(null);
+            setNomorUrut('');
+            setNamaKetua('');
+            setNamaWakil('');
+            setIsModalOpen(true);
+          }}
+          className="btn btn-primary"
+        >
+          <Icons.Plus />
+          <span>Tambah Paslon</span>
+        </button>
+      </div>
+
+      {loading && <div style={{ fontSize: '0.875rem', color: 'var(--text-muted)', marginBottom: '16px' }}>Memuat data pasangan calon...</div>}
+
+      {!loading && (
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))', gap: '24px', marginTop: '8px' }}>
+          {paslons.map(p => (
+            <div
+              key={p.id}
+              style={{
+                backgroundColor: 'var(--surface)',
+                border: '1px solid var(--border)',
+                borderRadius: 'var(--radius-lg)',
+                padding: '28px',
+                textAlign: 'center',
+                boxShadow: 'var(--shadow-sm)',
+                display: 'flex',
+                flexDirection: 'column',
+                justifyContent: 'space-between',
+                minHeight: '220px'
+              }}
+            >
+              <div>
+                <div
+                  style={{
+                    width: '60px',
+                    height: '60px',
+                    borderRadius: '50%',
+                    backgroundColor: 'var(--primary-light)',
+                    color: 'var(--primary)',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    fontSize: '1.75rem',
+                    fontWeight: '800',
+                    margin: '0 auto 16px',
+                    border: '2px solid var(--primary)'
+                  }}
+                >
+                  {p.nomor_urut}
+                </div>
+                <h3 style={{ fontSize: '1.125rem', fontWeight: '700', color: 'var(--text)', marginBottom: '6px' }}>
+                  {p.nama_ketua}
+                </h3>
+                <div style={{ fontSize: '0.875rem', color: 'var(--text-muted)', fontWeight: '500', marginBottom: '20px' }}>
+                  Calon Wakil: <span style={{ color: 'var(--text)', fontWeight: '600' }}>{p.nama_wakil}</span>
+                </div>
+              </div>
+
+              <div style={{ display: 'flex', gap: '12px', borderTop: '1px solid var(--border)', paddingTop: '16px' }}>
+                <button
+                  onClick={() => {
+                    setIsEditing(true);
+                    setEditingPaslon(p);
+                    setNomorUrut(String(p.nomor_urut));
+                    setNamaKetua(p.nama_ketua);
+                    setNamaWakil(p.nama_wakil);
+                    setIsModalOpen(true);
+                  }}
+                  className="btn btn-secondary"
+                  style={{ flex: 1, padding: '8px 12px', fontSize: '0.875rem' }}
+                >
+                  Edit
+                </button>
+                <button
+                  onClick={() => handleDeletePaslon(p.id)}
+                  className="btn btn-secondary"
+                  style={{ flex: 1, padding: '8px 12px', fontSize: '0.875rem', color: 'var(--danger)' }}
+                >
+                  Hapus
+                </button>
+              </div>
+            </div>
+          ))}
+
+          {paslons.length === 0 && (
+            <div style={{ gridColumn: '1 / -1', textAlign: 'center', padding: '48px', color: 'var(--text-muted)' }}>
+              Belum ada pasangan calon terdaftar.
+            </div>
+          )}
+        </div>
+      )}
+    </div>
+  );
+};
+export default PaslonTab;

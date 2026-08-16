@@ -17,6 +17,13 @@ export const DashboardTab: React.FC<DashboardTabProps> = ({
   setSelectedTpsId,
   setPage,
 }) => {
+  const getPaslonLabel = (num: number, defaultLabel: string) => {
+    if (!dashboardData?.paslons) return defaultLabel;
+    const match = dashboardData.paslons.find((p: any) => p.nomor_urut === num);
+    if (!match) return defaultLabel;
+    return `${match.nomor_urut}. ${match.nama_ketua} - ${match.nama_wakil}`;
+  };
+
   return (
     <div>
       <div className="section-header">
@@ -65,7 +72,7 @@ export const DashboardTab: React.FC<DashboardTabProps> = ({
               <div className="quickcount-stats">
                 <div>
                   <div className="quickcount-row">
-                    <span>Kandidat 01</span>
+                    <span>{getPaslonLabel(1, 'Kandidat 01')}</span>
                     <span>{dashboardData.quick_count_aggregates.kandidat_1} suara</span>
                   </div>
                   <div className="quickcount-bar-container">
@@ -80,7 +87,7 @@ export const DashboardTab: React.FC<DashboardTabProps> = ({
                 </div>
                 <div>
                   <div className="quickcount-row">
-                    <span>Kandidat 02</span>
+                    <span>{getPaslonLabel(2, 'Kandidat 02')}</span>
                     <span>{dashboardData.quick_count_aggregates.kandidat_2} suara</span>
                   </div>
                   <div className="quickcount-bar-container">
@@ -95,7 +102,7 @@ export const DashboardTab: React.FC<DashboardTabProps> = ({
                 </div>
                 <div>
                   <div className="quickcount-row">
-                    <span>Kandidat 03</span>
+                    <span>{getPaslonLabel(3, 'Kandidat 03')}</span>
                     <span>{dashboardData.quick_count_aggregates.kandidat_3} suara</span>
                   </div>
                   <div className="quickcount-bar-container">

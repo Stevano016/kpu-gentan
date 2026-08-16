@@ -69,6 +69,8 @@ class DashboardController extends Controller
                 ];
             });
 
+        $paslons = \App\Models\Paslon::orderBy('nomor_urut')->get();
+
         return response()->json([
             'status' => 'success',
             'data' => [
@@ -91,7 +93,8 @@ class DashboardController extends Controller
                     'suara_tidak_sah' => (int)($qcAggregates->suara_tidak_sah ?? 0),
                     'total_suara_masuk' => (int)($qcAggregates->kandidat_1 ?? 0) + (int)($qcAggregates->kandidat_2 ?? 0) + (int)($qcAggregates->kandidat_3 ?? 0) + (int)($qcAggregates->suara_tidak_sah ?? 0)
                 ],
-                'tps_list' => $tpsList
+                'tps_list' => $tpsList,
+                'paslons' => $paslons
             ]
         ]);
     }
@@ -117,6 +120,8 @@ class DashboardController extends Controller
         $totalVal = $voters->count();
         $hadirVal = $voters->where('status_hadir', true)->count();
 
+        $paslons = \App\Models\Paslon::orderBy('nomor_urut')->get();
+
         return response()->json([
             'status' => 'success',
             'data' => [
@@ -137,7 +142,8 @@ class DashboardController extends Controller
                 ],
                 'quick_count' => $tps->quickCount,
                 'voters' => $voters,
-                'recent_syncs' => $recentSyncs
+                'recent_syncs' => $recentSyncs,
+                'paslons' => $paslons
             ]
         ]);
     }

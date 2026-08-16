@@ -13,6 +13,7 @@ import { ResetPasswordModal } from './components/modals/ResetPasswordModal';
 import { QrViewerModal } from './components/modals/QrViewerModal';
 import { VoterSuccessModal } from './components/modals/VoterSuccessModal';
 import { CustomConfirmModal } from './components/CustomConfirmModal';
+import { PaslonModal } from './components/modals/PaslonModal';
 
 // Screen Tabs
 import DashboardTab from './components/tabs/DashboardTab';
@@ -21,6 +22,7 @@ import TpsDetailTab from './components/tabs/TpsDetailTab';
 import DptTab from './components/tabs/DptTab';
 import DpkTab from './components/tabs/DpkTab';
 import KppsTab from './components/tabs/KppsTab';
+import { PaslonTab } from './components/tabs/PaslonTab';
 
 export default function App() {
   return (
@@ -149,6 +151,16 @@ function AppContent() {
   const [selectedVoterName, setSelectedVoterName] = useState<string>('');
   const [isQrModalOpen, setIsQrModalOpen] = useState(false);
 
+  // Paslon states
+  const [paslons, setPaslons] = useState<any[]>([]);
+  const [paslonLoading, setPaslonLoading] = useState(false);
+  const [isPaslonModalOpen, setIsPaslonModalOpen] = useState(false);
+  const [isPaslonEditing, setIsPaslonEditing] = useState(false);
+  const [editingPaslon, setEditingPaslon] = useState<any>(null);
+  const [paslonNomorUrut, setPaslonNomorUrut] = useState('');
+  const [paslonNamaKetua, setPaslonNamaKetua] = useState('');
+  const [paslonNamaWakil, setPaslonNamaWakil] = useState('');
+
   const showConfirm = (title: string, message: string, onConfirm: () => void, btnText = 'Ya', danger = false) => {
     setConfirmModalTitle(title);
     setConfirmModalMessage(message);
@@ -178,6 +190,8 @@ function AppContent() {
     } else if (path === '/kpps') {
       fetchKppsUsers();
       fetchTpsList();
+    } else if (path === '/paslon') {
+      fetchPaslons();
     }
   }, [path, token, dptSearch, dptTpsFilter, dptPage, tpsPage, kppsPage]);
 
@@ -196,7 +210,11 @@ function AppContent() {
         const payload = JSON.parse(event.data);
         console.log('Menerima WebSocket broadcast:', payload);
         
-        if (payload.event === 'checkin' || payload.event === 'quick-count' || payload.event === 'update') {
+        if (payload.event === 'paslon_updated') {
+          if (path === '/paslon') {
+            fetchPaslons();
+          }
+        } else if (payload.event === 'checkin' || payload.event === 'quick-count' || payload.event === 'update') {
           if (path === '/' || path === '/dashboard') {
             fetchDashboard();
           } else if (path === '/tps') {
@@ -327,6 +345,72 @@ function AppContent() {
       }
     } catch {}
     setTpsPageLoading(false);
+  };
+
+  const fetchPaslons = async () => {
+    if (!token) return;
+    setPaslonLoading(true);
+    try {
+      const res = await ApiService.getPaslons(token);
+      const json = await res.json();
+      if (res.ok) {
+        setPaslons(json.data);
+      }
+    } catch (e) {
+      console.error(e);
+    } finally {
+      setPaslonLoading(false);
+    }
+  };
+
+  const handleSavePaslon = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!token) return;
+
+    const payload = {
+      nomor_urut: parseInt(paslonNomorUrut, 10),
+      nama_ketua: paslonNamaKetua,
+      nama_wakil: paslonNamaWakil,
+    };
+
+    try {
+      const res = isPaslonEditing && editingPaslon
+        ? await ApiService.updatePaslon(token, editingPaslon.id, payload)
+        : await ApiService.createPaslon(token, payload);
+      
+      const json = await res.json();
+      if (res.ok) {
+        setIsPaslonModalOpen(false);
+        fetchPaslons();
+      } else {
+        alert(json.message || 'Gagal menyimpan pasangan calon.');
+      }
+    } catch {
+      alert('Gagal menghubungi server.');
+    }
+  };
+
+  const handleDeletePaslon = async (id: number) => {
+    showConfirm(
+      'Hapus Pasangan Calon',
+      'Apakah Anda yakin ingin menghapus pasangan calon ini?',
+      async () => {
+        if (!token) return;
+        try {
+          const res = await ApiService.deletePaslon(token, id);
+          if (res.ok) {
+            fetchPaslons();
+          } else {
+            const json = await res.json();
+            alert(json.message || 'Gagal menghapus pasangan calon.');
+          }
+        } catch {
+          alert('Gagal menghubungi server.');
+        }
+      },
+      'Hapus',
+      true
+    );
   };
 
   const fetchTpsDetail = async (id: number) => {
@@ -705,6 +789,19 @@ function AppContent() {
               handleDeleteUser={handleDeleteUser}
             />
           } />
+          <Route path="/paslon" element={
+            <PaslonTab
+              paslons={paslons}
+              loading={paslonLoading}
+              setIsModalOpen={setIsPaslonModalOpen}
+              setIsEditing={setIsPaslonEditing}
+              setEditingPaslon={setEditingPaslon}
+              setNomorUrut={setPaslonNomorUrut}
+              setNamaKetua={setPaslonNamaKetua}
+              setNamaWakil={setPaslonNamaWakil}
+              handleDeletePaslon={handleDeletePaslon}
+            />
+          } />
           <Route path="*" element={<Navigate to="/dashboard" replace />} />
         </Routes>
       </main>
@@ -788,6 +885,19 @@ function AppContent() {
         newVoterSuccess={newVoterSuccess}
         onClose={() => setNewVoterSuccess(null)}
         downloadQrCode={downloadQrCode}
+      />
+
+      <PaslonModal
+        isOpen={isPaslonModalOpen}
+        onClose={() => setIsPaslonModalOpen(false)}
+        isEditing={isPaslonEditing}
+        nomorUrut={paslonNomorUrut}
+        setNomorUrut={setPaslonNomorUrut}
+        namaKetua={paslonNamaKetua}
+        setNamaKetua={setPaslonNamaKetua}
+        namaWakil={paslonNamaWakil}
+        setNamaWakil={setPaslonNamaWakil}
+        onSubmit={handleSavePaslon}
       />
 
       <CustomConfirmModal
