@@ -207,12 +207,16 @@ class _HomeScreenState extends State<HomeScreen> {
     });
   }
 
-  // Action: Search Voter by NIK
+  // Action: Search Voter by NIK or ID Pemilih
   Future<void> _searchVoter(String query) async {
     final searchVal = query.trim().toUpperCase();
-    if (!searchVal.startsWith('USH-GTN-026')) {
+    
+    bool isNik = false;
+    if (searchVal.length == 16 && RegExp(r'^\d+$').hasMatch(searchVal)) {
+      isNik = true;
+    } else if (!searchVal.startsWith('USH-GTN-026')) {
       setState(() {
-        _validationMessage = 'Format ID Pemilih salah (Harus diawali USH-GTN-026)';
+        _validationMessage = 'Format ID Pemilih / NIK salah (ID diawali USH-GTN-026, NIK 16 digit)';
         _validationSuccess = false;
         _foundVoter = null;
       });
@@ -221,7 +225,13 @@ class _HomeScreenState extends State<HomeScreen> {
 
     List<dynamic> dptList = await _storage.getCachedDptList();
     var voter = dptList.firstWhere(
-      (element) => element['id_pemilih'] != null && element['id_pemilih'].toString().toUpperCase() == searchVal,
+      (element) {
+        if (isNik) {
+          return element['nik'] != null && element['nik'].toString() == searchVal;
+        } else {
+          return element['id_pemilih'] != null && element['id_pemilih'].toString().toUpperCase() == searchVal;
+        }
+      },
       orElse: () => null,
     );
 
@@ -229,13 +239,19 @@ class _HomeScreenState extends State<HomeScreen> {
       // If not found locally, check if online and refresh cache in real-time!
       await _checkNetworkStatus();
       if (_isOnline) {
-        _addSyncLog('ID Pemilih tidak ditemukan lokal. Mencoba memperbarui DPT dari server...');
+        _addSyncLog('Pemilih tidak ditemukan lokal. Mencoba memperbarui DPT dari server...');
         final res = await _api.downloadAndCacheDpt();
         if (res['success'] == true) {
           await _loadDptStats();
           dptList = await _storage.getCachedDptList();
           voter = dptList.firstWhere(
-            (element) => element['id_pemilih'] != null && element['id_pemilih'].toString().toUpperCase() == searchVal,
+            (element) {
+              if (isNik) {
+                return element['nik'] != null && element['nik'].toString() == searchVal;
+              } else {
+                return element['id_pemilih'] != null && element['id_pemilih'].toString().toUpperCase() == searchVal;
+              }
+            },
             orElse: () => null,
           );
         }
@@ -248,7 +264,9 @@ class _HomeScreenState extends State<HomeScreen> {
         _validationMessage = null;
       } else {
         _foundVoter = null;
-        _validationMessage = 'ID Pemilih tidak ditemukan di DPT TPS ini!';
+        _validationMessage = isNik 
+            ? 'NIK Pemilih tidak ditemukan di DPT TPS ini!'
+            : 'ID Pemilih tidak ditemukan di DPT TPS ini!';
         _validationSuccess = false;
       }
     });
@@ -396,9 +414,9 @@ class _HomeScreenState extends State<HomeScreen> {
       MaterialPageRoute(builder: (_) => const ScannerScreen()),
     );
     if (code != null && code.isNotEmpty) {
-      String cleanNik = code.replaceAll('KPPSGENTAN-', '');
-      _nikSearchController.text = cleanNik;
-      _searchVoter(cleanNik);
+      String cleanCode = code.replaceAll('KPPSGENTAN-', '').trim();
+      _nikSearchController.text = cleanCode;
+      _searchVoter(cleanCode);
     }
   }
 

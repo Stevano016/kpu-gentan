@@ -7,22 +7,19 @@ use Illuminate\Console\Command;
 class WebSocketServer extends Command
 {
     protected $signature = 'websocket:serve {--port=8080}';
-    protected $description = 'Start the lightweight custom WebSocket server';
+    protected $description = 'Start the lightweight custom WebSocket server using stream sockets';
 
     public function handle()
     {
         $port = intval($this->option('port') ?: 8080);
         $this->info("WebSocket Server starting on port {$port}...");
 
-        $server = socket_create(AF_INET, SOCK_STREAM, SOL_TCP);
-        socket_set_option($server, SOL_SOCKET, SO_REUSEADDR, 1);
-        
-        if (!@socket_bind($server, '0.0.0.0', $port)) {
-            $this->error("Could not bind socket to port {$port}: " . socket_strerror(socket_last_error()));
+        $server = @stream_socket_server("tcp://0.0.0.0:{$port}", $errno, $errstr);
+        if (!$server) {
+            $this->error("Could not bind stream socket to port {$port}: {$errstr} ({$errno})");
             return 1;
         }
 
-        socket_listen($server);
         $this->info("Server listening on port {$port}...");
 
         $clients = [$server];
@@ -34,13 +31,15 @@ class WebSocketServer extends Command
             $except = null;
 
             // Wait for activity on any socket (timeout 0.1s)
-            if (socket_select($read, $write, $except, 0, 100000) > 0) {
+            if (@stream_select($read, $write, $except, 0, 100000) > 0) {
                 // Check if new connection is arriving
                 if (in_array($server, $read)) {
-                    $newSocket = socket_accept($server);
-                    $clients[] = $newSocket;
-                    $socketId = intval($newSocket);
-                    $handshakes[$socketId] = false;
+                    $newSocket = @stream_socket_accept($server);
+                    if ($newSocket) {
+                        $clients[] = $newSocket;
+                        $socketId = intval($newSocket);
+                        $handshakes[$socketId] = false;
+                    }
                     
                     // Remove server from read list
                     $key = array_search($server, $read);
@@ -50,7 +49,7 @@ class WebSocketServer extends Command
                 // Check other active client sockets
                 foreach ($read as $socket) {
                     $socketId = intval($socket);
-                    $data = @socket_read($socket, 8192);
+                    $data = @fread($socket, 8192);
 
                     if ($data === false || $data === '') {
                         // Connection closed
@@ -80,7 +79,7 @@ class WebSocketServer extends Command
                                 $this->closeConnection($socket, $clients, $handshakes);
                             } else if ($decoded['opcode'] === 9) { // Ping
                                 $pong = $this->encodeFrame($decoded['text'], 10);
-                                @socket_write($socket, $pong, strlen($pong));
+                                @fwrite($socket, $pong);
                             } else if ($decoded['opcode'] === 1) { // Text message
                                 $this->info("Client {$socketId} sent: " . $decoded['text']);
                             }
@@ -94,7 +93,7 @@ class WebSocketServer extends Command
     private function closeConnection($socket, &$clients, &$handshakes)
     {
         $socketId = intval($socket);
-        @socket_close($socket);
+        @fclose($socket);
         
         $key = array_search($socket, $clients);
         if ($key !== false) {
@@ -112,7 +111,7 @@ class WebSocketServer extends Command
                         "Upgrade: websocket\r\n" .
                         "Connection: Upgrade\r\n" .
                         "Sec-WebSocket-Accept: $accept\r\n\r\n";
-            @socket_write($socket, $response, strlen($response));
+            @fwrite($socket, $response);
         }
     }
 
@@ -125,7 +124,7 @@ class WebSocketServer extends Command
             $socketId = intval($client);
             // Skip the listening server socket and un-handshaken sockets
             if (isset($handshakes[$socketId]) && $handshakes[$socketId]) {
-                @socket_write($client, $encodedFrame, strlen($encodedFrame));
+                @fwrite($client, $encodedFrame);
             }
         }
     }

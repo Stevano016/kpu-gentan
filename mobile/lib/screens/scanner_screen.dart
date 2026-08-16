@@ -92,9 +92,9 @@ class _ScannerScreenState extends State<ScannerScreen> {
                           TextField(
                             controller: _simController,
                             decoration: const InputDecoration(
-                              labelText: 'Simulasi Payload QR / NIK',
+                              labelText: 'Simulasi Payload QR / ID Pemilih',
                               border: OutlineInputBorder(),
-                              hintText: 'KPPSGENTAN-3311010101010001',
+                              hintText: 'USH-GTN-0260001',
                             ),
                           ),
                           const SizedBox(height: 16),
