@@ -355,7 +355,11 @@ class DptController extends Controller
     {
         $dpt = Dpt::where('nik', $nik)->firstOrFail();
         
-        $qrCode = new QRCode();
+        $options = new \chillerlan\QRCode\QROptions([
+            'outputInterface' => \chillerlan\QRCode\Output\QRGdImagePNG::class,
+            'quality' => 90,
+        ]);
+        $qrCode = new \chillerlan\QRCode\QRCode($options);
         $base64 = $qrCode->render($dpt->qr_payload ?? $dpt->id_pemilih);
 
         return response()->json([
