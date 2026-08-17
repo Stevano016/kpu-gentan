@@ -27,8 +27,12 @@ import { PaslonTab } from './components/tabs/PaslonTab';
 
 // Live updates reach the origin directly on a forwarded port: the proxy chain in
 // front of it drops the headers a WebSocket handshake needs, so the usual
-// same-origin path cannot carry one.
-const LIVE_SOCKET_URL = 'wss://ws.gentan.wujud.id:10650/ws';
+// same-origin path cannot carry one. Set per environment via
+// VITE_LIVE_SOCKET_URL — leaving it empty disables the socket and leaves the
+// dashboard on polling, which is what a deployment without its own socket
+// server needs. It must never be pointed at another environment's server, or
+// that environment's activity would drive this one's dashboard.
+const LIVE_SOCKET_URL = import.meta.env.VITE_LIVE_SOCKET_URL ?? '';
 
 // Used only while the socket is down, so the dashboard keeps moving instead of
 // going stale unnoticed.
@@ -337,6 +341,11 @@ function AppContent() {
 
     const connect = () => {
       if (disposed) return;
+      // No socket configured for this deployment — polling is the whole story.
+      if (!socketUrl) {
+        startPolling();
+        return;
+      }
       socket = new WebSocket(socketUrl);
 
       socket.onopen = () => {

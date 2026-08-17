@@ -8,6 +8,7 @@ Thumbs.db
 /backend/.env
 /web/node_modules/
 /web/dist/
+/web/dist-test/
 /mobile/.dart_tool/
 /mobile/build/
 
