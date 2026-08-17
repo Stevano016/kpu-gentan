@@ -70,13 +70,11 @@ class _HomeScreenState extends State<HomeScreen> {
     }
     _reconnectTimer?.cancel();
 
-    String wsHost = '192.168.11.9';
-    try {
-      final uri = Uri.parse(ApiService.baseUrl);
-      wsHost = uri.host;
-    } catch (_) {}
-
-    final wsUrl = 'ws://$wsHost:8080';
+    final wsUrl = ApiService.wsUrl;
+    if (Uri.tryParse(wsUrl)?.host.isEmpty ?? true) {
+      _addSyncLog('Alamat WebSocket tidak valid, real-time dilewati.');
+      return;
+    }
     _addSyncLog('Menghubungkan ke WebSocket: $wsUrl');
 
     try {

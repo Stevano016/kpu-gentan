@@ -13,3 +13,8 @@ Thumbs.db
 
 # Local database
 /backend/database/database.sqlite
+
+# Android release signing — never commit these
+/mobile/android/key.properties
+*.jks
+*.keystore
