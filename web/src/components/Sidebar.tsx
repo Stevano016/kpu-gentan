@@ -10,6 +10,8 @@ interface SidebarProps {
   toggleCollapsed: () => void;
   isFullscreen: boolean;
   toggleFullscreen: () => void;
+  isMobileOpen?: boolean;
+  closeMobileNav?: () => void;
 }
 
 export const Sidebar: React.FC<SidebarProps> = ({
@@ -21,9 +23,18 @@ export const Sidebar: React.FC<SidebarProps> = ({
   toggleCollapsed,
   isFullscreen,
   toggleFullscreen,
+  isMobileOpen = false,
+  closeMobileNav,
 }) => {
+  // On mobile the sidebar sits over the page, so it has to get out of the way
+  // once a destination is chosen.
+  const go = (target: string) => {
+    navigate(target);
+    closeMobileNav?.();
+  };
+
   return (
-    <aside className="sidebar">
+    <aside className={`sidebar${isMobileOpen ? ' is-open' : ''}`}>
       <div className="sidebar-head">
         <div className="sidebar-brand">
           <img src="/logo.png" alt="Gentara Logo" />
@@ -39,36 +50,44 @@ export const Sidebar: React.FC<SidebarProps> = ({
         >
           <Icons.Menu />
         </button>
+        <button
+          type="button"
+          className="drawer-close"
+          onClick={closeMobileNav}
+          aria-label="Tutup menu"
+        >
+          &times;
+        </button>
       </div>
 
       <nav style={{ flexGrow: 1 }}>
         <ul className="sidebar-menu">
           <li className={`menu-item ${path === '/' || path === '/dashboard' ? 'active' : ''}`}>
-            <button onClick={() => navigate('/dashboard')} title="Dashboard Monitor">
+            <button onClick={() => go('/dashboard')} title="Dashboard Monitor">
               <Icons.Dashboard />
               <span>Dashboard Monitor</span>
             </button>
           </li>
           <li className={`menu-item ${path.startsWith('/tps') ? 'active' : ''}`}>
-            <button onClick={() => navigate('/tps')} title="TPS & Monitoring">
+            <button onClick={() => go('/tps')} title="TPS & Monitoring">
               <Icons.Tps />
               <span>TPS & Monitoring</span>
             </button>
           </li>
           <li className={`menu-item ${path === '/pemilih' ? 'active' : ''}`}>
-            <button onClick={() => navigate('/pemilih')} title="Data Pemilih (DPT & DPK)">
+            <button onClick={() => go('/pemilih')} title="Data Pemilih (DPT & DPK)">
               <Icons.Voters />
               <span>Data Pemilih</span>
             </button>
           </li>
           <li className={`menu-item ${path === '/kpps' ? 'active' : ''}`}>
-            <button onClick={() => navigate('/kpps')} title="Manajemen Akun">
+            <button onClick={() => go('/kpps')} title="Manajemen Akun">
               <Icons.Users />
               <span>Manajemen Akun</span>
             </button>
           </li>
           <li className={`menu-item ${path === '/paslon' ? 'active' : ''}`}>
-            <button onClick={() => navigate('/paslon')} title="Pasangan Calon (Paslon)">
+            <button onClick={() => go('/paslon')} title="Pasangan Calon (Paslon)">
               <Icons.Users />
               <span>Pasangan Calon (Paslon)</span>
             </button>

@@ -99,7 +99,7 @@ export const PemilihTab: React.FC<PemilihTabProps> = ({
           </p>
         </div>
         {isAdmin && (
-          <div style={{ display: 'flex', gap: '12px' }}>
+          <div className="header-actions">
             <button onClick={() => setIsImportModalOpen(true)} className="btn btn-secondary">
               <Icons.Upload />
               <span>Impor CSV Bulk</span>

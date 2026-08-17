@@ -5,6 +5,7 @@ import { ApiService } from './services/api';
 // Shared Layouts & Modals
 import { LoginScreen } from './components/LoginScreen';
 import { Sidebar } from './components/Sidebar';
+import { Icons } from './components/Icons';
 import { TpsModal } from './components/modals/TpsModal';
 import { DptModal } from './components/modals/DptModal';
 import { ImportCsvModal } from './components/modals/ImportCsvModal';
@@ -176,6 +177,10 @@ function AppContent() {
   );
   const [isFullscreen, setIsFullscreen] = useState(false);
 
+  // On narrow screens the sidebar is an off-canvas drawer rather than a column,
+  // so the content starts at the top of the screen instead of below the menu.
+  const [isMobileNavOpen, setIsMobileNavOpen] = useState(false);
+
   // Custom Alert Modal State (pengganti window.alert)
   const [alertModalOpen, setAlertModalOpen] = useState(false);
   const [alertModalVariant, setAlertModalVariant] = useState<AlertVariant>('success');
@@ -215,6 +220,26 @@ function AppContent() {
     setAlertModalMessage(message);
     setAlertModalOpen(true);
   };
+
+  const closeMobileNav = () => setIsMobileNavOpen(false);
+
+  // The drawer covers the page, so leaving it open across a navigation would
+  // hide whatever the operator just asked for.
+  useEffect(() => {
+    setIsMobileNavOpen(false);
+  }, [path]);
+
+  useEffect(() => {
+    if (!isMobileNavOpen) return;
+    const onKey = (e: KeyboardEvent) => { if (e.key === 'Escape') setIsMobileNavOpen(false); };
+    document.addEventListener('keydown', onKey);
+    // Stop the page behind the drawer from scrolling under it.
+    document.body.classList.add('nav-open');
+    return () => {
+      document.removeEventListener('keydown', onKey);
+      document.body.classList.remove('nav-open');
+    };
+  }, [isMobileNavOpen]);
 
   const toggleSidebarCollapsed = () => {
     setIsSidebarCollapsed((prev) => {
@@ -893,6 +918,29 @@ function AppContent() {
 
   return (
     <div className={`app-container${isSidebarCollapsed ? ' sidebar-collapsed' : ''}`}>
+      {/* Shown only on narrow screens, where the sidebar is hidden off-canvas. */}
+      <header className="mobile-topbar">
+        <button
+          type="button"
+          className="mobile-nav-toggle"
+          onClick={() => setIsMobileNavOpen(true)}
+          aria-label="Buka menu"
+          aria-expanded={isMobileNavOpen}
+        >
+          <Icons.Menu />
+        </button>
+        <div className="mobile-brand">
+          <img src="/logo.png" alt="" />
+          <span>GENTARA</span>
+        </div>
+      </header>
+
+      <div
+        className={`nav-backdrop${isMobileNavOpen ? ' is-open' : ''}`}
+        onClick={closeMobileNav}
+        aria-hidden="true"
+      />
+
       <Sidebar
         path={path}
         user={user}
@@ -902,6 +950,8 @@ function AppContent() {
         toggleCollapsed={toggleSidebarCollapsed}
         isFullscreen={isFullscreen}
         toggleFullscreen={toggleFullscreen}
+        isMobileOpen={isMobileNavOpen}
+        closeMobileNav={closeMobileNav}
       />
 
       {/* Main Content Area */}
