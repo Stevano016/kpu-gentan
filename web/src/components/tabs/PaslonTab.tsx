@@ -1,5 +1,6 @@
 import React from 'react';
 import { Icons } from '../Icons';
+import { LoadingHint } from '../LoadingHint';
 
 interface PaslonTabProps {
   paslons: any[];
@@ -51,7 +52,7 @@ export const PaslonTab: React.FC<PaslonTabProps> = ({
         )}
       </div>
 
-      {loading && <div style={{ fontSize: '0.875rem', color: 'var(--text-muted)', marginBottom: '16px' }}>Memuat data pasangan calon...</div>}
+      <LoadingHint show={loading} label="Memuat data pasangan calon..." />
 
       {!loading && (
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))', gap: '24px', marginTop: '8px' }}>

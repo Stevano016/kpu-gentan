@@ -1,5 +1,6 @@
 import React from 'react';
 import { Icons } from '../Icons';
+import { LoadingHint } from '../LoadingHint';
 
 interface KppsTabProps {
   kppsUsers: any;
@@ -65,7 +66,7 @@ export const KppsTab: React.FC<KppsTabProps> = ({
         )}
       </div>
 
-      {kppsLoading && <div style={{ fontSize: '0.875rem', color: 'var(--text-muted)', marginBottom: '16px' }}>Memuat data...</div>}
+      <LoadingHint show={kppsLoading} />
 
       {kppsUsers && (
         <>

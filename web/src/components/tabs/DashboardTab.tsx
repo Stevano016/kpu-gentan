@@ -1,11 +1,12 @@
 import React from 'react';
 import { Icons } from '../Icons';
 import { roundVal } from '../../utils/helpers';
+import { LoadingHint } from '../LoadingHint';
 
 interface DashboardTabProps {
   dashboardData: any;
   dashboardLoading: boolean;
-  fetchDashboard: () => Promise<void>;
+  fetchDashboard: (silent?: boolean) => Promise<void>;
   setSelectedTpsId: (id: number | null) => void;
   setPage: (page: string) => void;
 }
@@ -31,13 +32,15 @@ export const DashboardTab: React.FC<DashboardTabProps> = ({
           <h1 className="section-title">Dashboard Umum</h1>
           <p className="section-desc">Statistik real-time kehadiran pemilih dan quick count suara.</p>
         </div>
-        <button onClick={fetchDashboard} disabled={dashboardLoading} className="btn btn-secondary">
+        {/* Wrapped: passing the handler directly would hand the click event in as
+            `silent`, making the manual refresh silent too. */}
+        <button onClick={() => fetchDashboard()} disabled={dashboardLoading} className="btn btn-secondary">
           <Icons.Refresh />
           <span>Segarkan</span>
         </button>
       </div>
 
-      {dashboardLoading && <div style={{ fontSize: '0.875rem', color: 'var(--text-muted)', marginBottom: '16px' }}>Memuat data...</div>}
+      <LoadingHint show={dashboardLoading} />
 
       {dashboardData && (
         <>
@@ -139,6 +142,7 @@ export const DashboardTab: React.FC<DashboardTabProps> = ({
                       d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831"
                     />
                     <path
+                      className="attendance-ring-value"
                       style={{ stroke: 'var(--primary)', fill: 'none', strokeWidth: '3.8', strokeDasharray: `${dashboardData.stats.persentase_kehadiran}, 100` }}
                       d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831"
                     />

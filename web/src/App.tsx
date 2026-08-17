@@ -24,6 +24,11 @@ import PemilihTab from './components/tabs/PemilihTab';
 import KppsTab from './components/tabs/KppsTab';
 import { PaslonTab } from './components/tabs/PaslonTab';
 
+// How often the dashboard re-fetches in production, where a push connection is
+// not available. Fast enough to watch a count climb, slow enough that a hall of
+// operators does not hammer the API.
+const LIVE_POLL_INTERVAL_MS = 10000;
+
 export default function App() {
   return (
     <BrowserRouter>
@@ -261,12 +266,58 @@ function AppContent() {
     }
   }, [path, token, dptSearch, dptTpsFilter, dptJenisFilter, dptPage, tpsPage, kppsPage]);
 
-  // Real-time updates via WebSocket
+  // Live updates.
+  //
+  // Locally the socket server is reachable directly, so we use it. In production
+  // we cannot: the page is served over https and a browser refuses to open a
+  // plain ws:// connection from it, while the proxy chain in front of the origin
+  // strips the Connection/Upgrade headers a wss:// handshake needs. So the
+  // dashboard polls the same endpoints instead. Slower than a push, but it keeps
+  // the numbers moving on their own without depending on that proxy.
   useEffect(() => {
     if (!token) return;
-    const wsProtocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
-    const wsHost = window.location.hostname || 'localhost';
-    const ws = new WebSocket(`${wsProtocol}//${wsHost}:8080`);
+
+    const refreshCurrentView = () => {
+      if (path === '/' || path === '/dashboard') {
+        fetchDashboard();
+      } else if (path === '/tps') {
+        fetchTpsPageData();
+      } else if (path.startsWith('/tps/')) {
+        const tpsId = parseInt(path.split('/').pop() ?? '', 10);
+        if (!isNaN(tpsId)) {
+          fetchTpsDetail(tpsId);
+        }
+      } else if (path === '/pemilih') {
+        fetchDpts();
+      } else if (path === '/paslon') {
+        fetchPaslons();
+      }
+    };
+
+    const host = window.location.hostname || 'localhost';
+    const isLocalHost = host === 'localhost' || host === '127.0.0.1';
+
+    if (!isLocalHost) {
+      // Only the dashboard auto-refreshes. The other screens are worked on
+      // directly — reloading a list under someone's cursor loses their place.
+      const isDashboard = path === '/' || path === '/dashboard';
+      if (!isDashboard) return;
+
+      const tick = () => {
+        // Skip while the tab is in the background — nobody is reading it.
+        if (!document.hidden) fetchDashboard(true);
+      };
+      const intervalId = setInterval(tick, LIVE_POLL_INTERVAL_MS);
+      // Catch up immediately when the operator comes back to the tab.
+      const onVisible = () => { if (!document.hidden) fetchDashboard(true); };
+      document.addEventListener('visibilitychange', onVisible);
+      return () => {
+        clearInterval(intervalId);
+        document.removeEventListener('visibilitychange', onVisible);
+      };
+    }
+
+    const ws = new WebSocket(`ws://${host}:8080`);
 
     ws.onopen = () => {
       console.log('Terhubung ke WebSocket Server untuk real-time update.');
@@ -276,25 +327,11 @@ function AppContent() {
       try {
         const payload = JSON.parse(event.data);
         console.log('Menerima WebSocket broadcast:', payload);
-        
+
         if (payload.event === 'paslon_updated') {
-          if (path === '/paslon') {
-            fetchPaslons();
-          }
+          if (path === '/paslon') fetchPaslons();
         } else if (payload.event === 'checkin' || payload.event === 'quick-count' || payload.event === 'update') {
-          if (path === '/' || path === '/dashboard') {
-            fetchDashboard();
-          } else if (path === '/tps') {
-            fetchTpsPageData();
-          } else if (path.startsWith('/tps/')) {
-            const parts = path.split('/');
-            const tpsId = parseInt(parts[parts.length - 1], 10);
-            if (!isNaN(tpsId)) {
-              fetchTpsDetail(tpsId);
-            }
-          } else if (path === '/pemilih') {
-            fetchDpts();
-          }
+          refreshCurrentView();
         }
       } catch (err) {
         console.error('Gagal memproses data WebSocket:', err);
@@ -377,9 +414,12 @@ function AppContent() {
     );
   };
 
-  const fetchDashboard = async () => {
+  // `silent` keeps the loading indicator off for background refreshes, so the
+  // auto-refresh swaps the numbers in place instead of flashing "Memuat data..."
+  // and shifting the layout every few seconds.
+  const fetchDashboard = async (silent = false) => {
     if (!token) return;
-    setDashboardLoading(true);
+    if (!silent) setDashboardLoading(true);
     try {
       const res = await ApiService.getDashboardSummary(token);
       const json = await res.json();
@@ -387,7 +427,7 @@ function AppContent() {
         setDashboardData(json.data);
       }
     } catch {}
-    setDashboardLoading(false);
+    if (!silent) setDashboardLoading(false);
   };
 
   const fetchTpsList = async () => {

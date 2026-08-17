@@ -733,6 +733,20 @@ tr:hover td {
   height: 100%;
   background-color: var(--primary);
   border-radius: 4px;
+  /* Auto-refresh replaces these values every few seconds; glide instead of jump. */
+  transition: width 0.6s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* Attendance ring, same reason. */
+.attendance-ring-value {
+  transition: stroke-dasharray 0.6s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .quickcount-bar,
+  .attendance-ring-value {
+    transition: none;
+  }
 }
 
 /* Responsive Web Layout */

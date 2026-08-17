@@ -1,5 +1,6 @@
 import React from 'react';
 import { Icons } from '../Icons';
+import { LoadingHint } from '../LoadingHint';
 
 interface PemilihTabProps {
   dptData: any;
@@ -183,7 +184,7 @@ export const PemilihTab: React.FC<PemilihTabProps> = ({
         </div>
       </div>
 
-      {dptLoading && <div style={{ fontSize: '0.875rem', color: 'var(--text-muted)', marginBottom: '16px' }}>Memuat data pemilih...</div>}
+      <LoadingHint show={dptLoading} label="Memuat data pemilih..." />
 
       {dptData && (
         <>

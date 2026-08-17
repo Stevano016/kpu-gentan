@@ -1,6 +1,7 @@
 import React from 'react';
 import { Icons } from '../Icons';
 import { roundVal } from '../../utils/helpers';
+import { LoadingHint } from '../LoadingHint';
 
 interface TpsTabProps {
   tpsPageData: any;
@@ -36,7 +37,7 @@ export const TpsTab: React.FC<TpsTabProps> = ({
         )}
       </div>
 
-      {tpsPageLoading && <div style={{ fontSize: '0.875rem', color: 'var(--text-muted)', marginBottom: '16px' }}>Memuat data TPS...</div>}
+      <LoadingHint show={tpsPageLoading} label="Memuat data TPS..." />
 
       {tpsPageData && (
         <>
