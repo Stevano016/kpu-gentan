@@ -6,21 +6,22 @@ use Illuminate\Console\Command;
 
 class WebSocketServer extends Command
 {
-    protected $signature = 'websocket:serve {--port=8080}';
+    protected $signature = 'websocket:serve {--port=} {--host=}';
     protected $description = 'Start the lightweight custom WebSocket server using stream sockets';
 
     public function handle()
     {
-        $port = intval($this->option('port') ?: 8080);
-        $this->info("WebSocket Server starting on port {$port}...");
+        $port = (int) ($this->option('port') ?: config('websocket.port', 8080));
+        $host = $this->option('host') ?: config('websocket.host', '0.0.0.0');
+        $this->info("WebSocket Server starting on {$host}:{$port}...");
 
-        $server = @stream_socket_server("tcp://0.0.0.0:{$port}", $errno, $errstr);
+        $server = @stream_socket_server("tcp://{$host}:{$port}", $errno, $errstr);
         if (!$server) {
-            $this->error("Could not bind stream socket to port {$port}: {$errstr} ({$errno})");
+            $this->error("Could not bind stream socket to {$host}:{$port}: {$errstr} ({$errno})");
             return 1;
         }
 
-        $this->info("Server listening on port {$port}...");
+        $this->info("Server listening on {$host}:{$port}...");
 
         $clients = [$server];
         $handshakes = [];
@@ -59,10 +60,16 @@ class WebSocketServer extends Command
 
                     // Check if handshaken
                     if (!$handshakes[$socketId]) {
-                        // Determine if it is a WebSocket handshake or local IPC notification
-                        if (str_contains($data, 'Upgrade: websocket')) {
+                        // Determine if it is a WebSocket handshake or local IPC notification.
+                        // Header names are case-insensitive (RFC 7230) — Node and several
+                        // proxies send them lowercased.
+                        if (preg_match('/^upgrade:\s*websocket/mi', $data)) {
                             // WebSocket handshake
-                            $this->doHandshake($socket, $data);
+                            if (!$this->doHandshake($socket, $data)) {
+                                $this->error("Handshake failed (no Sec-WebSocket-Key), closing client {$socketId}");
+                                $this->closeConnection($socket, $clients, $handshakes);
+                                continue;
+                            }
                             $handshakes[$socketId] = true;
                             $this->info("New WebSocket client connected (ID: {$socketId})");
                         } else {
@@ -102,17 +109,23 @@ class WebSocketServer extends Command
         unset($handshakes[$socketId]);
     }
 
-    private function doHandshake($socket, $headers)
+    private function doHandshake($socket, $headers): bool
     {
-        if (preg_match("/Sec-WebSocket-Key: (.*)\r\n/", $headers, $match)) {
-            $key = trim($match[1]);
-            $accept = base64_encode(sha1($key . '258EAFA5-E914-47DA-95CA-C5AB0DC85B11', true));
-            $response = "HTTP/1.1 101 Switching Protocols\r\n" .
-                        "Upgrade: websocket\r\n" .
-                        "Connection: Upgrade\r\n" .
-                        "Sec-WebSocket-Accept: $accept\r\n\r\n";
-            @fwrite($socket, $response);
+        // Case-insensitive: header names are not case sensitive, and clients such
+        // as Node send them lowercased. Matching only the capitalised spelling
+        // used to leave the client hanging with no response at all.
+        if (!preg_match('/^sec-websocket-key:\s*(\S+)/mi', $headers, $match)) {
+            return false;
         }
+
+        $key = trim($match[1]);
+        $accept = base64_encode(sha1($key . '258EAFA5-E914-47DA-95CA-C5AB0DC85B11', true));
+        $response = "HTTP/1.1 101 Switching Protocols\r\n" .
+                    "Upgrade: websocket\r\n" .
+                    "Connection: Upgrade\r\n" .
+                    "Sec-WebSocket-Accept: $accept\r\n\r\n";
+
+        return @fwrite($socket, $response) !== false;
     }
 
     private function handleIpcNotification($data, $clients, $handshakes)

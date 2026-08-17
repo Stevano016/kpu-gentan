@@ -14,7 +14,8 @@ class Broadcaster
     {
         try {
             // Non-blocking socket connect to local WebSocket server
-            $socket = @fsockopen('127.0.0.1', 8080, $errno, $errstr, 0.5);
+            $port = (int) config('websocket.port', 8080);
+            $socket = @fsockopen('127.0.0.1', $port, $errno, $errstr, 0.5);
             if ($socket) {
                 $payload = json_encode([
                     'event' => $event,

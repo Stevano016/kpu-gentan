@@ -13,6 +13,17 @@ return Application::configure(basePath: dirname(__DIR__))
         health: '/up',
     )
     ->withMiddleware(function (Middleware $middleware): void {
+        // Production sits behind Cloudflare and an openresty reverse proxy on the
+        // gateway. nginx already rewrites the client address from CF-Connecting-IP;
+        // this is the fallback so a forwarded request is still attributed to the
+        // caller rather than to the proxy, which would make the login throttle
+        // rate limit all users as one.
+        $middleware->trustProxies(at: [
+            '10.0.0.0/8',
+            '127.0.0.1',
+            '::1',
+        ]);
+
         $middleware->alias([
             'role' => \App\Http\Middleware\EnsureRole::class,
             'sekretariat.admin' => \App\Http\Middleware\EnsureSekretariatAdmin::class,
