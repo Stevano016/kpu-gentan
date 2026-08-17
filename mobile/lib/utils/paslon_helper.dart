@@ -32,8 +32,9 @@ Map<String, dynamic>? findPaslon(List<dynamic> paslons, int nomorUrut) {
 String paslonLabel(List<dynamic> paslons, int nomorUrut) {
   final nomor = nomorUrut.toString().padLeft(2, '0');
   final match = findPaslon(paslons, nomorUrut);
+  // Calon maju sendiri; tidak ada nama wakil untuk digabungkan.
   final names = match != null
-      ? '${match['nama_ketua']} - ${match['nama_wakil']}'
+      ? '${match['nama_ketua']}'
       : _fallbackPaslonNames[nomorUrut];
   return names == null ? 'Paslon $nomor' : 'Paslon $nomor ($names)';
 }

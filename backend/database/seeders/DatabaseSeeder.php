@@ -113,7 +113,9 @@ class DatabaseSeeder extends Seeder
                     'status_hadir' => false,
                     'waktu_checkin' => null,
                     'qr_payload' => $idPemilih,
-                    'jenis_pemilih' => 'dps',
+                    // Berkas Excel adalah DP4; verifikasi dijalankan terpisah.
+                    'asal' => 'dp4',
+                    'tahapan' => 'dp4',
                     'id_pemilih' => $idPemilih,
                     'umur' => intval($row[$colMap['umur']]),
                     'status_kawin' => $row[$colMap['status_kawin']],
@@ -123,7 +125,12 @@ class DatabaseSeeder extends Seeder
                     'rw' => $row[$colMap['rw']],
                     'pekerjaan' => $row[$colMap['pekerjaan']],
                     'disabilitas' => $row[$colMap['disabilitas']],
-                    'keterangan' => $row[$colMap['keterangan']],
+                    // Kolom keterangan pada CSV berisi catatan asal-usul impor,
+                    // bukan kategori hasil pemeriksaan. Sejak keterangan menjadi
+                    // enum, isinya dipindah ke catatan_impor dan hasil
+                    // pemeriksaan baru diisi saat verifikasi.
+                    'keterangan' => null,
+                    'catatan_impor' => $row[$colMap['keterangan']] ?: null,
                     'created_at' => now(),
                     'updated_at' => now(),
                 ];
@@ -150,17 +157,14 @@ class DatabaseSeeder extends Seeder
         Paslon::create([
             'nomor_urut' => 1,
             'nama_ketua' => 'Prabowo Subianto',
-            'nama_wakil' => 'Gibran Rakabuming',
         ]);
         Paslon::create([
             'nomor_urut' => 2,
             'nama_ketua' => 'Anies Baswedan',
-            'nama_wakil' => 'Muhaimin Iskandar',
         ]);
         Paslon::create([
             'nomor_urut' => 3,
             'nama_ketua' => 'Ganjar Pranowo',
-            'nama_wakil' => 'Mahfud MD',
         ]);
     }
 }

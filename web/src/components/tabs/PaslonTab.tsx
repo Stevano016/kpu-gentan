@@ -10,7 +10,7 @@ interface PaslonTabProps {
   setEditingPaslon: (val: any) => void;
   setNomorUrut: (val: string) => void;
   setNamaKetua: (val: string) => void;
-  setNamaWakil: (val: string) => void;
+  setFoto: (f: File | null) => void;
   handleDeletePaslon: (id: number) => Promise<void>;
   isAdmin: boolean;
 }
@@ -23,7 +23,7 @@ export const PaslonTab: React.FC<PaslonTabProps> = ({
   setEditingPaslon,
   setNomorUrut,
   setNamaKetua,
-  setNamaWakil,
+  setFoto,
   handleDeletePaslon,
   isAdmin,
 }) => {
@@ -41,7 +41,7 @@ export const PaslonTab: React.FC<PaslonTabProps> = ({
               setEditingPaslon(null);
               setNomorUrut('');
               setNamaKetua('');
-              setNamaWakil('');
+              setFoto(null);
               setIsModalOpen(true);
             }}
             className="btn btn-primary"
@@ -94,9 +94,38 @@ export const PaslonTab: React.FC<PaslonTabProps> = ({
                 <h3 style={{ fontSize: '1.125rem', fontWeight: '700', color: 'var(--text)', marginBottom: '6px' }}>
                   {p.nama_ketua}
                 </h3>
-                <div style={{ fontSize: '0.875rem', color: 'var(--text-muted)', fontWeight: '500', marginBottom: '20px' }}>
-                  Calon Wakil: <span style={{ color: 'var(--text)', fontWeight: '600' }}>{p.nama_wakil}</span>
-                </div>
+                {p.foto_url ? (
+                  <img
+                    src={p.foto_url}
+                    alt={`Foto ${p.nama_ketua}`}
+                    style={{
+                      width: '110px',
+                      height: '110px',
+                      objectFit: 'cover',
+                      borderRadius: 'var(--radius-md)',
+                      border: '1px solid var(--border)',
+                      margin: '0 auto 20px',
+                      display: 'block',
+                    }}
+                  />
+                ) : (
+                  <div
+                    style={{
+                      width: '110px',
+                      height: '110px',
+                      borderRadius: 'var(--radius-md)',
+                      border: '1px dashed var(--border)',
+                      margin: '0 auto 20px',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      fontSize: '0.75rem',
+                      color: 'var(--text-muted)',
+                    }}
+                  >
+                    Belum ada foto
+                  </div>
+                )}
               </div>
 
               {isAdmin && (
@@ -107,7 +136,7 @@ export const PaslonTab: React.FC<PaslonTabProps> = ({
                     setEditingPaslon(p);
                     setNomorUrut(String(p.nomor_urut));
                     setNamaKetua(p.nama_ketua);
-                    setNamaWakil(p.nama_wakil);
+                    setFoto(null);
                     setIsModalOpen(true);
                   }}
                   className="btn btn-secondary"

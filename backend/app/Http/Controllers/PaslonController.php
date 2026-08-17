@@ -29,7 +29,7 @@ class PaslonController extends Controller
         $validator = Validator::make($request->all(), [
             'nomor_urut' => 'required|integer|min:1|unique:paslons,nomor_urut',
             'nama_ketua' => 'required|string|max:255',
-            'nama_wakil' => 'required|string|max:255',
+            'foto' => 'nullable|image|mimes:jpeg,jpg,png,webp|max:2048',
         ]);
 
         if ($validator->fails()) {
@@ -43,7 +43,7 @@ class PaslonController extends Controller
         $paslon = Paslon::create([
             'nomor_urut' => $request->nomor_urut,
             'nama_ketua' => $request->nama_ketua,
-            'nama_wakil' => $request->nama_wakil,
+            'foto' => $this->simpanFoto($request),
         ]);
 
         // Broadcast change to WebSocket clients
@@ -66,7 +66,7 @@ class PaslonController extends Controller
         $validator = Validator::make($request->all(), [
             'nomor_urut' => 'required|integer|min:1|unique:paslons,nomor_urut,' . $id,
             'nama_ketua' => 'required|string|max:255',
-            'nama_wakil' => 'required|string|max:255',
+            'foto' => 'nullable|image|mimes:jpeg,jpg,png,webp|max:2048',
         ]);
 
         if ($validator->fails()) {
@@ -77,10 +77,17 @@ class PaslonController extends Controller
             ], 422);
         }
 
+        $fotoBaru = $this->simpanFoto($request);
+        if ($fotoBaru) {
+            // Foto lama tidak lagi dirujuk siapa pun; membiarkannya hanya
+            // menumpuk berkas yatim di disk.
+            $this->hapusFoto($paslon->foto);
+        }
+
         $paslon->update([
             'nomor_urut' => $request->nomor_urut,
             'nama_ketua' => $request->nama_ketua,
-            'nama_wakil' => $request->nama_wakil,
+            'foto' => $fotoBaru ?? $paslon->foto,
         ]);
 
         // Broadcast change to WebSocket clients
@@ -93,12 +100,30 @@ class PaslonController extends Controller
         ]);
     }
 
+    /** Simpan berkas foto bila ada, kembalikan path relatifnya. */
+    private function simpanFoto(Request $request): ?string
+    {
+        if (!$request->hasFile('foto')) {
+            return null;
+        }
+
+        return $request->file('foto')->store('paslon', 'public');
+    }
+
+    private function hapusFoto(?string $path): void
+    {
+        if ($path) {
+            \Illuminate\Support\Facades\Storage::disk('public')->delete($path);
+        }
+    }
+
     /**
      * Delete candidate (paslon).
      */
     public function destroy($id)
     {
         $paslon = Paslon::findOrFail($id);
+        $this->hapusFoto($paslon->foto);
         $paslon->delete();
 
         // Broadcast change to WebSocket clients

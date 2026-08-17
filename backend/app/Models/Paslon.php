@@ -11,6 +11,14 @@ class Paslon extends Model
     protected $fillable = [
         'nomor_urut',
         'nama_ketua',
-        'nama_wakil',
+        'foto',
     ];
+
+    /** URL foto siap pakai untuk klien; kolomnya hanya menyimpan path. */
+    protected $appends = ['foto_url'];
+
+    public function getFotoUrlAttribute(): ?string
+    {
+        return $this->foto ? asset('storage/' . $this->foto) : null;
+    }
 }
