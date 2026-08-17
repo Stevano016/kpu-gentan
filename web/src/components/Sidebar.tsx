@@ -73,6 +73,14 @@ export const Sidebar: React.FC<SidebarProps> = ({
           </li>
           )}
           {!isPantarlih && (
+          <li className={`menu-item ${path === '/quick-count' ? 'active' : ''}`}>
+            <button onClick={() => go('/quick-count')} title="Quick Count">
+              <Icons.Chart />
+              <span>Quick Count</span>
+            </button>
+          </li>
+          )}
+          {!isPantarlih && (
           <li className={`menu-item ${path.startsWith('/tps') ? 'active' : ''}`}>
             <button onClick={() => go('/tps')} title="TPS & Monitoring">
               <Icons.Tps />

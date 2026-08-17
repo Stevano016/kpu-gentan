@@ -26,6 +26,7 @@ import TpsDetailTab from './components/tabs/TpsDetailTab';
 import PemilihTab from './components/tabs/PemilihTab';
 import KppsTab from './components/tabs/KppsTab';
 import { PaslonTab } from './components/tabs/PaslonTab';
+import { QuickCountTab } from './components/tabs/QuickCountTab';
 
 // Live updates reach the origin directly on a forwarded port: the proxy chain in
 // front of it drops the headers a WebSocket handshake needs, so the usual
@@ -310,7 +311,7 @@ function AppContent() {
       }
       return;
     }
-    if (path === '/' || path === '/dashboard') {
+    if (path === '/' || path === '/dashboard' || path === '/quick-count') {
       fetchDashboard();
     } else if (path === '/tps') {
       fetchTpsPageData();
@@ -336,7 +337,7 @@ function AppContent() {
   // working through it loses their place, so the other screens stay put.
   useEffect(() => {
     if (!token || isPantarlih) return;
-    const isDashboard = path === '/' || path === '/dashboard';
+    const isDashboard = path === '/' || path === '/dashboard' || path === '/quick-count';
     if (!isDashboard) return;
 
     const host = window.location.hostname || 'localhost';
@@ -1143,6 +1144,13 @@ function AppContent() {
               fetchDashboard={fetchDashboard}
               setSelectedTpsId={(id) => navigate(`/tps/${id}`)}
               setPage={(p) => navigate('/' + p)}
+            />
+          } />
+          <Route path="/quick-count" element={isPantarlih ? <Navigate to="/pemilih" replace /> :
+            <QuickCountTab
+              dashboardData={dashboardData}
+              dashboardLoading={dashboardLoading}
+              fetchDashboard={fetchDashboard}
             />
           } />
           <Route path="/tps" element={
