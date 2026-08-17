@@ -6,6 +6,7 @@ import { ApiService } from './services/api';
 import { LoginScreen } from './components/LoginScreen';
 import { Sidebar } from './components/Sidebar';
 import { Icons } from './components/Icons';
+import { KETERANGAN_TMS } from './utils/tahapan';
 import { TpsModal } from './components/modals/TpsModal';
 import { DptModal } from './components/modals/DptModal';
 import { ImportCsvModal } from './components/modals/ImportCsvModal';
@@ -14,6 +15,7 @@ import { ResetPasswordModal } from './components/modals/ResetPasswordModal';
 import { QrViewerModal } from './components/modals/QrViewerModal';
 import { VoterSuccessModal } from './components/modals/VoterSuccessModal';
 import { CustomConfirmModal } from './components/CustomConfirmModal';
+import { CustomPromptModal } from './components/CustomPromptModal';
 import { CustomAlertModal, type AlertVariant } from './components/CustomAlertModal';
 import { PaslonModal } from './components/modals/PaslonModal';
 
@@ -37,6 +39,9 @@ const LIVE_SOCKET_URL = import.meta.env.VITE_LIVE_SOCKET_URL ?? '';
 // Used only while the socket is down, so the dashboard keeps moving instead of
 // going stale unnoticed.
 const LIVE_POLL_INTERVAL_MS = 10000;
+
+/** Peran yang boleh masuk ke panel web sama sekali. */
+const PERAN_PANEL = ['sekretariat', 'pantarlih'];
 const LIVE_SOCKET_RETRY_MS = 15000;
 
 export default function App() {
@@ -160,7 +165,7 @@ function AppContent() {
   const [kppsFormTps, setKppsFormTps] = useState('');
   const [kppsFormRole, setKppsFormRole] = useState('full'); // full | validasi
   const [kppsFormAccountType, setKppsFormAccountType] = useState('kpps'); // kpps | sekretariat
-  const [kppsFormSekretariatRole, setKppsFormSekretariatRole] = useState('admin'); // admin | viewer
+  const [kppsFormSekretariatRole, setKppsFormSekretariatRole] = useState('admin');
 
   // Password reset state
   const [isResetModalOpen, setIsResetModalOpen] = useState(false);
@@ -185,6 +190,14 @@ function AppContent() {
   // so the content starts at the top of the screen instead of below the menu.
   const [isMobileNavOpen, setIsMobileNavOpen] = useState(false);
 
+  // Modal alasan untuk keputusan TMS / DPK
+  const [promptOpen, setPromptOpen] = useState(false);
+  const [promptTitle, setPromptTitle] = useState('');
+  const [promptMessage, setPromptMessage] = useState('');
+  const [promptSaran, setPromptSaran] = useState<string[]>([]);
+  const [promptPilihan, setPromptPilihan] = useState<string[] | undefined>(undefined);
+  const [promptCallback, setPromptCallback] = useState<((v: string) => void) | null>(null);
+
   // Custom Alert Modal State (pengganti window.alert)
   const [alertModalOpen, setAlertModalOpen] = useState(false);
   const [alertModalVariant, setAlertModalVariant] = useState<AlertVariant>('success');
@@ -204,10 +217,14 @@ function AppContent() {
   const [editingPaslon, setEditingPaslon] = useState<any>(null);
   const [paslonNomorUrut, setPaslonNomorUrut] = useState('');
   const [paslonNamaKetua, setPaslonNamaKetua] = useState('');
-  const [paslonNamaWakil, setPaslonNamaWakil] = useState('');
+  const [paslonFoto, setPaslonFoto] = useState<File | null>(null);
+
+  // Pantarlih hanya mendata pemilih susulan; seluruh menu dan aksi lain
+  // disembunyikan supaya panelnya tidak membingungkan.
+  const isPantarlih = user?.role === 'pantarlih';
 
   // Sekretariat viewer hanya boleh melihat: seluruh aksi tulis disembunyikan
-  const isAdmin = user ? user.sekretariat_role !== 'viewer' : false;
+  const isAdmin = user ? !isPantarlih && user.sekretariat_role !== 'viewer' : false;
 
   const showConfirm = (title: string, message: string, onConfirm: () => void, btnText = 'Ya', danger = false) => {
     setConfirmModalTitle(title);
@@ -285,6 +302,14 @@ function AppContent() {
   // Load section-specific data based on URL path
   useEffect(() => {
     if (!token) return;
+    // Pantarlih hanya punya satu halaman; endpoint lain akan menolaknya.
+    if (isPantarlih) {
+      if (path === '/pemilih') {
+        fetchDpts();
+        fetchTpsList();
+      }
+      return;
+    }
     if (path === '/' || path === '/dashboard') {
       fetchDashboard();
     } else if (path === '/tps') {
@@ -310,7 +335,7 @@ function AppContent() {
   // Only the dashboard updates on its own. Reloading a list while someone is
   // working through it loses their place, so the other screens stay put.
   useEffect(() => {
-    if (!token) return;
+    if (!token || isPantarlih) return;
     const isDashboard = path === '/' || path === '/dashboard';
     if (!isDashboard) return;
 
@@ -398,8 +423,8 @@ function AppContent() {
       const json = await res.json();
       if (res.ok) {
         setUser(json.user);
-        if (json.user.role !== 'sekretariat') {
-          setLoginError('Akses Ditolak. Panel ini hanya untuk Sekretariat.');
+        if (!PERAN_PANEL.includes(json.user.role)) {
+          setLoginError('Akses Ditolak. Panel ini hanya untuk Sekretariat dan Pantarlih.');
           handleLogoutDirect();
         }
       } else {
@@ -424,8 +449,8 @@ function AppContent() {
       const res = await ApiService.login(username, password);
       const json = await res.json();
       if (res.ok) {
-        if (json.user.role !== 'sekretariat') {
-          setLoginError('Akses Ditolak. Hanya Sekretariat yang diizinkan masuk ke dashboard ini.');
+        if (!PERAN_PANEL.includes(json.user.role)) {
+          setLoginError('Akses Ditolak. Hanya Sekretariat dan Pantarlih yang bisa masuk ke panel ini.');
           return;
         }
         localStorage.setItem('token', json.token);
@@ -515,16 +540,17 @@ function AppContent() {
     e.preventDefault();
     if (!token) return;
 
-    const payload = {
-      nomor_urut: parseInt(paslonNomorUrut, 10),
-      nama_ketua: paslonNamaKetua,
-      nama_wakil: paslonNamaWakil,
-    };
+    const form = new FormData();
+    form.append('nomor_urut', String(parseInt(paslonNomorUrut, 10)));
+    form.append('nama_ketua', paslonNamaKetua);
+    // Hanya dikirim bila operator benar-benar memilih berkas; tanpa ini,
+    // menyunting nama saja akan menghapus foto yang sudah ada.
+    if (paslonFoto) form.append('foto', paslonFoto);
 
     try {
       const res = isPaslonEditing && editingPaslon
-        ? await ApiService.updatePaslon(token, editingPaslon.id, payload)
-        : await ApiService.createPaslon(token, payload);
+        ? await ApiService.updatePaslon(token, editingPaslon.id, form)
+        : await ApiService.createPaslon(token, form);
       
       const json = await res.json();
       if (res.ok) {
@@ -533,7 +559,7 @@ function AppContent() {
         fetchPaslons();
         showSuccess(
           wasEditing ? 'Paslon Diperbarui' : 'Paslon Ditambahkan',
-          `Pasangan calon nomor urut ${payload.nomor_urut} (${payload.nama_ketua} - ${payload.nama_wakil}) berhasil disimpan.`
+          `Calon nomor urut ${paslonNomorUrut} (${paslonNamaKetua}) berhasil disimpan.`
         );
       } else {
         showError(json.message || 'Gagal menyimpan pasangan calon.');
@@ -761,6 +787,150 @@ function AppContent() {
     }
   };
 
+  // --- Ekspor ke Excel ---
+
+  const [daftarRw, setDaftarRw] = useState<string[]>([]);
+
+  useEffect(() => {
+    if (!token) return;
+    ApiService.daftarRw(token)
+      .then((r) => (r.ok ? r.json() : null))
+      .then((j) => { if (j?.data) setDaftarRw(j.data); })
+      .catch(() => { /* daftar RW hanya untuk kenyamanan; diamkan bila gagal */ });
+  }, [token]);
+
+  const handleExport = async (params: Record<string, string>) => {
+    if (!token) return;
+    try {
+      const res = await ApiService.exportPemilih(token, params);
+      if (!res.ok) {
+        const json = await res.json().catch(() => ({}));
+        showError(json.message || 'Ekspor ditolak server.', 'Gagal Mengekspor');
+        return;
+      }
+
+      // Unduhan harus lewat fetch karena butuh header Authorization; tautan
+      // biasa tidak membawanya.
+      const blob = await res.blob();
+      const namaBerkas =
+        res.headers.get('Content-Disposition')?.match(/filename="?([^"]+)"?/)?.[1] ??
+        'pemilih.csv';
+
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = namaBerkas;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      URL.revokeObjectURL(url);
+
+      showSuccess('Ekspor Selesai', `Berkas ${namaBerkas} sudah diunduh dan siap dibuka di Excel.`);
+    } catch {
+      showError('Gagal menghubungi server.', 'Gagal Mengekspor');
+    }
+  };
+
+  // --- Perpindahan tahapan pendataan ---
+
+  const jalankanAksiTahapan = async (
+    aksi: () => Promise<Response>,
+    judulGagal: string,
+  ) => {
+    if (!token) return;
+    try {
+      const res = await aksi();
+      const json = await res.json().catch(() => ({}));
+      if (res.ok) {
+        showSuccess('Berhasil', json.message || 'Perubahan tahapan tersimpan.');
+        fetchDpts();
+        fetchDashboard(true);
+      } else {
+        showError(json.message || 'Perubahan tahapan ditolak.', judulGagal);
+      }
+    } catch {
+      showError('Gagal menghubungi server.', judulGagal);
+    }
+  };
+
+  const handleVerifikasiDp4 = () => {
+    const lingkup = dptTpsFilter ? 'TPS yang sedang dipilih' : 'SELURUH TPS';
+    showConfirm(
+      'Verifikasi DP4 jadi DPS?',
+      `Semua data DP4 pada ${lingkup} akan dinyatakan lolos verifikasi dan menjadi DPS. Data yang tidak memenuhi syarat sebaiknya ditandai TMS lebih dulu.`,
+      () => jalankanAksiTahapan(
+        () => ApiService.verifikasiDp4(token!, dptTpsFilter ? { tps_id: dptTpsFilter } : {}),
+        'Gagal Verifikasi',
+      ),
+      'Verifikasi',
+    );
+  };
+
+  const handleTetapkanDpt = () => {
+    const lingkup = dptTpsFilter ? 'TPS yang sedang dipilih' : 'SELURUH TPS';
+    showConfirm(
+      'Tetapkan sebagai DPT?',
+      `DPS dan DPTb pada ${lingkup} akan digabung menjadi DPT. Penetapan ditolak bila masih ada DP4 yang belum diverifikasi.`,
+      () => jalankanAksiTahapan(
+        () => ApiService.tetapkanDpt(token!, dptTpsFilter ? { tps_id: dptTpsFilter } : {}),
+        'Gagal Menetapkan',
+      ),
+      'Tetapkan',
+    );
+  };
+
+  const mintaAlasan = (
+    title: string,
+    message: string,
+    saran: string[],
+    onSubmit: (alasan: string) => void,
+    pilihan?: string[],
+  ) => {
+    setPromptTitle(title);
+    setPromptMessage(message);
+    setPromptSaran(saran);
+    setPromptPilihan(pilihan);
+    setPromptCallback(() => onSubmit);
+    setPromptOpen(true);
+  };
+
+  const handleTandaiTms = (nik: string, nama: string) => {
+    mintaAlasan(
+      'Tandai Tidak Memenuhi Syarat',
+      `Mengapa ${nama} tidak memenuhi syarat? Alasan ini tersimpan bersama datanya dan bisa dibatalkan.`,
+      [],
+      (alasan) => jalankanAksiTahapan(() => ApiService.tandaiTms(token!, nik, alasan), 'Gagal Menandai TMS'),
+      KETERANGAN_TMS,
+    );
+  };
+
+  const handleBatalkanTms = (nik: string) => {
+    showConfirm(
+      'Batalkan penandaan TMS?',
+      'Data akan dikembalikan ke DP4 dan ikut diverifikasi lagi.',
+      () => jalankanAksiTahapan(() => ApiService.batalkanTms(token!, nik), 'Gagal Membatalkan'),
+      'Kembalikan',
+    );
+  };
+
+  const handleTandaiDpk = (nik: string, nama: string) => {
+    mintaAlasan(
+      'Pindahkan ke DPK',
+      `Kasus khusus apa yang membuat ${nama} masuk DPK? Setelah dipindahkan, ia tidak lagi dihitung sebagai DPT.`,
+      ['Menikah di bawah usia 17 tahun', 'Sudah menikah', 'Purnawirawan TNI/Polri'],
+      (alasan) => jalankanAksiTahapan(() => ApiService.tandaiDpk(token!, nik, alasan), 'Gagal Memindahkan'),
+    );
+  };
+
+  const handleBatalkanDpk = (nik: string) => {
+    showConfirm(
+      'Kembalikan ke DPT?',
+      'Pemilih akan dihitung kembali sebagai DPT biasa.',
+      () => jalankanAksiTahapan(() => ApiService.batalkanDpk(token!, nik), 'Gagal Mengembalikan'),
+      'Kembalikan',
+    );
+  };
+
   const handleDeleteDpt = async (nik: string) => {
     showConfirm(
       'Hapus Pemilih?',
@@ -813,21 +983,15 @@ function AppContent() {
     e.preventDefault();
     if (!token) return;
 
-    const isKppsAccount = kppsFormAccountType === 'kpps';
-    const payload = isKppsAccount
-      ? {
-          username: kppsFormUsername,
-          password: kppsFormPassword,
-          role: 'kpps',
-          tps_id: kppsFormTps,
-          kpps_role: kppsFormRole,
-        }
-      : {
-          username: kppsFormUsername,
-          password: kppsFormPassword,
-          role: 'sekretariat',
-          sekretariat_role: kppsFormSekretariatRole,
-        };
+    const jenisAkun = kppsFormAccountType;
+    const dasar = { username: kppsFormUsername, password: kppsFormPassword };
+    const payload =
+      kppsFormAccountType === 'kpps'
+        ? { ...dasar, role: 'kpps', tps_id: kppsFormTps, kpps_role: kppsFormRole }
+        : kppsFormAccountType === 'pantarlih'
+        // Pantarlih tidak terikat TPS dan tidak punya sub-peran.
+        ? { ...dasar, role: 'pantarlih', tps_id: kppsFormTps }
+        : { ...dasar, role: 'sekretariat', sekretariat_role: kppsFormSekretariatRole };
 
     try {
       const res = await ApiService.createKpps(token, payload);
@@ -843,8 +1007,10 @@ function AppContent() {
         setKppsFormSekretariatRole('admin');
         fetchKppsUsers();
 
-        if (isKppsAccount) {
+        if (jenisAkun === 'kpps') {
           showSuccess('Akun KPPS Dibuat', `Akun "${savedUsername}" berhasil disimpan dan siap digunakan di aplikasi mobile.`);
+        } else if (jenisAkun === 'pantarlih') {
+          showSuccess('Akun Pantarlih Dibuat', `Akun "${savedUsername}" berhasil disimpan. Ia hanya bisa mendata di TPS yang dipilih, dan hasilnya otomatis tercatat sebagai DPTb.`);
         } else {
           showSuccess(
             'Akun Sekretariat Dibuat',
@@ -959,6 +1125,7 @@ function AppContent() {
         toggleCollapsed={toggleSidebarCollapsed}
         isFullscreen={isFullscreen}
         toggleFullscreen={toggleFullscreen}
+        isPantarlih={isPantarlih}
         isMobileOpen={isMobileNavOpen}
         closeMobileNav={closeMobileNav}
       />
@@ -966,8 +1133,10 @@ function AppContent() {
       {/* Main Content Area */}
       <main className="main-content">
         <Routes>
-          <Route path="/" element={<Navigate to="/dashboard" replace />} />
-          <Route path="/dashboard" element={
+          <Route path="/" element={<Navigate to={isPantarlih ? '/pemilih' : '/dashboard'} replace />} />
+          {/* Pantarlih tidak punya akses ke ringkasan; memuat halamannya hanya
+              akan memicu 403 dari server. */}
+          <Route path="/dashboard" element={isPantarlih ? <Navigate to="/pemilih" replace /> :
             <DashboardTab
               dashboardData={dashboardData}
               dashboardLoading={dashboardLoading}
@@ -1026,6 +1195,15 @@ function AppContent() {
               fetchQrCode={fetchQrCode}
               fetchEditingQr={fetchEditingQr}
               handleDeleteDpt={handleDeleteDpt}
+              handleVerifikasiDp4={handleVerifikasiDp4}
+              handleTetapkanDpt={handleTetapkanDpt}
+              handleTandaiTms={handleTandaiTms}
+              handleBatalkanTms={handleBatalkanTms}
+              handleTandaiDpk={handleTandaiDpk}
+              handleBatalkanDpk={handleBatalkanDpk}
+              isPantarlih={isPantarlih}
+              daftarRw={daftarRw}
+              handleExport={handleExport}
               isAdmin={isAdmin}
             />
           } />
@@ -1055,7 +1233,7 @@ function AppContent() {
               setEditingPaslon={setEditingPaslon}
               setNomorUrut={setPaslonNomorUrut}
               setNamaKetua={setPaslonNamaKetua}
-              setNamaWakil={setPaslonNamaWakil}
+              setFoto={setPaslonFoto}
               handleDeletePaslon={handleDeletePaslon}
               isAdmin={isAdmin}
             />
@@ -1087,6 +1265,7 @@ function AppContent() {
         dptFormTps={dptFormTps}
         setDptFormTps={setDptFormTps}
         dptFormJenis={dptFormJenis}
+        isPantarlih={isPantarlih}
         setDptFormJenis={setDptFormJenis}
         dptFormUmur={dptFormUmur}
         setDptFormUmur={setDptFormUmur}
@@ -1179,9 +1358,24 @@ function AppContent() {
         setNomorUrut={setPaslonNomorUrut}
         namaKetua={paslonNamaKetua}
         setNamaKetua={setPaslonNamaKetua}
-        namaWakil={paslonNamaWakil}
-        setNamaWakil={setPaslonNamaWakil}
+        foto={paslonFoto}
+        setFoto={setPaslonFoto}
+        fotoLama={editingPaslon?.foto_url ?? null}
         onSubmit={handleSavePaslon}
+      />
+
+      <CustomPromptModal
+        isOpen={promptOpen}
+        title={promptTitle}
+        message={promptMessage}
+        saran={promptSaran}
+        pilihan={promptPilihan}
+        placeholder="Tulis alasan..."
+        onCancel={() => setPromptOpen(false)}
+        onSubmit={(alasan) => {
+          setPromptOpen(false);
+          promptCallback?.(alasan);
+        }}
       />
 
       <CustomConfirmModal

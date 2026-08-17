@@ -1,5 +1,6 @@
 import React from 'react';
 import { Icons } from '../Icons';
+import { PasswordInput } from '../PasswordInput';
 
 interface KppsModalProps {
   isOpen: boolean;
@@ -41,6 +42,7 @@ export const KppsModal: React.FC<KppsModalProps> = ({
   if (!isOpen) return null;
 
   const isKpps = kppsFormAccountType === 'kpps';
+  const isPantarlih = kppsFormAccountType === 'pantarlih';
 
   return (
     <div className="modal-overlay">
@@ -60,7 +62,14 @@ export const KppsModal: React.FC<KppsModalProps> = ({
             >
               <option value="kpps">KPPS (Aplikasi Mobile)</option>
               <option value="sekretariat">Sekretariat (Panel Web)</option>
+              <option value="pantarlih">Pantarlih (Pendata Lapangan)</option>
             </select>
+            {isPantarlih && (
+              <p style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginTop: '6px', lineHeight: '1.5' }}>
+                Pantarlih hanya bisa mendaftarkan pemilih baru, dan setiap data yang
+                dimasukkannya otomatis tercatat sebagai DPTb.
+              </p>
+            )}
           </div>
 
           <div className="form-group">
@@ -69,7 +78,7 @@ export const KppsModal: React.FC<KppsModalProps> = ({
               type="text"
               className="form-control"
               required
-              placeholder={isKpps ? 'Contoh: kpps04' : 'Contoh: sekretariat02'}
+              placeholder={isKpps ? 'Contoh: kpps04' : isPantarlih ? 'Contoh: pantarlih01' : 'Contoh: sekretariat02'}
               value={kppsFormUsername}
               onChange={e => setKppsFormUsername(e.target.value)}
             />
@@ -77,14 +86,12 @@ export const KppsModal: React.FC<KppsModalProps> = ({
 
           <div className="form-group">
             <label className="form-label">Password</label>
-            <input
-              type="password"
-              className="form-control"
+            <PasswordInput
+              value={kppsFormPassword}
+              onChange={setKppsFormPassword}
               required
               minLength={6}
               placeholder="Minimal 6 karakter"
-              value={kppsFormPassword}
-              onChange={e => setKppsFormPassword(e.target.value)}
             />
           </div>
 
@@ -117,6 +124,24 @@ export const KppsModal: React.FC<KppsModalProps> = ({
                 </select>
               </div>
             </>
+          ) : isPantarlih ? (
+            <div className="form-group">
+              <label className="form-label">TPS Wilayah Tugas</label>
+              <select
+                className="form-control"
+                required
+                value={kppsFormTps}
+                onChange={e => setKppsFormTps(e.target.value)}
+              >
+                <option value="">Pilih TPS...</option>
+                {tpsList.map(t => (
+                  <option key={t.id} value={t.id}>{t.nama} ({t.wilayah})</option>
+                ))}
+              </select>
+              <p style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginTop: '6px' }}>
+                Pantarlih hanya bisa melihat dan mendata pemilih di TPS ini.
+              </p>
+            </div>
           ) : (
             <div className="form-group">
               <label className="form-label">Hak Akses Sekretariat</label>

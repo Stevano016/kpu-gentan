@@ -22,7 +22,7 @@ export const DashboardTab: React.FC<DashboardTabProps> = ({
     if (!dashboardData?.paslons) return defaultLabel;
     const match = dashboardData.paslons.find((p: any) => p.nomor_urut === num);
     if (!match) return defaultLabel;
-    return `${match.nomor_urut}. ${match.nama_ketua} - ${match.nama_wakil}`;
+    return `${match.nomor_urut}. ${match.nama_ketua}`;
   };
 
   return (
@@ -44,17 +44,43 @@ export const DashboardTab: React.FC<DashboardTabProps> = ({
 
       {dashboardData && (
         <>
+          {/* Tahapan pendataan: DP4 -> DPS (+DPTb) -> DPT -> DPK */}
+          <div className="grid-cols-4">
+            <div className="card">
+              <div className="card-title">DP4 — Belum Diverifikasi</div>
+              <div className="card-value">{dashboardData.stats.total_dp4 ?? 0}</div>
+              <div className="card-subtext">Data impor yang menunggu verifikasi</div>
+            </div>
+            <div className="card">
+              <div className="card-title">DPS — Hasil Verifikasi</div>
+              <div className="card-value">{dashboardData.stats.total_dps}</div>
+              <div className="card-subtext">Menunggu penetapan jadi DPT</div>
+            </div>
+            <div className="card">
+              <div className="card-title">DPTb — Pemilih Tambahan</div>
+              <div className="card-value">{dashboardData.stats.total_dptb}</div>
+              <div className="card-subtext">Didaftarkan setelah verifikasi</div>
+            </div>
+            <div className="card">
+              <div className="card-title">TMS — Tidak Memenuhi Syarat</div>
+              <div className="card-value">{dashboardData.stats.total_tms ?? 0}</div>
+              <div className="card-subtext">Gugur saat verifikasi, tidak dihitung</div>
+            </div>
+          </div>
+
           {/* Aggregate Widgets */}
           <div className="grid-cols-4">
             <div className="card">
-              <div className="card-title">Total Pemilih (Voters)</div>
+              <div className="card-title">Total Pemilih Berhak</div>
               <div className="card-value">{dashboardData.stats.total_pemilih}</div>
-              <div className="card-subtext">DPT: {dashboardData.stats.total_dpt} | DPK: {dashboardData.stats.total_dpk} | DPS: {dashboardData.stats.total_dps} | DPTb: {dashboardData.stats.total_dptb}</div>
+              {/* DP4 dan DPS masih proses, TMS sudah gugur — hanya DPT dan DPK
+                  yang berhak memilih, jadi hanya keduanya yang dijumlahkan. */}
+              <div className="card-subtext">DPT: {dashboardData.stats.total_dpt} | DPK: {dashboardData.stats.total_dpk}</div>
             </div>
             <div className="card">
               <div className="card-title">Kehadiran (Check-In)</div>
               <div className="card-value">{dashboardData.stats.total_hadir}</div>
-              <div className="card-subtext">DPT: {dashboardData.stats.total_hadir_dpt} | DPK: {dashboardData.stats.total_hadir_dpk} | DPS: {dashboardData.stats.total_hadir_dps} | DPTb: {dashboardData.stats.total_hadir_dptb} ({dashboardData.stats.persentase_kehadiran}%)</div>
+              <div className="card-subtext">DPT: {dashboardData.stats.total_hadir_dpt} | DPK: {dashboardData.stats.total_hadir_dpk} ({dashboardData.stats.persentase_kehadiran}%)</div>
             </div>
             <div className="card">
               <div className="card-title">TPS Sudah Kirim QC</div>
@@ -155,7 +181,7 @@ export const DashboardTab: React.FC<DashboardTabProps> = ({
                 <div style={{ marginTop: '24px', display: 'flex', flexWrap: 'wrap', justifyContent: 'center', gap: '16px', fontSize: '0.875rem' }}>
                   <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                     <span style={{ width: '12px', height: '12px', borderRadius: '50%', backgroundColor: 'var(--primary)' }}></span>
-                    <span>Hadir: {dashboardData.stats.total_hadir} (DPT: {dashboardData.stats.total_hadir_dpt} | DPK: {dashboardData.stats.total_hadir_dpk} | DPS: {dashboardData.stats.total_hadir_dps} | DPTb: {dashboardData.stats.total_hadir_dptb})</span>
+                    <span>Hadir: {dashboardData.stats.total_hadir} (DPT: {dashboardData.stats.total_hadir_dpt} | DPK: {dashboardData.stats.total_hadir_dpk})</span>
                   </div>
                   <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                     <span style={{ width: '12px', height: '12px', borderRadius: '50%', backgroundColor: 'var(--border)' }}></span>

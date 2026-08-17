@@ -1,6 +1,7 @@
 import React from 'react';
 import { Icons } from '../Icons';
 import { LoadingHint } from '../LoadingHint';
+import { TAHAPAN, URUTAN_TAHAPAN, metaTahapan } from '../../utils/tahapan';
 
 interface PemilihTabProps {
   dptData: any;
@@ -33,15 +34,27 @@ interface PemilihTabProps {
   fetchQrCode: (nik: string, name: string) => Promise<void>;
   fetchEditingQr: (nik: string) => Promise<void>;
   handleDeleteDpt: (nik: string) => Promise<void>;
+  handleVerifikasiDp4: () => void;
+  handleTetapkanDpt: () => void;
+  handleTandaiTms: (nik: string, nama: string) => void;
+  handleBatalkanTms: (nik: string) => void;
+  handleTandaiDpk: (nik: string, nama: string) => void;
+  handleBatalkanDpk: (nik: string) => void;
   isAdmin: boolean;
+  isPantarlih?: boolean;
+  daftarRw: string[];
+  handleExport: (params: Record<string, string>) => Promise<void>;
 }
 
 const JENIS_OPTIONS = [
-  { value: '', label: 'Semua Pemilih' },
-  { value: 'dps', label: 'DPS — Pemilih Sementara' },
-  { value: 'dptb', label: 'DPTb — Pemilih Tambahan' },
-  { value: 'dpt', label: 'DPT — Pemilih Tetap' },
-  { value: 'dpk', label: 'DPK — Pemilih Khusus' },
+  { value: '', label: 'Semua', judul: 'Tampilkan seluruh tahapan' },
+  // Label pendek supaya tujuh chip muat dalam satu baris; nama lengkap dan
+  // penjelasannya tetap tersedia lewat tooltip.
+  ...URUTAN_TAHAPAN.map((t) => ({
+    value: t,
+    label: TAHAPAN[t].singkat,
+    judul: `${TAHAPAN[t].label} — ${TAHAPAN[t].keterangan}`,
+  })),
 ];
 
 export const PemilihTab: React.FC<PemilihTabProps> = ({
@@ -75,19 +88,20 @@ export const PemilihTab: React.FC<PemilihTabProps> = ({
   fetchQrCode,
   fetchEditingQr,
   handleDeleteDpt,
+  handleVerifikasiDp4,
+  handleTetapkanDpt,
+  handleTandaiTms,
+  handleBatalkanTms,
+  handleTandaiDpk,
+  handleBatalkanDpk,
   isAdmin,
+  isPantarlih = false,
+  daftarRw,
+  handleExport,
 }) => {
+  const [menuEksporTerbuka, setMenuEksporTerbuka] = React.useState(false);
   const [expandedNik, setExpandedNik] = React.useState<string | null>(null);
-  const activeJenisLabel =
-    dptJenisFilter === 'dpt'
-      ? 'DPT'
-      : dptJenisFilter === 'dpk'
-      ? 'DPK'
-      : dptJenisFilter === 'dps'
-      ? 'DPS'
-      : dptJenisFilter === 'dptb'
-      ? 'DPTb'
-      : 'Semua Kategori';
+  const activeJenisLabel = dptJenisFilter ? metaTahapan(dptJenisFilter).singkat : 'Semua Kategori';
 
   return (
     <div>
@@ -95,15 +109,85 @@ export const PemilihTab: React.FC<PemilihTabProps> = ({
         <div>
           <h1 className="section-title">Data Pemilih</h1>
           <p className="section-desc">
-            Kelola seluruh pemilih wilayah Gentan — saring berdasarkan DPT, DPK, DPS, atau DPTb. Menampilkan: {activeJenisLabel}.
+            {isPantarlih
+              ? 'Daftarkan pemilih yang belum terdata. Setiap data yang Anda masukkan otomatis tercatat sebagai DPTb (Pemilih Tambahan).'
+              : `Alur pendataan: DP4 → verifikasi → DPS, ditambah DPTb, lalu ditetapkan jadi DPT, dan kasus khusus dipilah ke DPK. Menampilkan: ${activeJenisLabel}.`}
           </p>
         </div>
-        {isAdmin && (
+        {(isAdmin || isPantarlih) && (
           <div className="header-actions">
-            <button onClick={() => setIsImportModalOpen(true)} className="btn btn-secondary">
-              <Icons.Upload />
-              <span>Impor CSV Bulk</span>
-            </button>
+            {isAdmin && (
+              <>
+                <button onClick={handleVerifikasiDp4} className="btn btn-secondary" title="DP4 yang lolos menjadi DPS">
+                  <span>Verifikasi DP4</span>
+                </button>
+                <button onClick={handleTetapkanDpt} className="btn btn-secondary" title="Gabungkan DPS dan DPTb menjadi DPT">
+                  <span>Tetapkan DPT</span>
+                </button>
+                <button onClick={() => setIsImportModalOpen(true)} className="btn btn-secondary">
+                  <Icons.Upload />
+                  <span>Impor CSV</span>
+                </button>
+              </>
+            )}
+            {isPantarlih ? (
+              <button
+                onClick={() => handleExport({})}
+                className="btn btn-secondary"
+                title="Unduh seluruh pemilih di TPS Anda"
+              >
+                <Icons.Download />
+                <span>Unduh Excel TPS Saya</span>
+              </button>
+            ) : (
+              <div style={{ position: 'relative' }}>
+                <button
+                  type="button"
+                  onClick={() => setMenuEksporTerbuka((v) => !v)}
+                  className="btn btn-secondary"
+                >
+                  <Icons.Download />
+                  <span>Ekspor Excel</span>
+                </button>
+                {menuEksporTerbuka && (
+                  <div className="export-menu">
+                    <button
+                      type="button"
+                      className="export-menu-item"
+                      onClick={() => { setMenuEksporTerbuka(false); handleExport({ lingkup: 'all' }); }}
+                    >
+                      Semua data pemilih
+                    </button>
+
+                    <div className="export-menu-label">Per TPS</div>
+                    {tpsList.map((t) => (
+                      <button
+                        key={`tps-${t.id}`}
+                        type="button"
+                        className="export-menu-item"
+                        onClick={() => { setMenuEksporTerbuka(false); handleExport({ lingkup: 'tps', tps_id: String(t.id) }); }}
+                      >
+                        {t.nama}
+                      </button>
+                    ))}
+
+                    <div className="export-menu-label">Per RW</div>
+                    {daftarRw.length === 0 && <div className="export-menu-kosong">Belum ada data RW</div>}
+                    {daftarRw.map((rw) => (
+                      <button
+                        key={`rw-${rw}`}
+                        type="button"
+                        className="export-menu-item"
+                        onClick={() => { setMenuEksporTerbuka(false); handleExport({ lingkup: 'rw', rw }); }}
+                      >
+                        RW {rw}
+                      </button>
+                    ))}
+                  </div>
+                )}
+              </div>
+            )}
+
             <button
               onClick={() => {
                 setEditingDpt(null);
@@ -143,6 +227,7 @@ export const PemilihTab: React.FC<PemilihTabProps> = ({
               setDptJenisFilter(opt.value);
               setDptPage(1);
             }}
+            title={opt.judul}
             className={`jenis-filter-btn${dptJenisFilter === opt.value ? ' active' : ''}`}
           >
             {opt.label}
@@ -206,21 +291,26 @@ export const PemilihTab: React.FC<PemilihTabProps> = ({
                 {dptData.data.map((v: any) => (
                   <React.Fragment key={v.nik}>
                     <tr style={{ borderBottom: expandedNik === v.nik ? 'none' : '1px solid var(--border)' }}>
-                      <td style={{ fontFamily: 'monospace', fontWeight: '700', color: 'var(--primary)' }}>{v.id_pemilih}</td>
-                      <td style={{ fontFamily: 'monospace', fontWeight: '500' }}>{v.nik}</td>
+                      <td className="cell-nowrap" style={{ fontFamily: 'monospace', fontWeight: '700', color: 'var(--primary)' }}>{v.id_pemilih}</td>
+                      <td className="cell-nowrap" style={{ fontFamily: 'monospace', fontWeight: '500' }}>{v.nik}</td>
                       <td style={{ fontWeight: '600' }}>{v.nama}</td>
                       <td>
-                        <span className={`badge ${
-                          v.jenis_pemilih === 'dpk'
-                            ? 'badge-warning'
-                            : v.jenis_pemilih === 'dps'
-                            ? 'badge-success'
-                            : v.jenis_pemilih === 'dptb'
-                            ? 'badge-secondary'
-                            : 'badge-info'
-                        }`}>
-                          {(v.jenis_pemilih || 'dpt').toUpperCase()}
+                        <span
+                          className={`badge ${metaTahapan(v.tahapan).badge}`}
+                          title={metaTahapan(v.tahapan).keterangan}
+                        >
+                          {metaTahapan(v.tahapan).singkat}
                         </span>
+                        {/* Setelah jadi DPT, asalnya tidak lagi terlihat dari
+                            tahapan — padahal itu yang dilaporkan ke KPU. */}
+                        {v.tahapan === 'dpt' && v.asal === 'dptb' && (
+                          <span
+                            style={{ marginLeft: '6px', fontSize: '0.7rem', color: 'var(--text-muted)' }}
+                            title="Masuk lewat DPTb, bukan dari DP4"
+                          >
+                            eks-DPTb
+                          </span>
+                        )}
                       </td>
                       <td>{v.tps?.nama || `TPS ID: ${v.tps_id}`}</td>
                       <td>
@@ -234,22 +324,64 @@ export const PemilihTab: React.FC<PemilihTabProps> = ({
                         {v.waktu_checkin ? new Date(v.waktu_checkin).toLocaleString('id-ID') : '-'}
                       </td>
                       <td>
-                        <div style={{ display: 'flex', gap: '8px' }}>
+                        <div className="row-actions">
                           <button
                             onClick={() => fetchQrCode(v.nik, v.nama)}
                             className="btn btn-secondary"
-                            style={{ padding: '4px 8px', fontSize: '0.75rem', color: 'var(--primary)' }}
+                            style={{ color: 'var(--primary)' }}
                           >
-                            Lihat QR
+                            QR
                           </button>
                           <button
                             type="button"
                             onClick={() => setExpandedNik(expandedNik === v.nik ? null : v.nik)}
                             className="btn btn-secondary"
-                            style={{ padding: '4px 8px', fontSize: '0.75rem', color: expandedNik === v.nik ? 'var(--primary)' : 'inherit' }}
+                            style={{ color: expandedNik === v.nik ? 'var(--primary)' : 'inherit' }}
                           >
                             {expandedNik === v.nik ? 'Tutup' : 'Detail'}
                           </button>
+                          {isAdmin && v.tahapan === 'dp4' && (
+                            <button
+                              type="button"
+                              onClick={() => handleTandaiTms(v.nik, v.nama)}
+                              className="btn btn-secondary"
+                              style={{ color: 'var(--danger)' }}
+                              title="Tandai tidak memenuhi syarat"
+                            >
+                              TMS
+                            </button>
+                          )}
+                          {isAdmin && v.tahapan === 'tms' && (
+                            <button
+                              type="button"
+                              onClick={() => handleBatalkanTms(v.nik)}
+                              className="btn btn-secondary"
+                              title={v.tms_alasan ? `Alasan: ${v.tms_alasan}` : 'Kembalikan ke DP4'}
+                            >
+                              Batal TMS
+                            </button>
+                          )}
+                          {isAdmin && v.tahapan === 'dpt' && (
+                            <button
+                              type="button"
+                              onClick={() => handleTandaiDpk(v.nik, v.nama)}
+                              className="btn btn-secondary"
+                              style={{ color: 'var(--warning)' }}
+                              title="Pilah sebagai pemilih khusus"
+                            >
+                              Jadikan DPK
+                            </button>
+                          )}
+                          {isAdmin && v.tahapan === 'dpk' && (
+                            <button
+                              type="button"
+                              onClick={() => handleBatalkanDpk(v.nik)}
+                              className="btn btn-secondary"
+                              title={v.dpk_alasan ? `Alasan: ${v.dpk_alasan}` : 'Kembalikan ke DPT'}
+                            >
+                              Batal DPK
+                            </button>
+                          )}
                           {isAdmin && (
                             <>
                               <button
@@ -259,7 +391,7 @@ export const PemilihTab: React.FC<PemilihTabProps> = ({
                                   setDptFormNkk(v.nkk || '');
                                   setDptFormNama(v.nama);
                                   setDptFormTps(String(v.tps_id));
-                                  setDptFormJenis(v.jenis_pemilih || 'dpt');
+                                  setDptFormJenis(v.tahapan || 'dp4');
                                   setDptFormUmur(v.umur ? String(v.umur) : '');
                                   setDptFormStatusKawin(v.status_kawin || '');
                                   setDptFormJenisKelamin(v.jenis_kelamin || '');

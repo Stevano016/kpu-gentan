@@ -125,25 +125,94 @@ export const ApiService = {
     return fetch(`${API_URL}/paslon`, { headers: getAuthHeaders(token) });
   },
 
-  async createPaslon(token: string, payload: any) {
+  async createPaslon(token: string, form: FormData) {
+    // Tanpa Content-Type manual: browser yang menyusun boundary multipart.
     return fetch(`${API_URL}/paslon`, {
       method: 'POST',
-      headers: { ...getAuthHeaders(token), 'Content-Type': 'application/json' },
-      body: JSON.stringify(payload)
+      headers: getAuthHeaders(token),
+      body: form
     });
   },
 
-  async updatePaslon(token: string, id: number, payload: any) {
+  async updatePaslon(token: string, id: number, form: FormData) {
+    // PHP tidak mem-parsing berkas pada request PUT, jadi dikirim sebagai POST
+    // dengan _method=PUT — cara baku Laravel untuk unggahan saat memperbarui.
+    form.append('_method', 'PUT');
     return fetch(`${API_URL}/paslon/${id}`, {
-      method: 'PUT',
-      headers: { ...getAuthHeaders(token), 'Content-Type': 'application/json' },
-      body: JSON.stringify(payload)
+      method: 'POST',
+      headers: getAuthHeaders(token),
+      body: form
     });
   },
 
   async deletePaslon(token: string, id: number) {
     return fetch(`${API_URL}/paslon/${id}`, {
       method: 'DELETE',
+      headers: getAuthHeaders(token)
+    });
+  },
+
+  // --- Perpindahan tahapan pendataan ---
+
+  async ringkasanTahapan(token: string) {
+    return fetch(`${API_URL}/tahapan/ringkasan`, { headers: getAuthHeaders(token) });
+  },
+
+  async verifikasiDp4(token: string, payload: { tps_id?: string | number } = {}) {
+    return fetch(`${API_URL}/tahapan/verifikasi`, {
+      method: 'POST',
+      headers: { ...getAuthHeaders(token), 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload)
+    });
+  },
+
+  async tetapkanDpt(token: string, payload: { tps_id?: string | number; paksa?: boolean } = {}) {
+    return fetch(`${API_URL}/tahapan/tetapkan`, {
+      method: 'POST',
+      headers: { ...getAuthHeaders(token), 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload)
+    });
+  },
+
+  async tandaiTms(token: string, nik: string, alasan: string) {
+    return fetch(`${API_URL}/tahapan/${nik}/tms`, {
+      method: 'POST',
+      headers: { ...getAuthHeaders(token), 'Content-Type': 'application/json' },
+      body: JSON.stringify({ alasan })
+    });
+  },
+
+  async batalkanTms(token: string, nik: string) {
+    return fetch(`${API_URL}/tahapan/${nik}/tms`, {
+      method: 'DELETE',
+      headers: getAuthHeaders(token)
+    });
+  },
+
+  async tandaiDpk(token: string, nik: string, alasan: string) {
+    return fetch(`${API_URL}/tahapan/${nik}/dpk`, {
+      method: 'POST',
+      headers: { ...getAuthHeaders(token), 'Content-Type': 'application/json' },
+      body: JSON.stringify({ alasan })
+    });
+  },
+
+  async batalkanDpk(token: string, nik: string) {
+    return fetch(`${API_URL}/tahapan/${nik}/dpk`, {
+      method: 'DELETE',
+      headers: getAuthHeaders(token)
+    });
+  },
+
+  // --- Ekspor data ---
+
+  async daftarRw(token: string) {
+    return fetch(`${API_URL}/export/rw`, { headers: getAuthHeaders(token) });
+  },
+
+  async exportPemilih(token: string, params: Record<string, string> = {}) {
+    const qs = new URLSearchParams(params).toString();
+    return fetch(`${API_URL}/export/pemilih${qs ? `?${qs}` : ''}`, {
       headers: getAuthHeaders(token)
     });
   }

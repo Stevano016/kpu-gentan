@@ -1,5 +1,6 @@
 import React from 'react';
 import { Icons } from '../Icons';
+import { PasswordInput } from '../PasswordInput';
 
 interface ResetPasswordModalProps {
   isOpen: boolean;
@@ -33,14 +34,13 @@ export const ResetPasswordModal: React.FC<ResetPasswordModalProps> = ({
           </p>
           <div className="form-group">
             <label className="form-label">Password Baru</label>
-            <input
-              type="password"
-              className="form-control"
+            <PasswordInput
+              value={resetPasswordVal}
+              onChange={setResetPasswordVal}
               required
+              autoFocus
               minLength={6}
               placeholder="Masukkan password baru (min 6 karakter)"
-              value={resetPasswordVal}
-              onChange={e => setResetPasswordVal(e.target.value)}
             />
           </div>
           <div className="modal-footer">

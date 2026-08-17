@@ -16,6 +16,15 @@ interface KppsTabProps {
 }
 
 const RoleBadge: React.FC<{ user: any }> = ({ user }) => {
+  // Tanpa cabang ini pantarlih jatuh ke cabang KPPS di bawah dan salah dilabeli.
+  if (user.role === 'pantarlih') {
+    return (
+      <span className="badge" style={{ backgroundColor: 'oklch(0.93 0.04 200)', color: 'oklch(0.38 0.13 200)' }}>
+        Pantarlih — Pendata {user.tps?.nama || 'TPS ?'}
+      </span>
+    );
+  }
+
   if (user.role === 'sekretariat') {
     return user.sekretariat_role === 'viewer' ? (
       <span className="badge" style={{ backgroundColor: 'oklch(0.94 0.02 60)', color: 'oklch(0.45 0.12 60)' }}>

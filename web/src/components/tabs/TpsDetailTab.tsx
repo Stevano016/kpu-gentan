@@ -13,7 +13,7 @@ export const TpsDetailTab: React.FC<TpsDetailTabProps> = ({
     if (!tpsDetailData?.paslons) return defaultLabel;
     const match = tpsDetailData.paslons.find((p: any) => p.nomor_urut === num);
     if (!match) return defaultLabel;
-    return `${match.nomor_urut}. ${match.nama_ketua} - ${match.nama_wakil}`;
+    return `${match.nomor_urut}. ${match.nama_ketua}`;
   };
 
   return (

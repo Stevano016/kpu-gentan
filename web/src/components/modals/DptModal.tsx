@@ -1,5 +1,6 @@
 import React from 'react';
 import { Icons } from '../Icons';
+import { KETERANGAN } from '../../utils/tahapan';
 
 interface DptModalProps {
   isOpen: boolean;
@@ -14,6 +15,7 @@ interface DptModalProps {
   dptFormTps: string;
   setDptFormTps: (val: string) => void;
   dptFormJenis: string;
+  isPantarlih?: boolean;
   setDptFormJenis: (val: string) => void;
   dptFormUmur: string;
   setDptFormUmur: (val: string) => void;
@@ -52,6 +54,7 @@ export const DptModal: React.FC<DptModalProps> = ({
   dptFormTps,
   setDptFormTps,
   dptFormJenis,
+  isPantarlih = false,
   setDptFormJenis,
   dptFormUmur,
   setDptFormUmur,
@@ -131,17 +134,30 @@ export const DptModal: React.FC<DptModalProps> = ({
 
               <div className="form-group" style={{ gridColumn: 'span 1', marginBottom: 0 }}>
                 <label className="form-label">Jenis Pemilih</label>
-                <select
-                  className="form-control"
-                  required
-                  value={dptFormJenis}
-                  onChange={e => setDptFormJenis(e.target.value)}
-                >
-                  <option value="dpt">DPT — Daftar Pemilih Tetap</option>
-                  <option value="dpk">DPK — Daftar Pemilih Khusus</option>
-                  <option value="dps">DPS — Daftar Pemilih Sementara</option>
-                  <option value="dptb">DPTb — Daftar Pemilih Tambahan</option>
-                </select>
+                {isPantarlih ? (
+                  // Pantarlih hanya mendata pemilih susulan. Server memang sudah
+                  // memaksa DPTb, tapi menampilkan pilihan lain di sini hanya
+                  // akan menyesatkan.
+                  <>
+                    <input className="form-control" value="DPTb — Daftar Pemilih Tambahan" readOnly disabled />
+                    <p style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginTop: '6px' }}>
+                      Semua data yang Anda daftarkan tercatat sebagai DPTb.
+                    </p>
+                  </>
+                ) : (
+                  <select
+                    className="form-control"
+                    required
+                    value={dptFormJenis}
+                    onChange={e => setDptFormJenis(e.target.value)}
+                  >
+                    <option value="dp4">DP4 — Belum Diverifikasi</option>
+                    <option value="dps">DPS — Daftar Pemilih Sementara</option>
+                    <option value="dptb">DPTb — Daftar Pemilih Tambahan</option>
+                    <option value="dpt">DPT — Daftar Pemilih Tetap</option>
+                    <option value="dpk">DPK — Daftar Pemilih Khusus</option>
+                  </select>
+                )}
               </div>
 
               <div className="form-group" style={{ gridColumn: 'span 1', marginBottom: 0 }}>
@@ -255,13 +271,17 @@ export const DptModal: React.FC<DptModalProps> = ({
 
               <div className="form-group" style={{ gridColumn: 'span 1', marginBottom: 0 }}>
                 <label className="form-label">Keterangan</label>
-                <input
-                  type="text"
+                {/* Kategori tetap: nilainya tersimpan sebagai enum di basis data. */}
+                <select
                   className="form-control"
-                  placeholder="Keterangan tambahan"
                   value={dptFormKeterangan}
                   onChange={e => setDptFormKeterangan(e.target.value)}
-                />
+                >
+                  <option value="">— Belum ditentukan —</option>
+                  {KETERANGAN.map((k) => (
+                    <option key={k} value={k}>{k}</option>
+                  ))}
+                </select>
               </div>
 
             </div>
