@@ -142,6 +142,11 @@ This file captures the active state, environment variables, completed tasks, and
   - **Luberan horizontal 29px** sempat terjadi karena batang mengambil persentase dari seluruh baris lalu label nilainya terdorong melewati tepi; diperbaiki dengan memberi batang jalur grid sendiri (`1fr auto`). Terverifikasi 0 luberan.
   - Diverifikasi dengan data contoh yang disisipkan **di sisi browser saja** — basis data server tidak disentuh.
 
+- **17 Aug 2026 — Seluruh perubahan hari ini dirilis ke produksi (`gentan.wujud.id`)**: aman dijalankan karena produksi masih **0 check-in dan 0 quick count** (belum dipakai). Basis data dicadangkan dulu ke `/root/cadangan-gentan/`, dan `dist` web lama disimpan di `web/dist.sebelumnya` agar bisa dikembalikan cepat. Empat migrasi jalan bersih; hasil verifikasi: 6.856 pemilih semuanya DP4, `catatan_impor` terisi 5.981, kolom `nama_wakil` hilang, WebSocket tetap tersambung.
+  - **Nginx**: ditambahkan `location /storage/` dengan `alias` ke `backend/public/storage/` supaya foto paslon disajikan sebagai berkas statis. Tanpa ini fotonya akan 404 (jatuh ke fallback SPA) — persis masalah yang sebelumnya ditemukan di server tes. Terverifikasi: `/storage/...` kini menjawab 404 nginx, bukan halaman SPA.
+  - **SSH ke bleber sedang tersendat**: autentikasi berhasil tapi sesi kadang langsung ditutup (±1 dari 3 percobaan gagal), padahal disk 39% dan load 0.18 — jadi bukan kehabisan sumber daya. Karena itu deploy dikemas jadi **satu skrip yang dijalankan `setsid nohup`** dengan log ke berkas: kalau koneksi terputus di tengah, deploy tetap berjalan sampai selesai. Pola ini sebaiknya dipakai lagi untuk server ini.
+  - **Konsekuensi operasional**: sinkronisasi ke aplikasi lapangan di produksi kini mengirim **0 pemilih**, karena semuanya masih DP4 dan endpoint itu hanya mengirim DPT + DPK. Petugas baru akan menerima data setelah **Verifikasi DP4 → Tetapkan DPT** dijalankan di panel web.
+
 ---
 
 ## 🛠️ Local Environment Notes
