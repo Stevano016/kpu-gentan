@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Everything must go over HTTPS. The single exception is the internal test
+  server, which is reached by LAN address and has no certificate of its own.
+  Scoping the exception to that one host keeps every other connection — the
+  production API included — protected against downgrade.
+
+  Remove the domain-config below once the test environment is served over
+  HTTPS under its own domain name.
+-->
+<network-security-config>
+    <base-config cleartextTrafficPermitted="false" />
+
+    <domain-config cleartextTrafficPermitted="true">
+        <domain includeSubdomains="false">192.168.111.5</domain>
+    </domain-config>
+</network-security-config>

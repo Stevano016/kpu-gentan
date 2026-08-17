@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import '../../utils/paslon_helper.dart';
 
@@ -166,20 +168,133 @@ class QuickCountTab extends StatelessWidget {
           ),
         ),
         const SizedBox(width: 12),
-        SizedBox(
-          width: 100,
-          child: TextField(
-            controller: controller,
-            keyboardType: TextInputType.number,
-            textAlign: TextAlign.center,
-            enabled: !locked,
-            decoration: const InputDecoration(
-              contentPadding: EdgeInsets.symmetric(vertical: 8),
-              border: OutlineInputBorder(),
+        StepperAngka(controller: controller, aktif: !locked),
+      ],
+    );
+  }
+}
+
+/// Penghitung suara dengan tombol tambah dan kurang.
+///
+/// Angkanya tetap disimpan di [TextEditingController] yang sama seperti saat
+/// masih diketik, supaya logika penyimpanan draft dan submit di layar induk
+/// tidak perlu ikut berubah.
+///
+/// Tombolnya bisa ditekan-tahan: perolehan suara satu TPS bisa ratusan, dan
+/// mengharuskan petugas mengetuk ratusan kali jelas tidak masuk akal.
+class StepperAngka extends StatefulWidget {
+  final TextEditingController controller;
+  final bool aktif;
+
+  const StepperAngka({super.key, required this.controller, required this.aktif});
+
+  @override
+  State<StepperAngka> createState() => _StepperAngkaState();
+}
+
+class _StepperAngkaState extends State<StepperAngka> {
+  Timer? _pengulang;
+
+  @override
+  void dispose() {
+    _pengulang?.cancel();
+    super.dispose();
+  }
+
+  int get _nilai => int.tryParse(widget.controller.text.trim()) ?? 0;
+
+  void _ubah(int selisih) {
+    // Suara tidak mungkin negatif.
+    final baru = (_nilai + selisih).clamp(0, 999999);
+    widget.controller.text = baru.toString();
+  }
+
+  void _mulaiUlang(int selisih) {
+    _ubah(selisih);
+    _pengulang?.cancel();
+    _pengulang = Timer.periodic(const Duration(milliseconds: 90), (_) => _ubah(selisih));
+  }
+
+  void _berhenti() {
+    _pengulang?.cancel();
+    _pengulang = null;
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    const tealColor = Color(0xFF0D9488);
+
+    return Container(
+      decoration: BoxDecoration(
+        border: Border.all(color: const Color(0xFFD1D5DB)),
+        borderRadius: BorderRadius.circular(8),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          _tombol(
+            ikon: Icons.remove,
+            aktif: widget.aktif,
+            selisih: -1,
+            warna: const Color(0xFFB91C1C),
+          ),
+          // Angkanya ikut berubah tanpa perlu setState karena controller
+          // memang sudah berupa notifier.
+          ValueListenableBuilder<TextEditingValue>(
+            valueListenable: widget.controller,
+            builder: (context, value, _) {
+              final angka = int.tryParse(value.text.trim()) ?? 0;
+              return Container(
+                constraints: const BoxConstraints(minWidth: 56),
+                alignment: Alignment.center,
+                padding: const EdgeInsets.symmetric(vertical: 10),
+                child: Text(
+                  '$angka',
+                  style: TextStyle(
+                    fontSize: 18,
+                    fontWeight: FontWeight.bold,
+                    color: widget.aktif ? const Color(0xFF111827) : Colors.grey,
+                  ),
+                ),
+              );
+            },
+          ),
+          _tombol(
+            ikon: Icons.add,
+            aktif: widget.aktif,
+            selisih: 1,
+            warna: tealColor,
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _tombol({
+    required IconData ikon,
+    required bool aktif,
+    required int selisih,
+    required Color warna,
+  }) {
+    return GestureDetector(
+      onLongPressStart: aktif ? (_) => _mulaiUlang(selisih) : null,
+      onLongPressEnd: aktif ? (_) => _berhenti() : null,
+      onLongPressCancel: aktif ? _berhenti : null,
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          onTap: aktif ? () => _ubah(selisih) : null,
+          borderRadius: BorderRadius.circular(8),
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+            child: Icon(
+              ikon,
+              size: 22,
+              color: aktif ? warna : Colors.grey[400],
             ),
           ),
         ),
-      ],
+      ),
     );
   }
 }

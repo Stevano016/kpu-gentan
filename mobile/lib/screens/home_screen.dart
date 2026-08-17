@@ -179,16 +179,25 @@ class _HomeScreenState extends State<HomeScreen> {
   Future<void> _loadDptStats() async {
     final dptList = await _storage.getCachedDptList();
     
-    final totalDpt = dptList.where((e) => e['jenis_pemilih'] == 'dpt' || e['jenis_pemilih'] == null).length;
-    final totalDpk = dptList.where((e) => e['jenis_pemilih'] == 'dpk').length;
-    final totalDps = dptList.where((e) => e['jenis_pemilih'] == 'dps').length;
-    final totalDptb = dptList.where((e) => e['jenis_pemilih'] == 'dptb').length;
+    // Server hanya mengirim pemilih yang berhak memilih (DPT dan DPK); tahapan
+    // lain masih dalam proses pendataan dan tidak pernah sampai ke perangkat.
+    // `tahapan` adalah kolom baru, `jenis_pemilih` dipertahankan agar cache
+    // lama di perangkat yang belum sinkron ulang tetap terbaca.
+    String tahapanDari(dynamic e) =>
+        (e['tahapan'] ?? e['jenis_pemilih'] ?? 'dpt').toString();
+    bool hadirNya(dynamic e) =>
+        e['status_hadir'] == true || e['status_hadir'] == 1 || e['status_hadir'] == '1';
+
+    final totalDpt = dptList.where((e) => tahapanDari(e) == 'dpt').length;
+    final totalDpk = dptList.where((e) => tahapanDari(e) == 'dpk').length;
+    final totalDps = dptList.where((e) => tahapanDari(e) == 'dps').length;
+    final totalDptb = dptList.where((e) => tahapanDari(e) == 'dptb').length;
     final totalAll = totalDpt + totalDpk + totalDps + totalDptb;
 
-    final hadirDpt = dptList.where((e) => (e['jenis_pemilih'] == 'dpt' || e['jenis_pemilih'] == null) && (e['status_hadir'] == true || e['status_hadir'] == 1 || e['status_hadir'] == '1')).length;
-    final hadirDpk = dptList.where((e) => e['jenis_pemilih'] == 'dpk' && (e['status_hadir'] == true || e['status_hadir'] == 1 || e['status_hadir'] == '1')).length;
-    final hadirDps = dptList.where((e) => e['jenis_pemilih'] == 'dps' && (e['status_hadir'] == true || e['status_hadir'] == 1 || e['status_hadir'] == '1')).length;
-    final hadirDptb = dptList.where((e) => e['jenis_pemilih'] == 'dptb' && (e['status_hadir'] == true || e['status_hadir'] == 1 || e['status_hadir'] == '1')).length;
+    final hadirDpt = dptList.where((e) => tahapanDari(e) == 'dpt' && hadirNya(e)).length;
+    final hadirDpk = dptList.where((e) => tahapanDari(e) == 'dpk' && hadirNya(e)).length;
+    final hadirDps = dptList.where((e) => tahapanDari(e) == 'dps' && hadirNya(e)).length;
+    final hadirDptb = dptList.where((e) => tahapanDari(e) == 'dptb' && hadirNya(e)).length;
     final hadirAll = hadirDpt + hadirDpk + hadirDps + hadirDptb;
 
     final percentage = totalAll > 0 ? (hadirAll / totalAll) * 100 : 0.0;
