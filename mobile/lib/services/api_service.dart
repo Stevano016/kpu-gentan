@@ -17,11 +17,12 @@ class ApiService {
 
   // Live updates bypass Cloudflare and the gateway proxy entirely — both drop
   // the Connection/Upgrade headers a WebSocket handshake needs — and hit the
-  // origin directly on a forwarded port. Override for local testing with
+  // origin directly on a forwarded port, where TLS is terminated by its own
+  // certificate. Override for local testing with
   // --dart-define=WS_URL=ws://<ip-pc-anda>:8080
   static const String wsUrl = String.fromEnvironment(
     'WS_URL',
-    defaultValue: 'ws://202.10.45.61:10650/ws',
+    defaultValue: 'wss://ws.gentan.wujud.id:10650/ws',
   );
 
   final LocalStorageService _storage = LocalStorageService();

@@ -24,10 +24,15 @@ import PemilihTab from './components/tabs/PemilihTab';
 import KppsTab from './components/tabs/KppsTab';
 import { PaslonTab } from './components/tabs/PaslonTab';
 
-// How often the dashboard re-fetches in production, where a push connection is
-// not available. Fast enough to watch a count climb, slow enough that a hall of
-// operators does not hammer the API.
+// Live updates reach the origin directly on a forwarded port: the proxy chain in
+// front of it drops the headers a WebSocket handshake needs, so the usual
+// same-origin path cannot carry one.
+const LIVE_SOCKET_URL = 'wss://ws.gentan.wujud.id:10650/ws';
+
+// Used only while the socket is down, so the dashboard keeps moving instead of
+// going stale unnoticed.
 const LIVE_POLL_INTERVAL_MS = 10000;
+const LIVE_SOCKET_RETRY_MS = 15000;
 
 export default function App() {
   return (
@@ -266,88 +271,90 @@ function AppContent() {
     }
   }, [path, token, dptSearch, dptTpsFilter, dptJenisFilter, dptPage, tpsPage, kppsPage]);
 
-  // Live updates.
+  // Live updates for the dashboard.
   //
-  // Locally the socket server is reachable directly, so we use it. In production
-  // we cannot: the page is served over https and a browser refuses to open a
-  // plain ws:// connection from it, while the proxy chain in front of the origin
-  // strips the Connection/Upgrade headers a wss:// handshake needs. So the
-  // dashboard polls the same endpoints instead. Slower than a push, but it keeps
-  // the numbers moving on their own without depending on that proxy.
+  // The socket server is reached directly on a forwarded port, because the proxy
+  // chain in front of the origin drops the Connection/Upgrade headers a handshake
+  // needs. If the socket cannot be established we fall back to polling, so the
+  // numbers never silently stop moving during counting.
+  //
+  // Only the dashboard updates on its own. Reloading a list while someone is
+  // working through it loses their place, so the other screens stay put.
   useEffect(() => {
     if (!token) return;
-
-    const refreshCurrentView = () => {
-      if (path === '/' || path === '/dashboard') {
-        fetchDashboard();
-      } else if (path === '/tps') {
-        fetchTpsPageData();
-      } else if (path.startsWith('/tps/')) {
-        const tpsId = parseInt(path.split('/').pop() ?? '', 10);
-        if (!isNaN(tpsId)) {
-          fetchTpsDetail(tpsId);
-        }
-      } else if (path === '/pemilih') {
-        fetchDpts();
-      } else if (path === '/paslon') {
-        fetchPaslons();
-      }
-    };
+    const isDashboard = path === '/' || path === '/dashboard';
+    if (!isDashboard) return;
 
     const host = window.location.hostname || 'localhost';
     const isLocalHost = host === 'localhost' || host === '127.0.0.1';
+    const socketUrl = isLocalHost ? `ws://${host}:8080` : LIVE_SOCKET_URL;
 
-    if (!isLocalHost) {
-      // Only the dashboard auto-refreshes. The other screens are worked on
-      // directly — reloading a list under someone's cursor loses their place.
-      const isDashboard = path === '/' || path === '/dashboard';
-      if (!isDashboard) return;
+    let socket: WebSocket | null = null;
+    let pollId: number | undefined;
+    let retryId: number | undefined;
+    let disposed = false;
 
-      const tick = () => {
-        // Skip while the tab is in the background — nobody is reading it.
-        if (!document.hidden) fetchDashboard(true);
-      };
-      const intervalId = setInterval(tick, LIVE_POLL_INTERVAL_MS);
-      // Catch up immediately when the operator comes back to the tab.
-      const onVisible = () => { if (!document.hidden) fetchDashboard(true); };
-      document.addEventListener('visibilitychange', onVisible);
-      return () => {
-        clearInterval(intervalId);
-        document.removeEventListener('visibilitychange', onVisible);
-      };
-    }
-
-    const ws = new WebSocket(`ws://${host}:8080`);
-
-    ws.onopen = () => {
-      console.log('Terhubung ke WebSocket Server untuk real-time update.');
+    const refresh = () => {
+      // Skip while the tab is in the background — nobody is reading it.
+      if (!document.hidden) fetchDashboard(true);
     };
 
-    ws.onmessage = (event) => {
-      try {
-        const payload = JSON.parse(event.data);
-        console.log('Menerima WebSocket broadcast:', payload);
+    const startPolling = () => {
+      if (pollId !== undefined) return;
+      pollId = window.setInterval(refresh, LIVE_POLL_INTERVAL_MS);
+    };
 
-        if (payload.event === 'paslon_updated') {
-          if (path === '/paslon') fetchPaslons();
-        } else if (payload.event === 'checkin' || payload.event === 'quick-count' || payload.event === 'update') {
-          refreshCurrentView();
+    const stopPolling = () => {
+      if (pollId === undefined) return;
+      window.clearInterval(pollId);
+      pollId = undefined;
+    };
+
+    const connect = () => {
+      if (disposed) return;
+      socket = new WebSocket(socketUrl);
+
+      socket.onopen = () => {
+        // Push is live, so the fallback is no longer needed.
+        stopPolling();
+      };
+
+      socket.onmessage = (event) => {
+        try {
+          const payload = JSON.parse(event.data);
+          if (
+            payload.event === 'checkin' ||
+            payload.event === 'quick-count' ||
+            payload.event === 'update' ||
+            payload.event === 'paslon_updated'
+          ) {
+            refresh();
+          }
+        } catch {
+          // A malformed frame is not worth interrupting the operator over.
         }
-      } catch (err) {
-        console.error('Gagal memproses data WebSocket:', err);
-      }
+      };
+
+      socket.onclose = () => {
+        socket = null;
+        if (disposed) return;
+        startPolling();
+        retryId = window.setTimeout(connect, LIVE_SOCKET_RETRY_MS);
+      };
     };
 
-    ws.onerror = () => {
-      console.warn('Koneksi WebSocket gagal. Mencoba kembali...');
-    };
+    connect();
 
-    ws.onclose = () => {
-      console.log('Koneksi WebSocket terputus.');
-    };
+    // Catch up immediately when the operator comes back to the tab.
+    const onVisible = () => { if (!document.hidden) fetchDashboard(true); };
+    document.addEventListener('visibilitychange', onVisible);
 
     return () => {
-      ws.close();
+      disposed = true;
+      document.removeEventListener('visibilitychange', onVisible);
+      stopPolling();
+      if (retryId !== undefined) window.clearTimeout(retryId);
+      if (socket) socket.close();
     };
   }, [path, token]);
 

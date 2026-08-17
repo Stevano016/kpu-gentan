@@ -66,6 +66,14 @@ This file captures the active state, environment variables, completed tasks, and
   - **Mobile**: ditambah `ApiService.wsUrl` (`String.fromEnvironment('WS_URL')`, default `ws://202.10.45.61:10650/ws`), `home_screen.dart` memakainya langsung. Reconnect tetap 10 detik.
   - **Catatan build**: cache inkremental Flutter **dua kali** menghasilkan APK dengan string endpoint lama padahal sumber sudah berubah. Untuk artefak rilis **wajib `flutter clean` dulu**, lalu verifikasi dengan `unzip -p <apk> lib/arm64-v8a/libapp.so | grep -a <endpoint>`.
 
+- **17 Aug 2026 — Dashboard web naik ke WebSocket sungguhan (`wss://ws.gentan.wujud.id:10650/ws`)**:
+  - Dibuat subdomain `ws.gentan.wujud.id` → `202.10.45.61` **DNS only (awan abu-abu)** supaya port 10650 tidak lewat Cloudflare. Terbukti: port 10650 dijawab `Server: nginx/1.18.0` (server kita), sedangkan port 80 masih dijawab `Server: openresty` (proxy gateway) — karena itu **ACME HTTP-01 tidak mungkin** dan verifikasi harus lewat **DNS-01**.
+  - Dipasang `python3-certbot-dns-cloudflare`, kredensial token di `/root/.secrets/cloudflare.ini` (mode 600), sertifikat terbit untuk `ws.gentan.wujud.id` (berlaku s/d 15 Nov 2026). Ditambahkan `/etc/letsencrypt/renewal-hooks/deploy/reload-nginx.sh` agar nginx memuat sertifikat baru saat perpanjangan. `certbot renew --dry-run` sukses dan `certbot.timer` aktif.
+  - Vhost `gentan-ws` kini `listen 10650 ssl` dengan `server_name ws.gentan.wujud.id`; `/ws` mem-proxy ke `127.0.0.1:8090`, path lain 404.
+  - Web (`App.tsx`): polling diganti WebSocket ke `LIVE_SOCKET_URL`, **dengan polling sebagai jaring pengaman** — bila socket putus, polling 10 detik otomatis menyala dan socket dicoba lagi tiap 15 detik; saat socket terbuka polling dimatikan. Tetap hanya di path `/` dan `/dashboard`; halaman lain tidak membuka socket sama sekali. Terverifikasi di Chrome: hanya **satu** socket dengan status **OPEN** ke `wss://ws.gentan.wujud.id:10650/ws`, broadcast memicu refresh seketika, dan tidak ada panggilan berkala saat socket hidup.
+  - Mobile: `ApiService.wsUrl` dipindah dari `ws://202.10.45.61:10650/ws` ke `wss://ws.gentan.wujud.id:10650/ws` — kini terenkripsi dan tidak lagi memakai IP mentah. APK di-build ulang (clean), terverifikasi 0 sisa IP mentah.
+  - **Catatan operasional**: jangan jalankan `certbot` lewat SSH tanpa `setsid`/redirect ke file. Sesi yang terputus meninggalkan proses certbot menggantung yang memegang lock, dan itu membuat perpanjangan otomatis berikutnya gagal dengan "Another instance of Certbot is already running".
+
 ---
 
 ## 🛠️ Local Environment Notes
@@ -81,6 +89,6 @@ This file captures the active state, environment variables, completed tasks, and
 
 ## 🚧 Active/Pending Tasks
 
-- **(Opsional) wss untuk dashboard web**: bila ingin web ikut push real-time (bukan polling 10 detik), tambahkan DNS A record `ws.gentan.wujud.id` → `202.10.45.61` dengan **DNS only (awan abu-abu)**, lalu terbitkan sertifikat Let's Encrypt dan pasang TLS di port 10650. Alternatif lain: aktifkan **"Websockets Support"** di Nginx Proxy Manager gateway (`10.0.0.1`, panel port 81 — tidak terjangkau dari VPS ini) untuk `gentan.wujud.id`, yang sekalian memulihkan real-time Reverb `wujud.id`.
+- **(Opsional) real-time untuk app lain di VPS ini**: `wujud.id/app` (Reverb) masih mati karena Nginx Proxy Manager di gateway (`10.0.0.1`, panel port 81 — tidak terjangkau dari VPS ini) membuang header upgrade. Perbaikannya: aktifkan **"Websockets Support"** pada proxy host tersebut, atau tiru pola `gentan-ws` (port forward langsung + subdomain DNS-only + sertifikat sendiri).
 - **Keamanan**: seluruh 12 akun production masih memakai password seeder `password123`. Harus diganti sebelum dipakai di lapangan.
 - **Backup keystore**: `D:/keys/gentara-release.jks` + `mobile/android/key.properties` belum dibackup ke tempat aman. Ini satu-satunya kunci yang bisa merilis update aplikasi.
