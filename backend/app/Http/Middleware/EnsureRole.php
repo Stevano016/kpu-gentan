@@ -13,15 +13,22 @@ class EnsureRole
      *
      * @param  \Closure(\Illuminate\Http\Request): (\Symfony\Component\HttpFoundation\Response)  $next
      */
-    public function handle(Request $request, Closure $next, string $role): Response
+    /**
+     * Accepts several roles (`role:sekretariat,pantarlih`) so a shared endpoint
+     * can be declared once. Declaring the same route twice under two separate
+     * role groups would silently leave only the last one registered.
+     */
+    public function handle(Request $request, Closure $next, string ...$roles): Response
     {
-        if ($request->user() && $request->user()->role === $role) {
+        if ($request->user() && in_array($request->user()->role, $roles, true)) {
             return $next($request);
         }
 
+        $daftar = implode(' atau ', array_map('ucfirst', $roles));
+
         return response()->json([
             'status' => 'error',
-            'message' => 'Akses ditolak. Hanya peran ' . ucfirst($role) . ' yang diizinkan.'
+            'message' => 'Akses ditolak. Hanya peran ' . $daftar . ' yang diizinkan.'
         ], 403);
     }
 }

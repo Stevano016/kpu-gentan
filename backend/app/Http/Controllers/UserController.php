@@ -35,9 +35,10 @@ class UserController extends Controller
         $validator = Validator::make($request->all(), [
             'username' => 'required|string|max:100|unique:users,username',
             'password' => 'required|string|min:6',
-            'role' => 'required|string|in:kpps,sekretariat',
+            'role' => 'required|string|in:kpps,sekretariat,pantarlih',
             // TPS & hak akses hanya relevan untuk akun KPPS
-            'tps_id' => 'required_if:role,kpps|nullable|exists:tps,id',
+            // Pantarlih maupun KPPS sama-sama terikat satu TPS.
+            'tps_id' => 'required_if:role,kpps|required_if:role,pantarlih|nullable|exists:tps,id',
             'kpps_role' => 'nullable|string|in:validasi,full',
             // admin = akses penuh, viewer = hanya lihat
             'sekretariat_role' => 'required_if:role,sekretariat|nullable|string|in:admin,viewer',
@@ -51,21 +52,25 @@ class UserController extends Controller
         }
 
         $isKpps = $request->role === 'kpps';
+        $isSekretariat = $request->role === 'sekretariat';
 
         $user = User::create([
             'username' => $request->username,
             'password' => Hash::make($request->password),
             'role' => $request->role,
             'kpps_role' => $isKpps ? ($request->kpps_role ?? 'full') : null,
-            'sekretariat_role' => $isKpps ? null : $request->sekretariat_role,
-            'tps_id' => $isKpps ? $request->tps_id : null,
+            // Pantarlih tidak punya sub-peran; tugasnya tunggal.
+            'sekretariat_role' => $isSekretariat ? $request->sekretariat_role : null,
+            'tps_id' => in_array($request->role, ['kpps', 'pantarlih'], true) ? $request->tps_id : null,
         ]);
 
         return response()->json([
             'status' => 'success',
-            'message' => $isKpps
-                ? 'Akun KPPS berhasil dibuat.'
-                : 'Akun Sekretariat berhasil dibuat.',
+            'message' => match ($request->role) {
+                'kpps' => 'Akun KPPS berhasil dibuat.',
+                'pantarlih' => 'Akun Pantarlih berhasil dibuat.',
+                default => 'Akun Sekretariat berhasil dibuat.',
+            },
             'data' => [
                 'id' => $user->id,
                 'username' => $user->username,

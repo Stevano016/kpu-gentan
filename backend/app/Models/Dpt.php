@@ -23,7 +23,11 @@ class Dpt extends Model
         'status_hadir',
         'waktu_checkin',
         'qr_payload',
-        'jenis_pemilih',
+        'asal',
+        'tahapan',
+        'tms_alasan',
+        'dpk_alasan',
+        'diverifikasi_pada',
         'id_pemilih',
         'umur',
         'status_kawin',
@@ -34,12 +38,62 @@ class Dpt extends Model
         'pekerjaan',
         'disabilitas',
         'keterangan',
+        'catatan_impor',
     ];
 
     protected $casts = [
         'status_hadir' => 'boolean',
         'waktu_checkin' => 'datetime',
+        'diverifikasi_pada' => 'datetime',
     ];
+
+    /**
+     * Older builds of the mobile app read `jenis_pemilih`, which is no longer a
+     * column. Exposing the current stage under the old key keeps those installs
+     * working until every device has been updated.
+     */
+    protected $appends = ['jenis_pemilih'];
+
+    /**
+     * Hasil pemeriksaan seorang pemilih: `dps` berarti lolos, sisanya alasan
+     * gugur. Dipakai bersama oleh form pendataan dan aksi TMS supaya tidak ada
+     * dua daftar alasan yang bisa berbeda isi.
+     */
+    public const KETERANGAN = [
+        'dps',
+        'meninggal',
+        'data ganda',
+        'dibawah umur',
+        'pindah',
+        'tni',
+        'polri',
+    ];
+
+    /** Keterangan yang berarti pemilih gugur (semua kecuali `dps`). */
+    public const KETERANGAN_TMS = ['meninggal', 'data ganda', 'dibawah umur', 'pindah', 'tni', 'polri'];
+
+    /** Stages a voter is still counted as an active part of the roll. */
+    public const TAHAPAN_AKTIF = ['dp4', 'dps', 'dptb', 'dpt', 'dpk'];
+
+    /** Stages that may be reached from each stage. */
+    public const TRANSISI = [
+        'dp4' => ['dps', 'tms'],
+        'dps' => ['dpt'],
+        'dptb' => ['dpt'],
+        'dpt' => ['dpk'],
+        'dpk' => ['dpt'],
+        'tms' => ['dp4'],
+    ];
+
+    public function getJenisPemilihAttribute(): ?string
+    {
+        return $this->tahapan;
+    }
+
+    public function scopeTahapan($query, string|array $tahapan)
+    {
+        return $query->whereIn('tahapan', (array) $tahapan);
+    }
 
     public function tps(): BelongsTo
     {

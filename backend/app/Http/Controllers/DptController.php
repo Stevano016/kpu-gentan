@@ -27,8 +27,23 @@ class DptController extends Controller
             $query->where('tps_id', $request->tps_id);
         }
 
-        if ($request->filled('jenis_pemilih')) {
-            $query->where('jenis_pemilih', $request->jenis_pemilih);
+        // `jenis_pemilih` masih diterima demi klien lama yang belum diperbarui.
+        $tahapan = $request->tahapan ?? $request->jenis_pemilih;
+        if (filled($tahapan)) {
+            $query->where('tahapan', $tahapan);
+        }
+
+        if ($request->filled('asal')) {
+            $query->where('asal', $request->asal);
+        }
+
+        // Pantarlih bertugas di satu TPS; daftarnya dibatasi di server, bukan
+        // sekadar disaring di antarmuka.
+        $pengguna = $request->user();
+        if ($pengguna?->role === 'pantarlih') {
+            $query->where('tps_id', $pengguna->tps_id);
+        } elseif ($request->filled('rw')) {
+            $query->where('rw', $request->rw);
         }
 
         $dpts = $query->paginate(20);
@@ -46,7 +61,7 @@ class DptController extends Controller
             'nkk' => 'nullable|string|size:16',
             'nama' => 'required|string|max:255',
             'tps_id' => 'required|exists:tps,id',
-            'jenis_pemilih' => 'nullable|string|in:dpt,dpk,dps,dptb',
+            'tahapan' => 'nullable|string|in:dp4,dps,dptb,dpt,dpk',
             'umur' => 'nullable|integer|min:0',
             'status_kawin' => 'nullable|string|max:50',
             'jenis_kelamin' => 'nullable|string|max:20',
@@ -55,7 +70,7 @@ class DptController extends Controller
             'rw' => 'nullable|string|max:10',
             'pekerjaan' => 'nullable|string|max:100',
             'disabilitas' => 'nullable|string|max:100',
-            'keterangan' => 'nullable|string|max:255',
+            'keterangan' => 'nullable|string|in:' . implode(',', Dpt::KETERANGAN),
         ]);
 
         if ($validator->fails()) {
@@ -65,7 +80,31 @@ class DptController extends Controller
             ], 422);
         }
 
-        $jenis = $request->jenis_pemilih ?? 'dpt';
+        // Pantarlih hanya mendata pemilih susulan, jadi hasil inputnya selalu
+        // DPTb. Dipaksa di sini, bukan diserahkan ke form: form bisa diakali.
+        $pengguna = $request->user();
+        $tpsId = $request->tps_id;
+
+        if ($pengguna?->role === 'pantarlih') {
+            $tahapan = 'dptb';
+
+            if (blank($pengguna->tps_id)) {
+                return response()->json([
+                    'status' => 'error',
+                    'message' => 'Akun pantarlih ini belum ditetapkan TPS-nya. Hubungi sekretariat.',
+                ], 422);
+            }
+
+            // Diambil dari akunnya, bukan dari isian form: pantarlih tidak boleh
+            // mendaftarkan pemilih di TPS orang lain.
+            $tpsId = $pengguna->tps_id;
+        } else {
+            // Penambahan manual setelah verifikasi DP4 berjalan juga terhitung
+            // susulan — kecuali admin sengaja memilih tahapan lain.
+            $verifikasiSudahJalan = Dpt::whereIn('tahapan', ['dps', 'dpt', 'dpk'])->exists();
+            $tahapan = $request->tahapan ?? ($verifikasiSudahJalan ? 'dptb' : 'dp4');
+        }
+        $asal = $tahapan === 'dp4' ? 'dp4' : 'dptb';
 
         // Auto-generate the next id_pemilih (format USH-GTN-026xxxx)
         $latestVoter = Dpt::where('id_pemilih', 'like', 'USH-GTN-026%')
@@ -86,12 +125,13 @@ class DptController extends Controller
             'nik' => $request->nik,
             'nkk' => $request->nkk,
             'nama' => $request->nama,
-            'tps_id' => $request->tps_id,
+            'tps_id' => $tpsId,
             'status_hadir' => false,
             'waktu_checkin' => null,
             'id_pemilih' => $idPemilih,
             'qr_payload' => $idPemilih,
-            'jenis_pemilih' => $jenis,
+            'tahapan' => $tahapan,
+            'asal' => $asal,
             'umur' => $request->umur,
             'status_kawin' => $request->status_kawin,
             'jenis_kelamin' => $request->jenis_kelamin,
@@ -104,7 +144,7 @@ class DptController extends Controller
         ]);
 
         // Increment total_dpt in TPS only if voter is DPT/DPS/DPTb
-        if (in_array($jenis, ['dpt', 'dps', 'dptb'])) {
+        if (in_array($tahapan, ['dp4', 'dps', 'dptb', 'dpt'])) {
             Tps::where('id', $request->tps_id)->increment('total_dpt');
         }
 
@@ -126,7 +166,7 @@ class DptController extends Controller
             'nama' => 'required|string|max:255',
             'tps_id' => 'required|exists:tps,id',
             'status_hadir' => 'boolean',
-            'jenis_pemilih' => 'nullable|string|in:dpt,dpk,dps,dptb',
+            'tahapan' => 'nullable|string|in:dp4,dps,dptb,dpt,dpk',
             'umur' => 'nullable|integer|min:0',
             'status_kawin' => 'nullable|string|max:50',
             'jenis_kelamin' => 'nullable|string|max:20',
@@ -135,7 +175,7 @@ class DptController extends Controller
             'rw' => 'nullable|string|max:10',
             'pekerjaan' => 'nullable|string|max:100',
             'disabilitas' => 'nullable|string|max:100',
-            'keterangan' => 'nullable|string|max:255',
+            'keterangan' => 'nullable|string|in:' . implode(',', Dpt::KETERANGAN),
         ]);
 
         if ($validator->fails()) {
@@ -147,15 +187,22 @@ class DptController extends Controller
 
         $oldTpsId = $dpt->tps_id;
         $newTpsId = $request->tps_id;
-        $oldJenis = $dpt->jenis_pemilih;
-        $newJenis = $request->jenis_pemilih ?? $dpt->jenis_pemilih;
+        $oldTahapan = $dpt->tahapan;
+        // Perpindahan tahapan sengaja tidak dilayani di sini: alurnya punya
+        // aturan dan alasan sendiri, semuanya lewat TahapanController.
+        $newTahapan = $request->tahapan ?? $dpt->tahapan;
+        if ($newTahapan !== $oldTahapan) {
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Tahapan tidak bisa diubah dari form ini. Gunakan aksi verifikasi, penetapan, TMS, atau DPK.',
+            ], 422);
+        }
 
         $updateData = [
             'nama' => $request->nama,
             'tps_id' => $newTpsId,
             'status_hadir' => $request->status_hadir ?? $dpt->status_hadir,
             'waktu_checkin' => ($request->status_hadir && !$dpt->status_hadir) ? now() : ($request->status_hadir ? $dpt->waktu_checkin : null),
-            'jenis_pemilih' => $newJenis,
         ];
 
         foreach (['nkk', 'umur', 'status_kawin', 'jenis_kelamin', 'alamat', 'rt', 'rw', 'pekerjaan', 'disabilitas', 'keterangan'] as $field) {
@@ -166,11 +213,10 @@ class DptController extends Controller
 
         $dpt->update($updateData);
 
-        // Adjust TPS total_dpt if TPS or voter type changed
-        if (in_array($oldJenis, ['dpt', 'dps', 'dptb'])) {
+        // Tahapan tidak bisa berubah lewat form ini, jadi penghitung TPS hanya
+        // perlu disesuaikan ketika pemilihnya benar-benar pindah TPS.
+        if ($oldTpsId !== $newTpsId && in_array($oldTahapan, ['dp4', 'dps', 'dptb', 'dpt'])) {
             Tps::where('id', $oldTpsId)->decrement('total_dpt');
-        }
-        if (in_array($newJenis, ['dpt', 'dps', 'dptb'])) {
             Tps::where('id', $newTpsId)->increment('total_dpt');
         }
 
@@ -190,10 +236,10 @@ class DptController extends Controller
     {
         $dpt = Dpt::where('nik', $nik)->firstOrFail();
         $tpsId = $dpt->tps_id;
-        $oldJenis = $dpt->jenis_pemilih;
+        $oldTahapan = $dpt->tahapan;
         $dpt->delete();
 
-        if (in_array($oldJenis, ['dpt', 'dps', 'dptb'])) {
+        if (in_array($oldTahapan, ['dp4', 'dps', 'dptb', 'dpt'])) {
             Tps::where('id', $tpsId)->decrement('total_dpt');
         }
 
@@ -366,7 +412,9 @@ class DptController extends Controller
                     'waktu_checkin' => null,
                     'id_pemilih' => $idPemilih,
                     'qr_payload' => $idPemilih,
-                    'jenis_pemilih' => 'dpt'
+                    // Impor massal adalah berkas DP4; verifikasi menyusul.
+                    'asal' => 'dp4',
+                    'tahapan' => 'dp4',
                 ]);
 
                 Tps::where('id', $tpsId)->increment('total_dpt');

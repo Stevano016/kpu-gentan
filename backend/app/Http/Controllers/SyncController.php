@@ -41,7 +41,12 @@ class SyncController extends Controller
             ], 400);
         }
 
-        $dpts = Dpt::where('tps_id', $tpsId)->get();
+        // Hanya DPT dan DPK yang berhak memilih. Mengirim DP4/DPS/TMS ke
+        // perangkat lapangan akan membuat petugas bisa men-check-in orang yang
+        // belum diverifikasi atau sudah dinyatakan tidak memenuhi syarat.
+        $dpts = Dpt::where('tps_id', $tpsId)
+            ->whereIn('tahapan', ['dpt', 'dpk'])
+            ->get();
 
         return response()->json([
             'status' => 'success',
@@ -177,8 +182,10 @@ class SyncController extends Controller
 
         // Server-side validation: total votes cannot exceed total registered voters and check-in counts
         $tps = \App\Models\Tps::findOrFail($tpsId);
-        $totalDpt = $tps->total_dpt;
-        $totalDpk = \App\Models\Dpt::where('tps_id', $tpsId)->where('jenis_pemilih', 'dpk')->count();
+        // Dihitung dari tahapan, bukan dari penghitung tps.total_dpt yang kini
+        // tidak lagi mencerminkan siapa saja yang berhak memilih.
+        $totalDpt = \App\Models\Dpt::where('tps_id', $tpsId)->where('tahapan', 'dpt')->count();
+        $totalDpk = \App\Models\Dpt::where('tps_id', $tpsId)->where('tahapan', 'dpk')->count();
         $totalPemilih = $totalDpt + $totalDpk;
 
         $totalHadir = \App\Models\Dpt::where('tps_id', $tpsId)->where('status_hadir', true)->count();

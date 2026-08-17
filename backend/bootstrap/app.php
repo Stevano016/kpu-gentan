@@ -27,6 +27,7 @@ return Application::configure(basePath: dirname(__DIR__))
         $middleware->alias([
             'role' => \App\Http\Middleware\EnsureRole::class,
             'sekretariat.admin' => \App\Http\Middleware\EnsureSekretariatAdmin::class,
+            'input.pemilih' => \App\Http\Middleware\EnsureBisaInputPemilih::class,
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {

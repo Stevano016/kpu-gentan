@@ -15,17 +15,31 @@ class DashboardController extends Controller
         // Core stats
         $totalTps = Tps::count();
         
-        $totalDptOnly = Dpt::where('jenis_pemilih', 'dpt')->count();
-        $totalDpkOnly = Dpt::where('jenis_pemilih', 'dpk')->count();
-        $totalDpsOnly = Dpt::where('jenis_pemilih', 'dps')->count();
-        $totalDptbOnly = Dpt::where('jenis_pemilih', 'dptb')->count();
-        $totalPemilih = $totalDptOnly + $totalDpkOnly + $totalDpsOnly + $totalDptbOnly;
+        // Satu query untuk seluruh tahapan; sebelumnya tiap angka satu query.
+        $perTahapan = Dpt::selectRaw('tahapan, COUNT(*) as jumlah, SUM(status_hadir = 1) as hadir')
+            ->groupBy('tahapan')
+            ->get()
+            ->keyBy('tahapan');
 
-        $totalHadirDpt = Dpt::where('jenis_pemilih', 'dpt')->where('status_hadir', true)->count();
-        $totalHadirDpk = Dpt::where('jenis_pemilih', 'dpk')->where('status_hadir', true)->count();
-        $totalHadirDps = Dpt::where('jenis_pemilih', 'dps')->where('status_hadir', true)->count();
-        $totalHadirDptb = Dpt::where('jenis_pemilih', 'dptb')->where('status_hadir', true)->count();
-        $totalHadirAll = $totalHadirDpt + $totalHadirDpk + $totalHadirDps + $totalHadirDptb;
+        $jumlah = fn (string $t) => (int) ($perTahapan[$t]->jumlah ?? 0);
+        $hadir = fn (string $t) => (int) ($perTahapan[$t]->hadir ?? 0);
+
+        $totalDp4 = $jumlah('dp4');
+        $totalDpsOnly = $jumlah('dps');
+        $totalDptbOnly = $jumlah('dptb');
+        $totalDptOnly = $jumlah('dpt');
+        $totalDpkOnly = $jumlah('dpk');
+        $totalTms = $jumlah('tms');
+
+        // Hanya DPT dan DPK yang berhak memilih. DP4 dan DPS masih proses, TMS
+        // sudah gugur — memasukkannya akan menggelembungkan angka kehadiran.
+        $totalPemilih = $totalDptOnly + $totalDpkOnly;
+
+        $totalHadirDpt = $hadir('dpt');
+        $totalHadirDpk = $hadir('dpk');
+        $totalHadirDps = $hadir('dps');
+        $totalHadirDptb = $hadir('dptb');
+        $totalHadirAll = $totalHadirDpt + $totalHadirDpk;
         
         // Quick Count status
         $totalSubmittedQc = QuickCount::where('status', 'final')->count();
@@ -39,28 +53,28 @@ class DashboardController extends Controller
         $tpsList = Tps::with(['quickCount'])
             ->withCount([
                 'dpt as total_dpt' => function ($query) {
-                    $query->where('jenis_pemilih', 'dpt');
+                    $query->where('tahapan', 'dpt');
                 },
                 'dpt as total_dpk' => function ($query) {
-                    $query->where('jenis_pemilih', 'dpk');
+                    $query->where('tahapan', 'dpk');
                 },
                 'dpt as total_dps' => function ($query) {
-                    $query->where('jenis_pemilih', 'dps');
+                    $query->where('tahapan', 'dps');
                 },
                 'dpt as total_dptb' => function ($query) {
-                    $query->where('jenis_pemilih', 'dptb');
+                    $query->where('tahapan', 'dptb');
                 },
                 'dpt as hadir_dpt' => function ($query) {
-                    $query->where('jenis_pemilih', 'dpt')->where('status_hadir', true);
+                    $query->where('tahapan', 'dpt')->where('status_hadir', true);
                 },
                 'dpt as hadir_dpk' => function ($query) {
-                    $query->where('jenis_pemilih', 'dpk')->where('status_hadir', true);
+                    $query->where('tahapan', 'dpk')->where('status_hadir', true);
                 },
                 'dpt as hadir_dps' => function ($query) {
-                    $query->where('jenis_pemilih', 'dps')->where('status_hadir', true);
+                    $query->where('tahapan', 'dps')->where('status_hadir', true);
                 },
                 'dpt as hadir_dptb' => function ($query) {
-                    $query->where('jenis_pemilih', 'dptb')->where('status_hadir', true);
+                    $query->where('tahapan', 'dptb')->where('status_hadir', true);
                 }
             ])
             ->get()
@@ -96,11 +110,16 @@ class DashboardController extends Controller
             'data' => [
                 'stats' => [
                     'total_tps' => $totalTps,
+                    'total_dp4' => $totalDp4,
                     'total_dpt' => $totalDptOnly,
                     'total_dpk' => $totalDpkOnly,
                     'total_dps' => $totalDpsOnly,
                     'total_dptb' => $totalDptbOnly,
+                    'total_tms' => $totalTms,
+                    // Hanya DPT + DPK; tahapan lain belum/tidak berhak memilih.
                     'total_pemilih' => $totalPemilih,
+                    'belum_diverifikasi' => $totalDp4,
+                    'siap_ditetapkan' => $totalDpsOnly + $totalDptbOnly,
                     'total_hadir_dpt' => $totalHadirDpt,
                     'total_hadir_dpk' => $totalHadirDpk,
                     'total_hadir_dps' => $totalHadirDps,
@@ -128,7 +147,7 @@ class DashboardController extends Controller
         $tps = Tps::with(['quickCount', 'users'])->findOrFail($id);
 
         $voters = Dpt::where('tps_id', $id)
-            ->select('nik', 'nama', 'status_hadir', 'waktu_checkin', 'jenis_pemilih')
+            ->select('nik', 'nama', 'status_hadir', 'waktu_checkin', 'tahapan', 'asal', 'tms_alasan', 'dpk_alasan')
             ->orderBy('nama')
             ->get();
 
@@ -137,14 +156,14 @@ class DashboardController extends Controller
             ->limit(10)
             ->get();
 
-        $dptCount = $voters->where('jenis_pemilih', 'dpt')->count();
-        $dpkCount = $voters->where('jenis_pemilih', 'dpk')->count();
-        $dpsCount = $voters->where('jenis_pemilih', 'dps')->count();
-        $dptbCount = $voters->where('jenis_pemilih', 'dptb')->count();
-        $hadirDpt = $voters->where('jenis_pemilih', 'dpt')->where('status_hadir', true)->count();
-        $hadirDpk = $voters->where('jenis_pemilih', 'dpk')->where('status_hadir', true)->count();
-        $hadirDps = $voters->where('jenis_pemilih', 'dps')->where('status_hadir', true)->count();
-        $hadirDptb = $voters->where('jenis_pemilih', 'dptb')->where('status_hadir', true)->count();
+        $dptCount = $voters->where('tahapan', 'dpt')->count();
+        $dpkCount = $voters->where('tahapan', 'dpk')->count();
+        $dpsCount = $voters->where('tahapan', 'dps')->count();
+        $dptbCount = $voters->where('tahapan', 'dptb')->count();
+        $hadirDpt = $voters->where('tahapan', 'dpt')->where('status_hadir', true)->count();
+        $hadirDpk = $voters->where('tahapan', 'dpk')->where('status_hadir', true)->count();
+        $hadirDps = $voters->where('tahapan', 'dps')->where('status_hadir', true)->count();
+        $hadirDptb = $voters->where('tahapan', 'dptb')->where('status_hadir', true)->count();
         $totalVal = $voters->count();
         $hadirVal = $voters->where('status_hadir', true)->count();
 
