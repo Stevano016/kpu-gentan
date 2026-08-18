@@ -6,12 +6,38 @@ export const getAuthHeaders = (token: string | null) => ({
   'Accept': 'application/json',
 });
 
+/**
+ * Dipanggil sekali saat panel menerima 401 dari permintaan yang membawa token.
+ *
+ * Sesi panel web punya umur — lihat `User::sesiKedaluwarsaPada()` di backend —
+ * jadi 401 bukan lagi kejadian aneh yang bisa didiamkan per pemanggil. Kalau
+ * tiap pemanggil menanganinya sendiri, akan selalu ada satu yang lupa, dan
+ * petugas melihat layar kosong tanpa penjelasan alih-alih diminta masuk lagi.
+ */
+let saatSesiBerakhir: (() => void) | null = null;
+
+export const daftarkanPenanganSesiBerakhir = (fn: (() => void) | null) => {
+  saatSesiBerakhir = fn;
+};
+
+const permintaan = async (input: RequestInfo | URL, init?: RequestInit): Promise<Response> => {
+  const res = await fetch(input, init);
+
+  if (res.status === 401) {
+    saatSesiBerakhir?.();
+  }
+
+  return res;
+};
+
 export const ApiService = {
   async getProfile(token: string) {
-    return fetch(`${API_URL}/me`, { headers: getAuthHeaders(token) });
+    return permintaan(`${API_URL}/me`, { headers: getAuthHeaders(token) });
   },
 
   async login(username: string, password: string) {
+    // Sengaja memakai fetch mentah: gagal masuk bukan "sesi berakhir", dan
+    // memicu penanganan sesi saat orang belum punya sesi jelas keliru.
     return fetch(`${API_URL}/login`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
@@ -20,26 +46,26 @@ export const ApiService = {
   },
 
   async logout(token: string) {
-    return fetch(`${API_URL}/logout`, { 
+    return permintaan(`${API_URL}/logout`, { 
       method: 'POST', 
       headers: getAuthHeaders(token) 
     });
   },
 
   async getDashboardSummary(token: string) {
-    return fetch(`${API_URL}/dashboard/summary`, { headers: getAuthHeaders(token) });
+    return permintaan(`${API_URL}/dashboard/summary`, { headers: getAuthHeaders(token) });
   },
 
   async getTpsList(token: string) {
-    return fetch(`${API_URL}/tps`, { headers: getAuthHeaders(token) });
+    return permintaan(`${API_URL}/tps`, { headers: getAuthHeaders(token) });
   },
 
   async getTpsPage(token: string, page: number) {
-    return fetch(`${API_URL}/tps?page=${page}`, { headers: getAuthHeaders(token) });
+    return permintaan(`${API_URL}/tps?page=${page}`, { headers: getAuthHeaders(token) });
   },
 
   async getTpsDetail(token: string, id: number) {
-    return fetch(`${API_URL}/dashboard/tps/${id}`, { headers: getAuthHeaders(token) });
+    return permintaan(`${API_URL}/dashboard/tps/${id}`, { headers: getAuthHeaders(token) });
   },
 
   // type kosong = tampilkan DPT dan DPK sekaligus
@@ -48,15 +74,15 @@ export const ApiService = {
     if (search) url += `&search=${encodeURIComponent(search)}`;
     if (tpsId) url += `&tps_id=${tpsId}`;
     if (type) url += `&jenis_pemilih=${type}`;
-    return fetch(url, { headers: getAuthHeaders(token) });
+    return permintaan(url, { headers: getAuthHeaders(token) });
   },
 
   async getQrCode(token: string, nik: string) {
-    return fetch(`${API_URL}/dpt/${nik}/qrcode`, { headers: getAuthHeaders(token) });
+    return permintaan(`${API_URL}/dpt/${nik}/qrcode`, { headers: getAuthHeaders(token) });
   },
 
   async createTps(token: string, nama: string, wilayah: string) {
-    return fetch(`${API_URL}/tps`, {
+    return permintaan(`${API_URL}/tps`, {
       method: 'POST',
       headers: { ...getAuthHeaders(token), 'Content-Type': 'application/json' },
       body: JSON.stringify({ nama, wilayah })
@@ -66,7 +92,7 @@ export const ApiService = {
   async saveDpt(token: string, payload: any, editingNik?: string) {
     const url = editingNik ? `${API_URL}/dpt/${editingNik}` : `${API_URL}/dpt`;
     const method = editingNik ? 'PUT' : 'POST';
-    return fetch(url, {
+    return permintaan(url, {
       method,
       headers: { ...getAuthHeaders(token), 'Content-Type': 'application/json' },
       body: JSON.stringify(payload)
@@ -74,7 +100,7 @@ export const ApiService = {
   },
 
   async deleteDpt(token: string, nik: string) {
-    return fetch(`${API_URL}/dpt/${nik}`, {
+    return permintaan(`${API_URL}/dpt/${nik}`, {
       method: 'DELETE',
       headers: getAuthHeaders(token)
     });
@@ -83,7 +109,7 @@ export const ApiService = {
   async importCsv(token: string, file: File) {
     const formData = new FormData();
     formData.append('file', file);
-    return fetch(`${API_URL}/dpt/import`, {
+    return permintaan(`${API_URL}/dpt/import`, {
       method: 'POST',
       headers: {
         'Authorization': `Bearer ${token}`
@@ -95,11 +121,11 @@ export const ApiService = {
   async getKppsUsers(token: string, page: number, role = '') {
     let url = `${API_URL}/users?page=${page}`;
     if (role) url += `&role=${role}`;
-    return fetch(url, { headers: getAuthHeaders(token) });
+    return permintaan(url, { headers: getAuthHeaders(token) });
   },
 
   async createKpps(token: string, payload: any) {
-    return fetch(`${API_URL}/users`, {
+    return permintaan(`${API_URL}/users`, {
       method: 'POST',
       headers: { ...getAuthHeaders(token), 'Content-Type': 'application/json' },
       body: JSON.stringify(payload)
@@ -107,7 +133,7 @@ export const ApiService = {
   },
 
   async resetKppsPassword(token: string, id: number, passwordVal: string) {
-    return fetch(`${API_URL}/users/${id}/reset-password`, {
+    return permintaan(`${API_URL}/users/${id}/reset-password`, {
       method: 'POST',
       headers: { ...getAuthHeaders(token), 'Content-Type': 'application/json' },
       body: JSON.stringify({ password: passwordVal })
@@ -115,19 +141,19 @@ export const ApiService = {
   },
 
   async deleteKpps(token: string, id: number) {
-    return fetch(`${API_URL}/users/${id}`, {
+    return permintaan(`${API_URL}/users/${id}`, {
       method: 'DELETE',
       headers: getAuthHeaders(token)
     });
   },
 
   async getPaslons(token: string) {
-    return fetch(`${API_URL}/paslon`, { headers: getAuthHeaders(token) });
+    return permintaan(`${API_URL}/paslon`, { headers: getAuthHeaders(token) });
   },
 
   async createPaslon(token: string, form: FormData) {
     // Tanpa Content-Type manual: browser yang menyusun boundary multipart.
-    return fetch(`${API_URL}/paslon`, {
+    return permintaan(`${API_URL}/paslon`, {
       method: 'POST',
       headers: getAuthHeaders(token),
       body: form
@@ -138,7 +164,7 @@ export const ApiService = {
     // PHP tidak mem-parsing berkas pada request PUT, jadi dikirim sebagai POST
     // dengan _method=PUT — cara baku Laravel untuk unggahan saat memperbarui.
     form.append('_method', 'PUT');
-    return fetch(`${API_URL}/paslon/${id}`, {
+    return permintaan(`${API_URL}/paslon/${id}`, {
       method: 'POST',
       headers: getAuthHeaders(token),
       body: form
@@ -146,7 +172,7 @@ export const ApiService = {
   },
 
   async deletePaslon(token: string, id: number) {
-    return fetch(`${API_URL}/paslon/${id}`, {
+    return permintaan(`${API_URL}/paslon/${id}`, {
       method: 'DELETE',
       headers: getAuthHeaders(token)
     });
@@ -155,11 +181,11 @@ export const ApiService = {
   // --- Perpindahan tahapan pendataan ---
 
   async ringkasanTahapan(token: string) {
-    return fetch(`${API_URL}/tahapan/ringkasan`, { headers: getAuthHeaders(token) });
+    return permintaan(`${API_URL}/tahapan/ringkasan`, { headers: getAuthHeaders(token) });
   },
 
   async verifikasiDp4(token: string, payload: { tps_id?: string | number } = {}) {
-    return fetch(`${API_URL}/tahapan/verifikasi`, {
+    return permintaan(`${API_URL}/tahapan/verifikasi`, {
       method: 'POST',
       headers: { ...getAuthHeaders(token), 'Content-Type': 'application/json' },
       body: JSON.stringify(payload)
@@ -167,7 +193,7 @@ export const ApiService = {
   },
 
   async tetapkanDpt(token: string, payload: { tps_id?: string | number; paksa?: boolean } = {}) {
-    return fetch(`${API_URL}/tahapan/tetapkan`, {
+    return permintaan(`${API_URL}/tahapan/tetapkan`, {
       method: 'POST',
       headers: { ...getAuthHeaders(token), 'Content-Type': 'application/json' },
       body: JSON.stringify(payload)
@@ -175,7 +201,7 @@ export const ApiService = {
   },
 
   async tandaiTms(token: string, nik: string, alasan: string) {
-    return fetch(`${API_URL}/tahapan/${nik}/tms`, {
+    return permintaan(`${API_URL}/tahapan/${nik}/tms`, {
       method: 'POST',
       headers: { ...getAuthHeaders(token), 'Content-Type': 'application/json' },
       body: JSON.stringify({ alasan })
@@ -183,14 +209,14 @@ export const ApiService = {
   },
 
   async batalkanTms(token: string, nik: string) {
-    return fetch(`${API_URL}/tahapan/${nik}/tms`, {
+    return permintaan(`${API_URL}/tahapan/${nik}/tms`, {
       method: 'DELETE',
       headers: getAuthHeaders(token)
     });
   },
 
   async tandaiDpk(token: string, nik: string, alasan: string) {
-    return fetch(`${API_URL}/tahapan/${nik}/dpk`, {
+    return permintaan(`${API_URL}/tahapan/${nik}/dpk`, {
       method: 'POST',
       headers: { ...getAuthHeaders(token), 'Content-Type': 'application/json' },
       body: JSON.stringify({ alasan })
@@ -198,7 +224,7 @@ export const ApiService = {
   },
 
   async batalkanDpk(token: string, nik: string) {
-    return fetch(`${API_URL}/tahapan/${nik}/dpk`, {
+    return permintaan(`${API_URL}/tahapan/${nik}/dpk`, {
       method: 'DELETE',
       headers: getAuthHeaders(token)
     });
@@ -207,12 +233,12 @@ export const ApiService = {
   // --- Ekspor data ---
 
   async daftarRw(token: string) {
-    return fetch(`${API_URL}/export/rw`, { headers: getAuthHeaders(token) });
+    return permintaan(`${API_URL}/export/rw`, { headers: getAuthHeaders(token) });
   },
 
   async exportPemilih(token: string, params: Record<string, string> = {}) {
     const qs = new URLSearchParams(params).toString();
-    return fetch(`${API_URL}/export/pemilih${qs ? `?${qs}` : ''}`, {
+    return permintaan(`${API_URL}/export/pemilih${qs ? `?${qs}` : ''}`, {
       headers: getAuthHeaders(token)
     });
   },
@@ -221,21 +247,21 @@ export const ApiService = {
 
   async getKeluarga(token: string, params: Record<string, string> = {}) {
     const qs = new URLSearchParams(params).toString();
-    return fetch(`${API_URL}/keluarga${qs ? `?${qs}` : ''}`, {
+    return permintaan(`${API_URL}/keluarga${qs ? `?${qs}` : ''}`, {
       headers: getAuthHeaders(token)
     });
   },
 
   async getWilayahKeluarga(token: string, params: Record<string, string> = {}) {
     const qs = new URLSearchParams(params).toString();
-    return fetch(`${API_URL}/keluarga/wilayah${qs ? `?${qs}` : ''}`, {
+    return permintaan(`${API_URL}/keluarga/wilayah${qs ? `?${qs}` : ''}`, {
       headers: getAuthHeaders(token)
     });
   },
 
   async getKeluargaUntukEkspor(token: string, params: Record<string, string> = {}) {
     const qs = new URLSearchParams(params).toString();
-    return fetch(`${API_URL}/keluarga/ekspor${qs ? `?${qs}` : ''}`, {
+    return permintaan(`${API_URL}/keluarga/ekspor${qs ? `?${qs}` : ''}`, {
       headers: getAuthHeaders(token)
     });
   }

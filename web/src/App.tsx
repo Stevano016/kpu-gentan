@@ -1,10 +1,11 @@
 import React, { useState, useEffect } from 'react';
 import { BrowserRouter, Routes, Route, Navigate, useNavigate, useParams, useLocation } from 'react-router-dom';
-import { ApiService } from './services/api';
+import { ApiService, daftarkanPenanganSesiBerakhir } from './services/api';
 
 // Shared Layouts & Modals
 import { LoginScreen } from './components/LoginScreen';
 import { Sidebar } from './components/Sidebar';
+import { PenjagaSesi, type InfoSesi } from './components/PenjagaSesi';
 import { Icons } from './components/Icons';
 import { KETERANGAN_TMS } from './utils/tahapan';
 import { TpsModal } from './components/modals/TpsModal';
@@ -95,11 +96,17 @@ function AppContent() {
 
   const [token, setToken] = useState<string | null>(localStorage.getItem('token'));
   const [user, setUser] = useState<any>(null);
+  // Umur sesi ditentukan server dan dikirim saat masuk / lewat /api/me.
+  // Sekretariat "Lihat Saja" dan KPPS mendapat `tanpa_batas: true`.
+  const [sesi, setSesi] = useState<InfoSesi | null>(null);
   
   // Auth Form State
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [loginError, setLoginError] = useState('');
+  // Kapan penguncian login berakhir (epoch ms); null = tidak terkunci.
+  const [kunciSampai, setKunciSampai] = useState<number | null>(null);
+  const [sisaKunci, setSisaKunci] = useState(0);
   const [showPassword, setShowPassword] = useState(false);
 
   // Dashboard Data
@@ -432,6 +439,7 @@ function AppContent() {
       const json = await res.json();
       if (res.ok) {
         setUser(json.user);
+        setSesi(json.sesi ?? null);
         if (!PERAN_PANEL.includes(json.user.role)) {
           setLoginError('Akses Ditolak. Panel ini hanya untuk Sekretariat dan Pantarlih.');
           handleLogoutDirect();
@@ -448,8 +456,38 @@ function AppContent() {
     localStorage.removeItem('token');
     setToken(null);
     setUser(null);
+    setSesi(null);
     navigate('/login');
   };
+
+  /**
+   * Sesi habis — entah karena menganggur, mencapai batas waktu, atau server
+   * menolak tokennya (401 dari mana pun, ditangkap terpusat di `api.ts`).
+   *
+   * Pesannya ditulis di layar masuk, bukan lewat modal peringatan: modalnya
+   * ikut hilang bersama panel saat rutenya berpindah ke /login, jadi petugas
+   * tidak akan sempat membacanya.
+   */
+  const akhiriSesi = React.useCallback((alasan: 'menganggur' | 'kedaluwarsa' | 'ditolak') => {
+    handleLogoutDirect();
+    setLoginError(
+      alasan === 'menganggur'
+        ? 'Sesi ditutup otomatis karena panel dibiarkan menganggur. Silakan masuk lagi.'
+        : alasan === 'kedaluwarsa'
+          ? 'Sesi Anda sudah mencapai batas waktu. Silakan masuk lagi.'
+          : 'Sesi Anda berakhir. Silakan masuk lagi.',
+    );
+  }, []);
+
+  // 401 dari permintaan mana pun berarti tokennya sudah tidak berlaku lagi.
+  useEffect(() => {
+    daftarkanPenanganSesiBerakhir(() => {
+      // Tanpa penjagaan ini, beberapa permintaan yang gagal bersamaan akan
+      // memicu logout berkali-kali dan menimpa pesan yang sudah tampil.
+      if (localStorage.getItem('token')) akhiriSesi('ditolak');
+    });
+    return () => daftarkanPenanganSesiBerakhir(null);
+  }, [akhiriSesi]);
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -465,7 +503,14 @@ function AppContent() {
         localStorage.setItem('token', json.token);
         setToken(json.token);
         setUser(json.user);
-        navigate('/dashboard');
+        setSesi(json.sesi ?? null);
+        navigate(json.user.role === 'pantarlih' ? '/pemilih' : '/dashboard');
+      } else if (res.status === 429) {
+        // Terkunci setelah terlalu banyak percobaan gagal. Sisa waktunya
+        // ditampilkan supaya petugas yang salah ketik tahu harus menunggu
+        // berapa lama, bukan menebak-nebak apakah sistemnya rusak.
+        setLoginError(json.message || 'Terlalu banyak percobaan masuk. Coba lagi nanti.');
+        setKunciSampai(Date.now() + (Number(json.retry_after) || 60) * 1000);
       } else {
         setLoginError(json.errors?.username?.[0] || json.message || 'Login gagal.');
       }
@@ -473,6 +518,41 @@ function AppContent() {
       setLoginError('Gagal terhubung ke server.');
     }
   };
+
+  // Hitung mundur penguncian login: tombol Masuk mati sampai waktunya habis,
+  // supaya percobaan yang pasti ditolak tidak menambah hitungan lagi.
+  useEffect(() => {
+    if (!kunciSampai) { setSisaKunci(0); return; }
+
+    const hitung = () => {
+      const sisa = Math.ceil((kunciSampai - Date.now()) / 1000);
+      if (sisa <= 0) {
+        setKunciSampai(null);
+        setSisaKunci(0);
+        setLoginError('');
+      } else {
+        setSisaKunci(sisa);
+      }
+    };
+
+    hitung();
+    const denyut = window.setInterval(hitung, 1000);
+    return () => window.clearInterval(denyut);
+  }, [kunciSampai]);
+
+  /** Menyentuh endpoint ringan supaya server mencatat sesi ini masih dipakai. */
+  const perpanjangSesi = React.useCallback(async () => {
+    if (!token) return;
+    try {
+      const res = await ApiService.getProfile(token);
+      if (res.ok) {
+        const json = await res.json();
+        setSesi(json.sesi ?? null);
+      }
+    } catch {
+      /* gagal menyambung bukan alasan memutus sesi; denyut berikutnya mencoba lagi */
+    }
+  }, [token]);
 
   const handleLogout = async () => {
     showConfirm(
@@ -1099,6 +1179,7 @@ function AppContent() {
             loginError={loginError}
             showPassword={showPassword}
             setShowPassword={setShowPassword}
+            sisaKunci={sisaKunci}
           />
         } />
       </Routes>
@@ -1107,6 +1188,10 @@ function AppContent() {
 
   return (
     <div className={`app-container${isSidebarCollapsed ? ' sidebar-collapsed' : ''}`}>
+      {/* Peringatan sebelum sesi ditutup. Tidak muncul sama sekali untuk
+          sekretariat "Lihat Saja" — sesinya memang tanpa batas. */}
+      <PenjagaSesi sesi={sesi} perpanjang={perpanjangSesi} akhiri={akhiriSesi} />
+
       {/* Shown only on narrow screens, where the sidebar is hidden off-canvas. */}
       <header className="mobile-topbar">
         <button

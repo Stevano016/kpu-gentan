@@ -9,6 +9,8 @@ interface LoginScreenProps {
   loginError: string;
   showPassword: boolean;
   setShowPassword: (val: boolean) => void;
+  /** Detik tersisa sebelum boleh mencoba masuk lagi; 0 berarti tidak terkunci. */
+  sisaKunci?: number;
 }
 
 export const LoginScreen: React.FC<LoginScreenProps> = ({
@@ -20,7 +22,11 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({
   loginError,
   showPassword,
   setShowPassword,
+  sisaKunci = 0,
 }) => {
+  const terkunci = sisaKunci > 0;
+  const hitungMundur = `${Math.floor(sisaKunci / 60)}:${String(sisaKunci % 60).padStart(2, '0')}`;
+
   return (
     <div className="login-wrapper">
       <div className="login-card">
@@ -34,6 +40,11 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({
           {loginError && (
             <div style={{ backgroundColor: 'var(--danger-light)', color: 'var(--danger)', padding: '12px', borderRadius: 'var(--radius-sm)', fontSize: '0.875rem', marginBottom: '20px', fontWeight: '500' }}>
               {loginError}
+              {terkunci && (
+                <div style={{ marginTop: '6px', fontWeight: 700, fontVariantNumeric: 'tabular-nums' }}>
+                  Bisa dicoba lagi dalam {hitungMundur}
+                </div>
+              )}
             </div>
           )}
           <div className="form-group">
@@ -77,8 +88,15 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({
               </button>
             </div>
           </div>
-          <button type="submit" className="btn btn-primary" style={{ width: '100%', marginTop: '8px' }}>
-            Masuk
+          {/* Dimatikan selama terkunci: percobaan yang pasti ditolak hanya
+              menambah hitungan dan memperpanjang penguncian. */}
+          <button
+            type="submit"
+            className="btn btn-primary"
+            style={{ width: '100%', marginTop: '8px' }}
+            disabled={terkunci}
+          >
+            {terkunci ? `Terkunci (${hitungMundur})` : 'Masuk'}
           </button>
         </form>
       </div>
