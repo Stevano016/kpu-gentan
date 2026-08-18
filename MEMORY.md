@@ -161,6 +161,14 @@ This file captures the active state, environment variables, completed tasks, and
   - Deploy produksi dijalankan lewat satu skrip dengan `setsid nohup` + log ke berkas, mengikuti catatan 17 Agustus tentang SSH bleber yang kadang memutus sesi. Terverifikasi setelahnya: 7.494 pemilih (638 NIK + 627 NKK sementara, 3.688 keluarga, sebaran 5 TPS sesuai), SPA dan fallback rutenya 200, `/api/keluarga` dan `/api/export/pemilih?format=json` menjawab benar, dan berkas .xlsx yang diunduh dari peramban berisi 15 lembar dengan NIK/NKK bertipe teks.
   - **`migrate:fresh` diblokir classifier izin** dan baru dijalankan setelah konfirmasi eksplisit dari user — perintah ini menghapus seluruh tabel lebih dulu, jadi memang selayaknya tidak berjalan diam-diam.
 
+- **18 Agt 2026 — Foto paslon 404 di produksi: `location /storage/` dikalahkan blok regex**:
+  - Gejalanya `https://gentan.wujud.id/storage/paslon/xxx.jpg` menjawab **404** padahal berkasnya ada di `backend/storage/app/public/paslon/`, symlink `public/storage` ada, izinnya benar, dan `location /storage/` sudah terpasang di vhost sejak 17 Agustus.
+  - **Sebabnya urutan pencocokan location nginx**: blok `location ~* \.(js|css|png|jpg|...)$` untuk aset SPA adalah **regex**, dan nginx memeriksa regex *setelah* menemukan prefix terpanjang — kalau ada regex yang cocok, regex itu yang menang. Setiap foto karena itu dilayani blok aset SPA yang memakai `root web/dist`, dicari di `web/dist/storage/paslon/xxx.jpg`, dan tentu tidak ada. Diperbaiki dengan **`location ^~ /storage/`**: `^~` menghentikan pencarian regex begitu prefix ini yang terpanjang.
+  - **Jebakan kedua yang ikut diperbaiki**: `alias` + `try_files $uri` menyusun jalur dari alias + URI **utuh** (`…/public/storage/storage/paslon/x.jpg`), bukan sisa URI-nya — jadi blok itu akan tetap 404 walau `^~` sudah dipasang. Diganti `root /var/www/gentan/backend/public;` yang kebetulan tepat karena URL-nya memang diawali `/storage/`.
+  - **Kenapa baru ketahuan sekarang**: verifikasi 17 Agustus hanya memastikan `/storage/...` menjawab "404 nginx, bukan halaman SPA" — dan itu memang yang terjadi, tapi dari blok location yang salah. Waktu itu belum ada satu pun foto terunggah, jadi tidak ada yang bisa membedakan 404-benar dari 404-salah. **Pelajarannya: menguji berkas yang tidak ada tidak membuktikan berkas yang ada akan tersaji.**
+  - Vhost lama dicadangkan ke `/root/cadangan-gentan/vhost-gentan-sebelum-perbaikan-storage.conf`. Setelah `nginx -t` + reload, terverifikasi: foto 200 `image/jpeg` 53.167 byte, berkas tidak ada tetap 404, aset SPA dan fallback rute tetap 200, API tetap 401 dengan `Accept: application/json`.
+  - **Server tes (`servergentan`, Apache) tidak terkena** — DocumentRoot-nya memang `backend/public` sehingga `/storage/` tersaji sebagai berkas statis biasa. Diuji langsung: berkas di `storage/app/public` menjawab 200 dengan isi yang benar.
+
 ---
 
 ## 🛠️ Local Environment Notes
