@@ -651,8 +651,18 @@ tr:hover td {
   background-color: oklch(0.20 0.02 165 / 0.4);
   backdrop-filter: blur(4px);
   display: flex;
-  align-items: center;
   justify-content: center;
+  /* `flex-start`, bukan `center`. Dengan `align-items: center`, isi yang lebih
+     tinggi dari layar melimpah ke **dua** arah, dan bagian yang keluar di atas
+     tidak bisa digulung sama sekali — judul dan tombol tutupnya hilang untuk
+     selamanya. Itulah yang terjadi pada form Tambah Pemilih di layar pendek.
+     Pemusatan tetap didapat lewat `margin: auto` pada isinya: browser
+     memusatkan bila ada ruang, dan menempel ke atas bila tidak. */
+  align-items: flex-start;
+  overflow-y: auto;
+  /* Menahan gulungan agar tidak merembet ke halaman di belakang modal. */
+  overscroll-behavior: contain;
+  padding: 24px 16px;
   z-index: 1000;
   animation: fadeIn 0.2s ease-out;
 }
@@ -665,6 +675,9 @@ tr:hover td {
   padding: 32px;
   box-shadow: var(--shadow-lg);
   position: relative;
+  /* Pasangan dari `align-items: flex-start` di atas — ini yang memusatkan
+     modal selama ia masih muat. */
+  margin: auto;
   animation: scaleUp 0.2s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
