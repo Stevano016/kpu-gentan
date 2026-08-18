@@ -1463,3 +1463,191 @@ tr:hover td {
     text-align: left;
   }
 }
+
+/* ============================================================
+   Data Keluarga — pengelompokan pemilih per Kartu Keluarga
+   ============================================================ */
+
+/* Baris penyaring dipakai bersama halaman keluarga; bentuknya sama dengan
+   penyaring di halaman pemilih supaya keduanya terasa satu aplikasi. */
+.filter-bar {
+  display: flex;
+  gap: 16px;
+  align-items: center;
+  flex-wrap: wrap;
+  margin-bottom: 24px;
+  padding: 16px;
+  background-color: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+}
+
+.filter-search {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-grow: 1;
+  min-width: 260px;
+  padding: 8px 12px;
+  background-color: var(--background);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+}
+
+.filter-search input {
+  width: 100%;
+  border: none;
+  outline: none;
+  background: none;
+  font-size: 0.875rem;
+  font-family: inherit;
+  color: var(--text);
+}
+
+.filter-field {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.filter-field label {
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: var(--text-muted);
+  white-space: nowrap;
+}
+
+.filter-field .form-control {
+  width: 150px;
+  padding: 8px 12px;
+  margin: 0;
+}
+
+.kk-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin-bottom: 24px;
+}
+
+.kk-card {
+  background-color: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow);
+  overflow: hidden;
+  transition: var(--transition);
+}
+
+.kk-card:hover {
+  border-color: var(--border-focus);
+}
+
+/* Keluarga yang NKK-nya masih nomor sementara ditandai di tepi kiri: kalau
+   hanya lewat lencana kecil, ia hilang begitu daftarnya panjang. */
+.kk-card-tanda {
+  border-left: 4px solid var(--warning);
+}
+
+.kk-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  width: 100%;
+  padding: 14px 18px;
+  background: none;
+  border: none;
+  cursor: pointer;
+  text-align: left;
+  font-family: inherit;
+  flex-wrap: wrap;
+}
+
+.kk-head:hover {
+  background-color: var(--surface-alt);
+}
+
+.kk-head-utama {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 240px;
+}
+
+.kk-nomor {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.kk-label {
+  font-size: 0.7rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+}
+
+.kk-nkk {
+  font-family: monospace;
+  font-size: 0.95rem;
+  font-weight: 700;
+  color: var(--primary);
+}
+
+.kk-alamat {
+  font-size: 0.8rem;
+  color: var(--text-muted);
+}
+
+.kk-head-meta {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.kk-chip {
+  padding: 4px 10px;
+  border-radius: 999px;
+  background-color: var(--surface-alt);
+  border: 1px solid var(--border);
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: var(--text-muted);
+  white-space: nowrap;
+}
+
+.kk-chip-kuat {
+  background-color: var(--primary-light);
+  border-color: var(--primary-light);
+  color: var(--primary-hover);
+}
+
+.kk-kait {
+  font-size: 0.7rem;
+  color: var(--text-muted);
+}
+
+.kk-card .table-container {
+  border: none;
+  border-top: 1px solid var(--border);
+  box-shadow: none;
+}
+
+/* Kepala tabel di dalam kartu tidak boleh menempel ke atas layar: ia berada di
+   dalam kartu yang bisa ikut tergulung. */
+.kk-card .table-container th {
+  position: static;
+}
+
+.kk-kosong {
+  padding: 40px;
+  text-align: center;
+  color: var(--text-muted);
+  background-color: var(--surface);
+  border: 1px dashed var(--border);
+  border-radius: var(--radius-md);
+}

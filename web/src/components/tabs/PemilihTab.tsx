@@ -292,7 +292,21 @@ export const PemilihTab: React.FC<PemilihTabProps> = ({
                   <React.Fragment key={v.nik}>
                     <tr style={{ borderBottom: expandedNik === v.nik ? 'none' : '1px solid var(--border)' }}>
                       <td className="cell-nowrap" style={{ fontFamily: 'monospace', fontWeight: '700', color: 'var(--primary)' }}>{v.id_pemilih}</td>
-                      <td className="cell-nowrap" style={{ fontFamily: 'monospace', fontWeight: '500' }}>{v.nik}</td>
+                      <td className="cell-nowrap" style={{ fontFamily: 'monospace', fontWeight: '500' }}>
+                        {v.nik}
+                        {/* Nomor sementara buatan sistem harus terbaca sebagai
+                            nomor sementara di mana pun ia muncul; tanpa tanda
+                            ini ia tampak seperti NIK resmi. */}
+                        {v.nik_sintetis && (
+                          <span
+                            className="badge badge-warning"
+                            style={{ marginLeft: '6px' }}
+                            title="NIK asli belum ada di data pembanding — nomor ini dibuat sistem dan wajib dilengkapi saat coklit"
+                          >
+                            sementara
+                          </span>
+                        )}
+                      </td>
                       <td style={{ fontWeight: '600' }}>{v.nama}</td>
                       <td>
                         <span
@@ -427,7 +441,18 @@ export const PemilihTab: React.FC<PemilihTabProps> = ({
                           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: '16px 24px' }}>
                             <div>
                               <div style={{ fontSize: '0.75rem', fontWeight: '600', color: 'var(--text-muted)', marginBottom: '4px' }}>NKK</div>
-                              <div style={{ fontSize: '0.875rem', fontWeight: '500' }}>{v.nkk || '-'}</div>
+                              <div style={{ fontSize: '0.875rem', fontWeight: '500' }}>
+                                {v.nkk || '-'}
+                                {v.nkk_sintetis && (
+                                  <span
+                                    className="badge badge-warning"
+                                    style={{ marginLeft: '6px' }}
+                                    title="NKK asli belum ada — nomor sementara, keluarganya belum bisa dikelompokkan"
+                                  >
+                                    sementara
+                                  </span>
+                                )}
+                              </div>
                             </div>
                             <div>
                               <div style={{ fontSize: '0.75rem', fontWeight: '600', color: 'var(--text-muted)', marginBottom: '4px' }}>Umur</div>

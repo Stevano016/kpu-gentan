@@ -117,7 +117,7 @@ class DatabaseSeeder extends Seeder
                     'asal' => 'dp4',
                     'tahapan' => 'dp4',
                     'id_pemilih' => $idPemilih,
-                    'umur' => intval($row[$colMap['umur']]),
+                    'umur' => $row[$colMap['umur']] !== '' ? intval($row[$colMap['umur']]) : null,
                     'status_kawin' => $row[$colMap['status_kawin']],
                     'jenis_kelamin' => $row[$colMap['jenis_kelamin']],
                     'alamat' => $row[$colMap['alamat']],
@@ -130,7 +130,11 @@ class DatabaseSeeder extends Seeder
                     // enum, isinya dipindah ke catatan_impor dan hasil
                     // pemeriksaan baru diisi saat verifikasi.
                     'keterangan' => null,
-                    'catatan_impor' => $row[$colMap['keterangan']] ?: null,
+                    'catatan_impor' => $row[$colMap['catatan_impor']] ?: null,
+                    // Penanda nomor sementara: lihat migrasi
+                    // `tandai_nik_nkk_sintetis_pada_dpt`.
+                    'nik_sintetis' => $row[$colMap['nik_sintetis']] === '1',
+                    'nkk_sintetis' => $row[$colMap['nkk_sintetis']] === '1',
                     'created_at' => now(),
                     'updated_at' => now(),
                 ];

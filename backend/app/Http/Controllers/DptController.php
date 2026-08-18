@@ -7,6 +7,7 @@ use App\Models\Tps;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Validator;
+use Illuminate\Validation\Rule;
 use chillerlan\QRCode\QRCode;
 
 class DptController extends Controller
@@ -162,6 +163,14 @@ class DptController extends Controller
         $dpt = Dpt::where('nik', $nik)->firstOrFail();
 
         $validator = Validator::make($request->all(), [
+            // NIK hanya boleh diganti selama masih nomor sementara buatan
+            // sistem — itulah satu-satunya cara pantarlih melengkapi 638 orang
+            // yang NIK aslinya belum ketemu. Nomor asli tidak boleh diubah:
+            // ia primary key, dan mengganti-gantinya memutus jejak data.
+            'nik' => [
+                'nullable', 'string', 'size:16',
+                Rule::unique('dpt', 'nik')->ignore($dpt->nik, 'nik'),
+            ],
             'nkk' => 'nullable|string|size:16',
             'nama' => 'required|string|max:255',
             'tps_id' => 'required|exists:tps,id',
@@ -182,6 +191,14 @@ class DptController extends Controller
             return response()->json([
                 'status' => 'error',
                 'errors' => $validator->errors()
+            ], 422);
+        }
+
+        $nikBaru = $request->input('nik');
+        if (filled($nikBaru) && $nikBaru !== $dpt->nik && ! $dpt->nik_sintetis) {
+            return response()->json([
+                'status' => 'error',
+                'message' => 'NIK asli tidak bisa diubah. Hanya nomor sementara buatan sistem yang boleh dilengkapi.',
             ], 422);
         }
 
@@ -209,6 +226,19 @@ class DptController extends Controller
             if ($request->has($field)) {
                 $updateData[$field] = $request->input($field);
             }
+        }
+
+        // Penanda "nomor sementara" ikut isinya, bukan disetel terpisah:
+        // kalau ia perlu dimatikan manual, cepat atau lambat akan ada nomor
+        // asli yang masih berlencana sementara, atau sebaliknya.
+        if (filled($nikBaru) && $nikBaru !== $dpt->nik) {
+            $updateData['nik'] = $nikBaru;
+            $updateData['nik_sintetis'] = str_starts_with($nikBaru, Dpt::AWALAN_NIK_SINTETIS);
+        }
+
+        if ($request->has('nkk')) {
+            $updateData['nkk_sintetis'] = filled($request->nkk)
+                && str_starts_with($request->nkk, Dpt::AWALAN_NKK_SINTETIS);
         }
 
         $dpt->update($updateData);

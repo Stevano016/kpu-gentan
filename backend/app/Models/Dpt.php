@@ -18,6 +18,8 @@ class Dpt extends Model
     protected $fillable = [
         'nik',
         'nkk',
+        'nik_sintetis',
+        'nkk_sintetis',
         'nama',
         'tps_id',
         'status_hadir',
@@ -43,6 +45,8 @@ class Dpt extends Model
 
     protected $casts = [
         'status_hadir' => 'boolean',
+        'nik_sintetis' => 'boolean',
+        'nkk_sintetis' => 'boolean',
         'waktu_checkin' => 'datetime',
         'diverifikasi_pada' => 'datetime',
     ];
@@ -68,6 +72,14 @@ class Dpt extends Model
         'tni',
         'polri',
     ];
+
+    /**
+     * Awalan nomor sementara buatan sistem, dipakai saat NIK/NKK seseorang
+     * belum ada di data pembanding. 99 bukan kode provinsi yang sah, jadi nomor
+     * ini mustahil bentrok dengan nomor asli dan langsung kelihatan palsu.
+     */
+    public const AWALAN_NIK_SINTETIS = '9999';
+    public const AWALAN_NKK_SINTETIS = '9998';
 
     /** Keterangan yang berarti pemilih gugur (semua kecuali `dps`). */
     public const KETERANGAN_TMS = ['meninggal', 'data ganda', 'dibawah umur', 'pindah', 'tni', 'polri'];

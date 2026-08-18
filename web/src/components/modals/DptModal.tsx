@@ -81,6 +81,10 @@ export const DptModal: React.FC<DptModalProps> = ({
 }) => {
   if (!isOpen) return null;
 
+  // Nomor sementara buatan sistem berawalan 9999 (NIK) / 9998 (NKK); lihat
+  // migrasi `tandai_nik_nkk_sintetis_pada_dpt` di backend.
+  const nikSementara = !!editingDpt?.nik_sintetis;
+
   return (
     <div className="modal-overlay">
       <div className="modal-content" style={{ width: '680px', maxWidth: '95%' }}>
@@ -93,22 +97,44 @@ export const DptModal: React.FC<DptModalProps> = ({
             <div style={{ flex: 1, minWidth: '280px', display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px 16px' }}>
               
               <div className="form-group" style={{ gridColumn: 'span 1', marginBottom: 0 }}>
-                <label className="form-label">NIK (16 Digit)</label>
+                <label className="form-label">
+                  NIK (16 Digit)
+                  {nikSementara && (
+                    <span className="badge badge-warning" style={{ marginLeft: '8px' }}>
+                      nomor sementara
+                    </span>
+                  )}
+                </label>
                 <input
                   type="text"
                   className="form-control"
                   required
                   maxLength={16}
                   minLength={16}
-                  disabled={!!editingDpt}
+                  /* NIK asli terkunci — ia primary key. Nomor sementara buatan
+                     sistem justru harus bisa diganti: itulah cara 638 orang
+                     tanpa NIK dilengkapi setelah coklit. */
+                  disabled={!!editingDpt && !nikSementara}
                   placeholder="NIK 16 Digit"
                   value={dptFormNik}
                   onChange={e => setDptFormNik(e.target.value.replace(/\D/g, ''))}
                 />
+                {nikSementara && (
+                  <small style={{ display: 'block', marginTop: '4px', fontSize: '0.75rem', color: 'var(--text-muted)' }}>
+                    Nomor ini dibuat sistem karena NIK aslinya belum ada. Ganti dengan NIK asli bila sudah diketahui.
+                  </small>
+                )}
               </div>
 
               <div className="form-group" style={{ gridColumn: 'span 1', marginBottom: 0 }}>
-                <label className="form-label">NKK (16 Digit)</label>
+                <label className="form-label">
+                  NKK (16 Digit)
+                  {editingDpt?.nkk_sintetis && (
+                    <span className="badge badge-warning" style={{ marginLeft: '8px' }}>
+                      nomor sementara
+                    </span>
+                  )}
+                </label>
                 <input
                   type="text"
                   className="form-control"

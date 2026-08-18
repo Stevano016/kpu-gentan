@@ -215,5 +215,28 @@ export const ApiService = {
     return fetch(`${API_URL}/export/pemilih${qs ? `?${qs}` : ''}`, {
       headers: getAuthHeaders(token)
     });
+  },
+
+  // --- Pengelompokan per Kartu Keluarga ---
+
+  async getKeluarga(token: string, params: Record<string, string> = {}) {
+    const qs = new URLSearchParams(params).toString();
+    return fetch(`${API_URL}/keluarga${qs ? `?${qs}` : ''}`, {
+      headers: getAuthHeaders(token)
+    });
+  },
+
+  async getWilayahKeluarga(token: string, params: Record<string, string> = {}) {
+    const qs = new URLSearchParams(params).toString();
+    return fetch(`${API_URL}/keluarga/wilayah${qs ? `?${qs}` : ''}`, {
+      headers: getAuthHeaders(token)
+    });
+  },
+
+  async getKeluargaUntukEkspor(token: string, params: Record<string, string> = {}) {
+    const qs = new URLSearchParams(params).toString();
+    return fetch(`${API_URL}/keluarga/ekspor${qs ? `?${qs}` : ''}`, {
+      headers: getAuthHeaders(token)
+    });
   }
 };

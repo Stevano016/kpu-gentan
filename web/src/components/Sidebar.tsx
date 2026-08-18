@@ -94,6 +94,14 @@ export const Sidebar: React.FC<SidebarProps> = ({
               <span>Data Pemilih</span>
             </button>
           </li>
+          {/* Tersedia untuk sekretariat dan pantarlih: keduanya bekerja per
+              rumah tangga, bukan per orang. */}
+          <li className={`menu-item ${path === '/keluarga' ? 'active' : ''}`}>
+            <button onClick={() => go('/keluarga')} title="Data Keluarga (pengelompokan per No. KK)">
+              <Icons.Keluarga />
+              <span>Data Keluarga</span>
+            </button>
+          </li>
           {!isPantarlih && (
           <li className={`menu-item ${path === '/kpps' ? 'active' : ''}`}>
             <button onClick={() => go('/kpps')} title="Manajemen Akun">

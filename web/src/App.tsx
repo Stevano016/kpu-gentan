@@ -27,6 +27,8 @@ import PemilihTab from './components/tabs/PemilihTab';
 import KppsTab from './components/tabs/KppsTab';
 import { PaslonTab } from './components/tabs/PaslonTab';
 import { QuickCountTab } from './components/tabs/QuickCountTab';
+import KeluargaTab from './components/tabs/KeluargaTab';
+import { unduhExcelPemilih } from './utils/excelPemilih';
 
 // Live updates reach the origin directly on a forwarded port: the proxy chain in
 // front of it drops the headers a WebSocket handshake needs, so the usual
@@ -308,6 +310,8 @@ function AppContent() {
       if (path === '/pemilih') {
         fetchDpts();
         fetchTpsList();
+      } else if (path === '/keluarga') {
+        fetchTpsList();
       }
       return;
     }
@@ -317,6 +321,10 @@ function AppContent() {
       fetchTpsPageData();
     } else if (path === '/pemilih') {
       fetchDpts();
+      fetchTpsList();
+    } else if (path === '/keluarga') {
+      // Halaman keluarga menarik datanya sendiri; daftar TPS-nya dipakai untuk
+      // penyaring dan penamaan.
       fetchTpsList();
     } else if (path === '/kpps') {
       fetchKppsUsers();
@@ -722,7 +730,10 @@ function AppContent() {
       keterangan: dptFormKeterangan || null,
     };
 
-    if (!editingDpt) {
+    // Saat menambah, NIK selalu ikut. Saat mengedit ia hanya boleh ikut kalau
+    // nomornya masih sementara — server juga menolak perubahan NIK asli, ini
+    // sekadar tidak mengirim yang percuma.
+    if (!editingDpt || editingDpt.nik_sintetis) {
       payload.nik = dptFormNik;
     }
 
@@ -800,35 +811,37 @@ function AppContent() {
       .catch(() => { /* daftar RW hanya untuk kenyamanan; diamkan bila gagal */ });
   }, [token]);
 
+  /**
+   * Ekspor pemilih menghasilkan .xlsx sungguhan, bukan CSV.
+   *
+   * CSV tidak menyimpan tipe kolom, jadi Excel menebak sendiri — dan untuk NIK
+   * 16 digit tebakannya selalu "angka": kolomnya tampil `3,31E+15` dan digit
+   * terakhirnya benar-benar hilang. Server mengirim datanya sebagai JSON dan
+   * berkasnya disusun di sini, tempat tipe tiap kolom bisa ditetapkan.
+   */
   const handleExport = async (params: Record<string, string>) => {
     if (!token) return;
     try {
-      const res = await ApiService.exportPemilih(token, params);
-      if (!res.ok) {
-        const json = await res.json().catch(() => ({}));
+      const res = await ApiService.exportPemilih(token, { ...params, format: 'json' });
+      const json = await res.json().catch(() => ({}));
+
+      if (!res.ok || json?.status !== 'success') {
         showError(json.message || 'Ekspor ditolak server.', 'Gagal Mengekspor');
         return;
       }
 
-      // Unduhan harus lewat fetch karena butuh header Authorization; tautan
-      // biasa tidak membawanya.
-      const blob = await res.blob();
-      const namaBerkas =
-        res.headers.get('Content-Disposition')?.match(/filename="?([^"]+)"?/)?.[1] ??
-        'pemilih.csv';
+      if (!json.data.jumlah) {
+        showError('Tidak ada pemilih pada pilihan ini.', 'Tidak Ada Data');
+        return;
+      }
 
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = namaBerkas;
-      document.body.appendChild(a);
-      a.click();
-      a.remove();
-      URL.revokeObjectURL(url);
-
-      showSuccess('Ekspor Selesai', `Berkas ${namaBerkas} sudah diunduh dan siap dibuka di Excel.`);
+      const namaBerkas = await unduhExcelPemilih(json.data);
+      showSuccess(
+        'Ekspor Selesai',
+        `Berkas ${namaBerkas} sudah diunduh — ${json.data.jumlah.toLocaleString('id-ID')} pemilih, NIK dan No. KK tersimpan sebagai teks.`,
+      );
     } catch {
-      showError('Gagal menghubungi server.', 'Gagal Mengekspor');
+      showError('Gagal menyusun berkas Excel.', 'Gagal Mengekspor');
     }
   };
 
@@ -1215,6 +1228,15 @@ function AppContent() {
               isAdmin={isAdmin}
             />
           } />
+          <Route path="/keluarga" element={
+            <KeluargaTab
+              token={token}
+              tpsList={tpsList}
+              isPantarlih={isPantarlih}
+              showSuccess={showSuccess}
+              showError={showError}
+            />
+          } />
           {/* Rute lama diarahkan ke menu gabungan agar bookmark tetap berfungsi */}
           <Route path="/dpt" element={<Navigate to="/pemilih" replace />} />
           <Route path="/dpk" element={<Navigate to="/pemilih" replace />} />
@@ -1246,7 +1268,7 @@ function AppContent() {
               isAdmin={isAdmin}
             />
           } />
-          <Route path="*" element={<Navigate to="/dashboard" replace />} />
+          <Route path="*" element={<Navigate to={isPantarlih ? '/pemilih' : '/dashboard'} replace />} />
         </Routes>
       </main>
 

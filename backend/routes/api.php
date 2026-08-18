@@ -10,6 +10,7 @@ use App\Http\Controllers\SyncController;
 use App\Http\Controllers\PaslonController;
 use App\Http\Controllers\TahapanController;
 use App\Http\Controllers\ExportController;
+use App\Http\Controllers\KeluargaController;
 
 // Public routes
 Route::post('/login', [AuthController::class, 'login'])->middleware('throttle:login');
@@ -71,6 +72,12 @@ Route::middleware(['auth:sanctum', 'throttle:api'])->group(function () {
         // di dalam controller.
         Route::get('/export/pemilih', [ExportController::class, 'pemilih']);
         Route::get('/export/rw', [ExportController::class, 'daftarRw']);
+
+        // Pengelompokan per Kartu Keluarga. Pantarlih dikunci ke TPS-nya di
+        // dalam controller, sama seperti daftar pemilih.
+        Route::get('/keluarga', [KeluargaController::class, 'index']);
+        Route::get('/keluarga/wilayah', [KeluargaController::class, 'wilayah']);
+        Route::get('/keluarga/ekspor', [KeluargaController::class, 'ekspor']);
     });
 
     // Shared read-only routes
