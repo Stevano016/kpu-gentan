@@ -180,6 +180,12 @@ This file captures the active state, environment variables, completed tasks, and
   - Dirilis ke `servergentan` dan produksi. Terverifikasi di produksi: sesi per peran benar, gagal ke-6 → 429 dengan `retry_after`, SPA dan fallback rute 200, API 401 dengan `Accept: application/json`. Di peramban: peringatan idle muncul dengan hitung mundur dan tombol "Tetap Masuk" yang memperpanjang, pengawas dibiarkan menganggur lewat ambang yang sama **tanpa peringatan sama sekali**, dan token yang dicabut membuat panel keluar sendiri dengan pesan yang jelas.
   - Watermark atribusi di sidebar dan layar masuk ditebalkan.
 
+- **18 Agt 2026 — Modal yang lebih tinggi dari layar tidak bisa digulung**:
+  - `.modal-overlay` memakai `align-items: center` tanpa `overflow`, sehingga isi yang melebihi tinggi layar melimpah ke **dua** arah — dan bagian yang keluar di atas **tidak bisa dijangkau sama sekali**, karena overlay-nya sendiri tidak menggulung. Form "Tambah Pemilih Baru" punya belasan isian, jadi di layar pendek judul dan tombol tutupnya benar-benar hilang.
+  - Diperbaiki dengan `align-items: flex-start` + `overflow-y: auto` pada overlay, dan **`margin: auto` pada isinya**. Pasangan itu yang penting: `margin: auto` memusatkan modal selama masih muat, lalu melepas ke atas begitu tidak muat — kalau hanya `overflow-y: auto` yang ditambahkan sementara `align-items: center` dipertahankan, bagian atasnya tetap terpotong. Ditambah `overscroll-behavior: contain` agar gulungannya tidak merembet ke halaman di belakang.
+  - Perbaikannya di overlay, bukan di masing-masing modal, jadi seluruh modal (pemilih, akun, paslon, TPS, impor, QR, konfirmasi, peringatan sesi) ikut sembuh tanpa disentuh satu per satu. Terverifikasi di layar 560–620 px: form tambah dan edit bisa digulung sampai tombol Simpan, sementara modal pendek seperti konfirmasi hapus tetap terpusat.
+  - Dirilis ke `servergentan` dan produksi — hanya berkas hasil build SPA, tanpa migrasi maupun seed. Jumlah data tetap 7.494.
+
 ---
 
 ## 🛠️ Local Environment Notes
