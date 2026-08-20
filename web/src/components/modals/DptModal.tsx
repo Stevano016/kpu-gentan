@@ -39,6 +39,53 @@ interface DptModalProps {
   onSubmit: (e: React.FormEvent) => void;
 }
 
+const getTpsIdFromRtRw = (rt: string, rw: string, tpsList: any[]): string => {
+  if (!rt || !rw) return '';
+  const cleanRt = rt.replace(/\D/g, '').padStart(3, '0');
+  const cleanRw = rw.replace(/\D/g, '').padStart(3, '0');
+
+  let targetTpsNum = 0;
+
+  // Pemetaan wilayah TPS Kelurahan Gentan (dari seeder)
+  if (cleanRw === '001' || cleanRw === '002') {
+    targetTpsNum = 1;
+  } else if (cleanRw === '010' && (cleanRt === '006' || cleanRt === '007')) {
+    targetTpsNum = 1;
+  } else if (cleanRw === '003' || cleanRw === '004' || cleanRw === '014') {
+    targetTpsNum = 2;
+  } else if (cleanRw === '006' && ['002', '004', '006', '008'].includes(cleanRt)) {
+    targetTpsNum = 2;
+  } else if (cleanRw === '007' || cleanRw === '013') {
+    targetTpsNum = 3;
+  } else if (cleanRw === '006' && ['001', '003', '005', '007'].includes(cleanRt)) {
+    targetTpsNum = 3;
+  } else if (cleanRw === '009' && cleanRt === '001') {
+    targetTpsNum = 3;
+  } else if (cleanRw === '008' || cleanRw === '012') {
+    targetTpsNum = 4;
+  } else if (cleanRw === '005' || cleanRw === '011') {
+    targetTpsNum = 5;
+  } else if (cleanRw === '009' && ['002', '003', '004', '005'].includes(cleanRt)) {
+    targetTpsNum = 5;
+  } else if (cleanRw === '010' && ['001', '002', '003', '004', '005'].includes(cleanRt)) {
+    targetTpsNum = 5;
+  }
+
+  if (targetTpsNum > 0) {
+    const foundTps = tpsList.find(t => 
+      t.id === targetTpsNum || 
+      String(t.id) === String(targetTpsNum) ||
+      t.nama === `TPS 0${targetTpsNum}` ||
+      t.nama === `TPS ${targetTpsNum}`
+    );
+    if (foundTps) {
+      return String(foundTps.id);
+    }
+  }
+
+  return '';
+};
+
 export const DptModal: React.FC<DptModalProps> = ({
   isOpen,
   onClose,
@@ -125,6 +172,15 @@ export const DptModal: React.FC<DptModalProps> = ({
       }
     }
   }, [dptFormNik, setDptFormUmur, setDptFormJenisKelamin]);
+
+  React.useEffect(() => {
+    if (!isPantarlih && dptFormRt && dptFormRw) {
+      const autoTpsId = getTpsIdFromRtRw(dptFormRt, dptFormRw, tpsList);
+      if (autoTpsId) {
+        setDptFormTps(autoTpsId);
+      }
+    }
+  }, [dptFormRt, dptFormRw, tpsList, setDptFormTps, isPantarlih]);
 
   return (
     <div className="modal-overlay">
@@ -234,12 +290,18 @@ export const DptModal: React.FC<DptModalProps> = ({
                   required
                   value={dptFormTps}
                   onChange={e => setDptFormTps(e.target.value)}
+                  disabled={isPantarlih || (!isPantarlih && !!dptFormRt && !!dptFormRw)}
                 >
                   <option value="">Pilih TPS...</option>
                   {tpsList.map(t => (
                     <option key={t.id} value={t.id}>{t.nama} ({t.wilayah})</option>
                   ))}
                 </select>
+                {!isPantarlih && !!dptFormRt && !!dptFormRw && (
+                  <small style={{ display: 'block', marginTop: '4px', fontSize: '0.75rem', color: 'var(--text-muted)' }}>
+                    Otomatis ditentukan dari RT/RW.
+                  </small>
+                )}
               </div>
 
               <div className="form-group" style={{ gridColumn: 'span 1', marginBottom: 0 }}>
