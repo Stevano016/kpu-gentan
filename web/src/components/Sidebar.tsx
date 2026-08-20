@@ -153,8 +153,8 @@ export const Sidebar: React.FC<SidebarProps> = ({
           <span>Keluar</span>
         </button>
 
-        <div className="app-watermark" title="Support by KKN USH-7 2026 Dinaungi Tim Digitalisasi Desa Gentan">
-          <span className="watermark-full">Support by KKN USH-7 2026 Dinaungi Tim Digitalisasi Desa Gentan</span>
+        <div className="app-watermark" title="Support by KKN USH-7 2026">
+          <span className="watermark-full">Support by KKN USH-7 2026</span>
           <span className="watermark-short">KKN USH-7</span>
         </div>
       </div>
