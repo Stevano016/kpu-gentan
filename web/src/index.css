@@ -729,6 +729,7 @@ tr:hover td {
   opacity: 0.85;
   letter-spacing: 0.02em;
   user-select: none;
+  text-align: center;
 }
 
 .login-card {

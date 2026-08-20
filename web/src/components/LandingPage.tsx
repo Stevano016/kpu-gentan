@@ -549,6 +549,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onGoToLogin }) => {
         textAlign: 'center',
         padding: '16px',
         fontSize: '0.8rem',
+        fontWeight: '700',
         color: 'var(--text-muted)',
         borderTop: '1px solid var(--border)',
         backgroundColor: 'var(--surface)'
