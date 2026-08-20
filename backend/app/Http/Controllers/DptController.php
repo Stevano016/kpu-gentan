@@ -59,7 +59,7 @@ class DptController extends Controller
     {
         $validator = Validator::make($request->all(), [
             'nik' => 'required|string|size:16|unique:dpt,nik',
-            'nkk' => 'nullable|string|size:16',
+            'nkk' => 'nullable|string|max:30',
             'nama' => 'required|string|max:255',
             'tps_id' => 'required|exists:tps,id',
             'tahapan' => 'nullable|string|in:dp4,dps,dptb,dpt,dpk',
@@ -171,7 +171,7 @@ class DptController extends Controller
                 'nullable', 'string', 'size:16',
                 Rule::unique('dpt', 'nik')->ignore($dpt->nik, 'nik'),
             ],
-            'nkk' => 'nullable|string|size:16',
+            'nkk' => 'nullable|string|max:30',
             'nama' => 'required|string|max:255',
             'tps_id' => 'required|exists:tps,id',
             'status_hadir' => 'boolean',
