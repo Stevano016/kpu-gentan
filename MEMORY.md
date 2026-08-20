@@ -220,6 +220,8 @@ This file captures the active state, environment variables, completed tasks, and
 
 - **20 Agt 2026 — Penyesuaian Tampilan Hasil Pencarian Landing Page**:
   - Mengubah urutan penampilan rincian alamat warga pada hasil pencarian mandiri di halaman Landing Page (`LandingPage.tsx`) dari semula RT / RW dahulu baru alamat, menjadi Alamat dahulu baru RT / RW.
+  - Menambahkan judul "PILKADES GENTAN 2026 GENTAN BAKI" berwarna kuning (`var(--warning)`) dengan font besar di luar kotak pencarian.
+  - Menghapus teks subtitle lama "Pemilihan Kepala Desa Gentan, Kecamatan Baki Tahun 2026" dari dalam card.
 
 ---
 

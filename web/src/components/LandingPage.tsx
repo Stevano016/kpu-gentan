@@ -253,16 +253,17 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onGoToLogin }) => {
 
       {/* Main Content Area */}
       <main className="landing-main">
-        <div className="landing-card">
-          {/* Card Header */}
-          <div className="landing-card-header">
-            <h2 style={{ fontSize: '1.5rem', fontWeight: '700', color: 'var(--primary)', marginBottom: '8px' }}>
-              Cek Daftar Pemilih
-            </h2>
-            <p style={{ fontSize: '0.875rem', color: 'var(--text-muted)', lineHeight: '1.4' }}>
-              Pemilihan Kepala Desa Gentan, Kecamatan Baki Tahun 2026
-            </p>
-          </div>
+        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '20px', width: '100%', maxWidth: '540px' }}>
+          <h1 style={{ fontSize: '1.5rem', fontWeight: '700', color: 'var(--warning)', textAlign: 'center', textTransform: 'uppercase' }}>
+            PILKADES GENTAN 2026 GENTAN BAKI
+          </h1>
+          <div className="landing-card">
+            {/* Card Header */}
+            <div className="landing-card-header">
+              <h2 style={{ fontSize: '1.5rem', fontWeight: '700', color: 'var(--primary)', marginBottom: '8px' }}>
+                Cek Daftar Pemilih
+              </h2>
+            </div>
 
           {/* Mode Switch Tabs */}
           <div className="landing-tabs">
@@ -540,7 +541,8 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onGoToLogin }) => {
             </div>
           )}
         </div>
-      </main>
+      </div>
+    </main>
 
       {/* Footer bar */}
       <footer style={{
