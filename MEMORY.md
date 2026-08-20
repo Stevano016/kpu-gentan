@@ -6,7 +6,7 @@ This file captures the active state, environment variables, completed tasks, and
 
 ## 📍 Last Known State
 
-- **Laravel Backend API (`/backend`)**: Running at `http://localhost:8000`. Added server-side validation to support four voter types (`dpt`, `dpk`, `dps`, `dptb`) in `DptController`. Adjusted `DashboardController` (`getSummary` and `getTpsDetails`) to compute stats for all four categories. Seeded all 6,856 voters from Excel as `dps` by default.
+- **Laravel Backend API (`/backend`)**: Running at `http://localhost:8000`. Added server-side validation to support four voter types (`dpt`, `dpk`, `dps`, `dptb`) in `DptController`. Adjusted `DashboardController` (`getSummary` and `getTpsDetails`) to compute stats for all four categories. Seeded 7,475 voters from Excel as `dp4` by default. Created a sync command `php artisan dpt:sync-csv` to update synthetic NIKs/NKKs to real ones in-place from updated Excel data.
 - **Web Dashboard (`/web`)**: Running at `http://localhost:5173`. Added DPS and DPTb options in `DptModal.tsx` dropdown, added filter buttons in `PemilihTab.tsx`, and extended cards/tables in `DashboardTab.tsx` and `TpsDetailTab.tsx` to display statistics for all four voter types.
 - **Mobile Client (`/mobile`)**: Analyzer is 100% clean (`No issues found!`). Extended `home_screen.dart` and `dashboard_tab.dart` to compute, validate, and display stats (Total and Check-in) for DPT, DPK, DPS, and DPTb.
 
@@ -206,6 +206,12 @@ This file captures the active state, environment variables, completed tasks, and
   - **Dua perilaku lama yang dikonfirmasi bukan akibat refactor** (dicek dengan menjalankan `App.tsx` versi sebelumnya): setelah "Keluar" halaman mendarat di `/` (landing) bukan `/login`, dan pantarlih yang mengetik `/kpps` langsung tetap melihat halaman Manajemen Akun kosong — hanya `/dashboard` dan `/quick-count` yang dijaga di level rute.
   - **Dirilis ke `servergentan`** (`http://192.168.111.5:1993`): hanya berkas SPA, tanpa migrasi maupun seed. Build memakai `VITE_LIVE_SOCKET_URL=` kosong dan bundel diperiksa tidak memuat host socket produksi; terverifikasi di peramban — dashboard hanya polling (`/api/dashboard/summary` tiap 10 detik), **tidak ada satu pun handshake WebSocket**. SPA lama dicadangkan ke `/root/cadangan-gentan/spa-20260820-1155/`. Produksi (`gentan.wujud.id`) **belum** dirilis.
   - **Catatan kebersihan**: `backend/public/assets/` di server tes sudah menumpuk 6 bundel lama (±5 MB) dari rilis-rilis sebelumnya; berkas lama tidak dihapus saat rilis ini agar sesi peramban yang sedang terbuka tidak patah.
+
+- **20 Agt 2026 — Pembaruan NIK & NKK Sintetis dari DPS 1-6**:
+  - Menyalin 6 berkas Excel yang diperbaiki dari `DPS 1-6/` ke `DPS PILKADES 2026/` (RW 1 s.d. RW 6).
+  - Menjalankan kembali `bangun_dpt_seed.py` untuk meregenerasi `dpt_seed.csv` dengan NIK/NKK riil baru (mengurangi jumlah NIK/NKK sintetis di CSV dari 619/608 menjadi 338/325).
+  - Membuat perintah Artisan baru `php artisan dpt:sync-csv` di `app/Console/Commands/SyncDptFromCsv.php` untuk membandingkan CSV dan memperbarui basis data secara in-place (mendukung opsi `--dry-run`).
+  - Menjalankan sinkronisasi secara penuh pada database SQLite lokal, berhasil memperbarui 294 baris data (293 NIK dan 283 NKK diperbaiki).
 
 ---
 
