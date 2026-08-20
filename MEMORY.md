@@ -239,6 +239,7 @@ This file captures the active state, environment variables, completed tasks, and
   - Mengubah penugasan tugas Pantarlih dari berbasis **TPS** menjadi berbasis **RW** kembali (karena wilayah tugas Pantarlih diputuskan per RW pada rapat, sedangkan beberapa RW seperti RW 006, 009, 010 beririsan dengan beberapa TPS).
   - Membuat migrasi database untuk menambahkan kembali kolom `rw` ke tabel `users`, memperbarui Model `User.php`, `UserController.php`, `DptController.php`, `KeluargaController.php`, dan `ExportController.php` untuk membatasi akun Pantarlih berdasarkan RW-nya (baik untuk pencarian data, penambahan data DPTb, penampilan keluarga, maupun pilihan ekspor).
   - Memperbarui `KppsModal.tsx` agar admin memilih RW Tugas saat mendaftarkan akun Pantarlih baru, dan mengupdate tabel `KppsTab.tsx` untuk menampilkan asosiasi RW bagi Pantarlih (misal "RW 006") dan TPS bagi KPPS.
+  - Mengubah domain API produksi default dan WebSocket di `api_service.dart` aplikasi Flutter dari `gentan.wujud.id` menjadi `kpps.ysmb.my.id`.
 
 ---
 

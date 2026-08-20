@@ -8,11 +8,11 @@ class ApiService {
   // --dart-define=API_URL=http://<ip-pc-anda>:8000/api
   static const String baseUrl = String.fromEnvironment(
     'API_URL',
-    defaultValue: 'https://gentan.wujud.id/api',
+    defaultValue: 'https://kpps.ysmb.my.id/api',
   );
   static const String fallbackUrl = String.fromEnvironment(
     'API_FALLBACK_URL',
-    defaultValue: 'https://gentan.wujud.id/api',
+    defaultValue: 'https://kpps.ysmb.my.id/api',
   );
 
   // Live updates bypass Cloudflare and the gateway proxy entirely — both drop
@@ -22,7 +22,7 @@ class ApiService {
   // --dart-define=WS_URL=ws://<ip-pc-anda>:8080
   static const String wsUrl = String.fromEnvironment(
     'WS_URL',
-    defaultValue: 'wss://ws.gentan.wujud.id:10650/ws',
+    defaultValue: 'wss://ws.kpps.ysmb.my.id:10650/ws',
   );
 
   final LocalStorageService _storage = LocalStorageService();
