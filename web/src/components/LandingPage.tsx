@@ -114,7 +114,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onGoToLogin }) => {
           <img src="/logo.png" alt="Logo" style={{ height: '36px', width: 'auto' }} />
           <div>
             <span style={{ fontWeight: '700', fontSize: '1.15rem', color: 'var(--primary)', display: 'block', lineHeight: '1.2' }}>GENTARA</span>
-            <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)', display: 'block' }}>Portal Warga Gentan</span>
+            <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)', display: 'block' }}>Bersama, Transparan, untuk Gentan.</span>
           </div>
         </div>
         <button
