@@ -227,6 +227,7 @@ This file captures the active state, environment variables, completed tasks, and
   - Menghilangkan input manual bidang "Umur" dan "Jenis Kelamin" di modal Tambah/Edit Pemilih (`DptModal.tsx`), serta mengintegrasikan efek otomatisasi (`React.useEffect`) yang mengkalkulasi umur dan mendeteksi jenis kelamin secara instan dari NIK 16-digit riil milik pemilih.
   - Menambahkan otomatisasi huruf kapital (auto-uppercase) pada isian nama pemilih, pekerjaan, dan alamat di formulir tambah pemilih baru.
   - Mengubah bidang isian RT dan RW pada formulir dari kolom teks biasa menjadi pilihan dropdown (select enum) terstruktur (RT 001-010 dan RW 001-014).
+  - Memperbaiki kesalahan NKK 17 digit pada sumber data Excel (`RW 5.xlsx` dan `RW 6.xlsx`), meregenerasi `dpt_seed.csv`, serta menyinkronkan data tersebut ke database lokal dan server untuk mengoreksi NKK keluarga Harits (`6372020806120006`) dan Dina Lisa Tantri (`3276052701120005`).
 
 ---
 
