@@ -97,62 +97,165 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onGoToLogin }) => {
       backgroundColor: 'var(--background)',
       color: 'var(--text)'
     }}>
+      <style dangerouslySetInnerHTML={{ __html: `
+        .landing-header {
+          display: flex;
+          justify-content: space-between;
+          align-items: center;
+          padding: 16px 24px;
+          background-color: var(--surface);
+          border-bottom: 1px solid var(--border);
+          box-shadow: var(--shadow);
+          position: sticky;
+          top: 0;
+          z-index: 100;
+        }
+        .landing-main {
+          flex: 1;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          padding: 40px 24px;
+        }
+        .landing-card {
+          width: 100%;
+          max-width: 540px;
+          background-color: var(--surface);
+          border-radius: var(--radius-lg);
+          box-shadow: var(--shadow-lg);
+          border: 1px solid var(--border);
+          overflow: hidden;
+        }
+        .landing-card-header {
+          padding: 32px 32px 24px 32px;
+          text-align: center;
+          border-bottom: 1px solid var(--border);
+        }
+        .landing-tabs {
+          display: flex;
+          background-color: var(--surface-alt);
+          padding: 6px;
+          margin: 24px 32px 0 32px;
+          border-radius: var(--radius-md);
+          border: 1px solid var(--border);
+        }
+        .landing-tab-btn {
+          flex: 1;
+          padding: 10px;
+          border: none;
+          border-radius: var(--radius-sm);
+          cursor: pointer;
+          transition: var(--transition);
+        }
+        .landing-form {
+          padding: 24px 32px 32px 32px;
+        }
+        .landing-results {
+          padding: 0 32px 32px 32px;
+          border-top: 1px solid var(--border);
+          background-color: var(--surface-alt);
+        }
+        .voter-detail-row {
+          display: flex;
+          border-bottom: 1px solid var(--background);
+          padding-bottom: 6px;
+        }
+        .voter-detail-label {
+          width: 120px;
+          flex-shrink: 0;
+          color: var(--text-muted);
+          font-weight: 500;
+        }
+        .voter-detail-value {
+          word-break: break-word;
+        }
+        
+        /* Mobile Responsiveness Rules */
+        @media (max-width: 576px) {
+          .landing-header {
+            padding: 12px 16px !important;
+          }
+          .landing-brand-text {
+            font-size: 1rem !important;
+          }
+          .landing-brand-sub {
+            font-size: 0.65rem !important;
+          }
+          .landing-login-btn {
+            padding: 6px 12px !important;
+            font-size: 0.8rem !important;
+          }
+          .landing-login-btn-text {
+            display: none;
+          }
+          .landing-login-btn svg {
+            margin-right: 0 !important;
+          }
+          .landing-main {
+            padding: 16px 12px !important;
+          }
+          .landing-card-header {
+            padding: 20px 20px 16px 20px !important;
+          }
+          .landing-tabs {
+            margin: 16px 20px 0 20px !important;
+            flex-direction: column !important;
+            gap: 6px !important;
+          }
+          .landing-tab-btn {
+            width: 100% !important;
+            padding: 8px !important;
+            font-size: 0.85rem !important;
+          }
+          .landing-form {
+            padding: 16px 20px 20px 20px !important;
+          }
+          .landing-results {
+            padding: 0 20px 20px 20px !important;
+          }
+        }
+
+        @media (max-width: 480px) {
+          .voter-detail-row {
+            flex-direction: column !important;
+            align-items: flex-start !important;
+            gap: 4px;
+            padding-bottom: 8px !important;
+          }
+          .voter-detail-label {
+            width: auto !important;
+            margin-bottom: 2px;
+          }
+        }
+      ` }} />
+
       {/* Header Topbar */}
-      <header style={{
-        display: 'flex',
-        justifyContent: 'space-between',
-        alignItems: 'center',
-        padding: '16px 24px',
-        backgroundColor: 'var(--surface)',
-        borderBottom: '1px solid var(--border)',
-        boxShadow: 'var(--shadow)',
-        position: 'sticky',
-        top: 0,
-        zIndex: 100
-      }}>
+      <header className="landing-header">
         <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
           <img src="/logo.png" alt="Logo" style={{ height: '36px', width: 'auto' }} />
           <div>
-            <span style={{ fontWeight: '700', fontSize: '1.15rem', color: 'var(--primary)', display: 'block', lineHeight: '1.2' }}>GENTARA</span>
-            <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)', display: 'block' }}>Bersama, Transparan, untuk Gentan.</span>
+            <span className="landing-brand-text" style={{ fontWeight: '700', fontSize: '1.15rem', color: 'var(--primary)', display: 'block', lineHeight: '1.2' }}>GENTARA</span>
+            <span className="landing-brand-sub" style={{ fontSize: '0.75rem', color: 'var(--text-muted)', display: 'block' }}>Bersama, Transparan, untuk Gentan.</span>
           </div>
         </div>
         <button
           type="button"
           onClick={onGoToLogin}
-          className="btn btn-secondary"
+          className="btn btn-secondary landing-login-btn"
           style={{ padding: '8px 16px', fontSize: '0.875rem' }}
         >
           <svg style={{ width: '16px', height: '16px', fill: 'currentColor', marginRight: '6px' }} viewBox="0 0 24 24">
             <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 3c1.66 0 3 1.34 3 3s-1.34 3-3 3-3-1.34-3-3 1.34-3 3-3zm0 14.2c-2.5 0-4.71-1.28-6-3.22.03-1.99 4-3.08 6-3.08 1.99 0 5.97 1.09 6 3.08-1.29 1.94-3.5 3.22-6 3.22z"/>
           </svg>
-          Login Petugas
+          <span className="landing-login-btn-text">Login Petugas</span>
         </button>
       </header>
 
       {/* Main Content Area */}
-      <main style={{
-        flex: 1,
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'center',
-        padding: '40px 24px'
-      }}>
-        <div style={{
-          width: '100%',
-          maxWidth: '540px',
-          backgroundColor: 'var(--surface)',
-          borderRadius: 'var(--radius-lg)',
-          boxShadow: 'var(--shadow-lg)',
-          border: '1px solid var(--border)',
-          overflow: 'hidden'
-        }}>
+      <main className="landing-main">
+        <div className="landing-card">
           {/* Card Header */}
-          <div style={{
-            padding: '32px 32px 24px 32px',
-            textAlign: 'center',
-            borderBottom: '1px solid var(--border)'
-          }}>
+          <div className="landing-card-header">
             <h2 style={{ fontSize: '1.5rem', fontWeight: '700', color: 'var(--primary)', marginBottom: '8px' }}>
               Cek Daftar Pemilih
             </h2>
@@ -162,28 +265,16 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onGoToLogin }) => {
           </div>
 
           {/* Mode Switch Tabs */}
-          <div style={{
-            display: 'flex',
-            backgroundColor: 'var(--surface-alt)',
-            padding: '6px',
-            margin: '24px 32px 0 32px',
-            borderRadius: 'var(--radius-md)',
-            border: '1px solid var(--border)'
-          }}>
+          <div className="landing-tabs">
             <button
               type="button"
               onClick={() => { setSearchMode('nik'); resetForm(); }}
+              className="landing-tab-btn"
               style={{
-                flex: 1,
-                padding: '10px',
-                border: 'none',
                 background: searchMode === 'nik' ? 'var(--surface)' : 'none',
-                borderRadius: 'var(--radius-sm)',
                 fontWeight: searchMode === 'nik' ? '600' : '500',
                 color: searchMode === 'nik' ? 'var(--primary)' : 'var(--text-muted)',
-                cursor: 'pointer',
                 boxShadow: searchMode === 'nik' ? 'var(--shadow)' : 'none',
-                transition: 'var(--transition)'
               }}
             >
               Cari dengan NIK
@@ -191,17 +282,12 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onGoToLogin }) => {
             <button
               type="button"
               onClick={() => { setSearchMode('nama'); resetForm(); }}
+              className="landing-tab-btn"
               style={{
-                flex: 1,
-                padding: '10px',
-                border: 'none',
                 background: searchMode === 'nama' ? 'var(--surface)' : 'none',
-                borderRadius: 'var(--radius-sm)',
                 fontWeight: searchMode === 'nama' ? '600' : '500',
                 color: searchMode === 'nama' ? 'var(--primary)' : 'var(--text-muted)',
-                cursor: 'pointer',
                 boxShadow: searchMode === 'nama' ? 'var(--shadow)' : 'none',
-                transition: 'var(--transition)'
               }}
             >
               Cari dengan Nama & RT/RW
@@ -209,7 +295,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onGoToLogin }) => {
           </div>
 
           {/* Form */}
-          <form onSubmit={handleSearch} style={{ padding: '24px 32px 32px 32px' }}>
+          <form onSubmit={handleSearch} className="landing-form">
             {errorMsg && (
               <div style={{
                 padding: '12px 16px',
@@ -361,11 +447,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onGoToLogin }) => {
 
           {/* Results Area */}
           {sudahCek && (
-            <div style={{
-              padding: '0 32px 32px 32px',
-              borderTop: '1px solid var(--border)',
-              backgroundColor: 'var(--surface-alt)'
-            }}>
+            <div className="landing-results">
               <h4 style={{ fontSize: '0.9rem', fontWeight: '700', color: 'var(--text)', margin: '24px 0 16px 0' }}>
                 Hasil Pencarian:
               </h4>
@@ -388,32 +470,32 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onGoToLogin }) => {
                       </h3>
 
                       <div style={{ display: 'grid', gridTemplateColumns: '1fr', gap: '10px', fontSize: '0.875rem', color: 'var(--text)' }}>
-                        <div style={{ display: 'flex', borderBottom: '1px solid var(--background)', paddingBottom: '6px' }}>
-                          <span style={{ width: '120px', color: 'var(--text-muted)', fontWeight: '500' }}>NIK</span>
-                          <span style={{ fontFamily: 'Consolas, monospace', fontWeight: '600' }}>{voter.nik}</span>
+                        <div className="voter-detail-row">
+                          <span className="voter-detail-label">NIK</span>
+                          <span className="voter-detail-value" style={{ fontFamily: 'Consolas, monospace', fontWeight: '600' }}>{voter.nik}</span>
                         </div>
                         {voter.nkk && (
-                          <div style={{ display: 'flex', borderBottom: '1px solid var(--background)', paddingBottom: '6px' }}>
-                            <span style={{ width: '120px', color: 'var(--text-muted)', fontWeight: '500' }}>No. KK</span>
-                            <span style={{ fontFamily: 'Consolas, monospace', fontWeight: '600' }}>{voter.nkk}</span>
+                          <div className="voter-detail-row">
+                            <span className="voter-detail-label">No. KK</span>
+                            <span className="voter-detail-value" style={{ fontFamily: 'Consolas, monospace', fontWeight: '600' }}>{voter.nkk}</span>
                           </div>
                         )}
-                        <div style={{ display: 'flex', borderBottom: '1px solid var(--background)', paddingBottom: '6px' }}>
-                          <span style={{ width: '120px', color: 'var(--text-muted)', fontWeight: '500' }}>Jenis Kelamin</span>
-                          <span>{voter.jenis_kelamin === 'LAKI-LAKI' ? 'Laki-laki' : 'Perempuan'}</span>
+                        <div className="voter-detail-row">
+                          <span className="voter-detail-label">Jenis Kelamin</span>
+                          <span className="voter-detail-value">{voter.jenis_kelamin === 'LAKI-LAKI' ? 'Laki-laki' : 'Perempuan'}</span>
                         </div>
-                        <div style={{ display: 'flex', borderBottom: '1px solid var(--background)', paddingBottom: '6px' }}>
-                          <span style={{ width: '120px', color: 'var(--text-muted)', fontWeight: '500' }}>TPS Terdaftar</span>
-                          <span style={{ fontWeight: '700', color: 'var(--primary)' }}>{voter.tps}</span>
+                        <div className="voter-detail-row">
+                          <span className="voter-detail-label">TPS Terdaftar</span>
+                          <span className="voter-detail-value" style={{ fontWeight: '700', color: 'var(--primary)' }}>{voter.tps}</span>
                         </div>
-                        <div style={{ display: 'flex', borderBottom: '1px solid var(--background)', paddingBottom: '6px' }}>
-                          <span style={{ width: '120px', color: 'var(--text-muted)', fontWeight: '500' }}>RT / RW</span>
-                          <span>RT {voter.rt} / RW {voter.rw}</span>
+                        <div className="voter-detail-row">
+                          <span className="voter-detail-label">RT / RW</span>
+                          <span className="voter-detail-value">RT {voter.rt} / RW {voter.rw}</span>
                         </div>
                         {voter.alamat && (
-                          <div style={{ display: 'flex', paddingBottom: '4px' }}>
-                            <span style={{ width: '120px', color: 'var(--text-muted)', fontWeight: '500' }}>Alamat</span>
-                            <span>{voter.alamat}</span>
+                          <div className="voter-detail-row">
+                            <span className="voter-detail-label">Alamat</span>
+                            <span className="voter-detail-value">{voter.alamat}</span>
                           </div>
                         )}
                       </div>
