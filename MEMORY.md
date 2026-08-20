@@ -223,6 +223,7 @@ This file captures the active state, environment variables, completed tasks, and
   - Menambahkan judul "PILKADES GENTAN 2026 GENTAN BAKI" berwarna kuning (`var(--warning)`) dengan font besar di luar kotak pencarian.
   - Menghapus teks subtitle lama "Pemilihan Kepala Desa Gentan, Kecamatan Baki Tahun 2026" dari dalam card.
   - Mengubah teks watermark support agar terpusat di halaman login dan tebal (bold) di halaman landing page.
+  - Mengubah judul dokumen (`<title>`) pada `index.html` dari "Gentara - KPPS Gentan" menjadi "Gentara".
 
 ---
 
