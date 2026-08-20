@@ -69,7 +69,7 @@ class TahapanController extends Controller
         // Alasan gugur memakai daftar yang sama dengan kolom keterangan, supaya
         // tidak ada dua daftar alasan yang bisa berbeda isi.
         $request->validate([
-            'alasan' => 'required|string|in:' . implode(',', Dpt::KETERANGAN_TMS),
+            'alasan' => 'required|string|in:' . implode(',', Dpt::KETERANGAN),
         ]);
 
         $dpt = Dpt::where('nik', $nik)->firstOrFail();

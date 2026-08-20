@@ -230,6 +230,7 @@ This file captures the active state, environment variables, completed tasks, and
   - Memperbaiki kesalahan NKK 17 digit pada sumber data Excel (`RW 5.xlsx` dan `RW 6.xlsx`), meregenerasi `dpt_seed.csv`, serta menyinkronkan data tersebut ke database lokal dan server untuk mengoreksi NKK keluarga Harits (`6372020806120006`) dan Dina Lisa Tantri (`3276052701120005`).
   - Mengembalikan panjang kolom `nkk` di database dan aturan validasi backend dari `30` karakter kembali menjadi `16` karakter.
   - Memperbarui daftar opsi dropdown bidang Keterangan dan alasan TMS menjadi daftar pilihan bernomor (1: Terverifikasi/Valid s.d. 7: Tidak Ditemukan) di backend (`Dpt.php` & `TahapanController.php`) dan frontend (`tahapan.ts`), serta mengubah kolom `keterangan` di database menjadi `string` (varchar(255)) agar dapat menyimpan isian kategori baru tersebut dengan fleksibel.
+  - Membuka akses seluruh 7 opsi tersebut (1 s.d. 7) agar tampil di dialog penandaan "Tidak Memenuhi Syarat" (TMS) di frontend (`useTahapanPemilih.ts`) dan diterima oleh backend validator (`TahapanController.php`).
 
 ---
 
