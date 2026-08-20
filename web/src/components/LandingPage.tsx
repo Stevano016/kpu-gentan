@@ -469,7 +469,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onGoToLogin }) => {
         borderTop: '1px solid var(--border)',
         backgroundColor: 'var(--surface)'
       }}>
-        © 2026 Panitia Pemilihan Kepala Desa Gentan. All Rights Reserved.
+        Support by KKN USH-7 2026 Dinaungi Tim Digitalisasi Desa Gentan
       </footer>
     </div>
   );
