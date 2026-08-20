@@ -65,25 +65,29 @@ class Dpt extends Model
      * dua daftar alasan yang bisa berbeda isi.
      */
     public const KETERANGAN = [
-        'dps',
-        'meninggal',
-        'data ganda',
-        'dibawah umur',
-        'pindah',
-        'tni',
-        'polri',
+        '1 : Terverifikasi/Valid',
+        '2 : Belum memiliki KTP-el',
+        '3 : Ubah Elemen Data',
+        '4 : Meninggal',
+        '5 : Ganda',
+        '6 : Dibawah Umur',
+        '7 : Tidak Ditemukan',
     ];
 
-    /**
-     * Awalan nomor sementara buatan sistem, dipakai saat NIK/NKK seseorang
+    /** Awalan nomor sementara buatan sistem, dipakai saat NIK/NKK seseorang
      * belum ada di data pembanding. 99 bukan kode provinsi yang sah, jadi nomor
      * ini mustahil bentrok dengan nomor asli dan langsung kelihatan palsu.
      */
     public const AWALAN_NIK_SINTETIS = '9999';
     public const AWALAN_NKK_SINTETIS = '9998';
 
-    /** Keterangan yang berarti pemilih gugur (semua kecuali `dps`). */
-    public const KETERANGAN_TMS = ['meninggal', 'data ganda', 'dibawah umur', 'pindah', 'tni', 'polri'];
+    /** Keterangan yang berarti pemilih gugur. */
+    public const KETERANGAN_TMS = [
+        '4 : Meninggal',
+        '5 : Ganda',
+        '6 : Dibawah Umur',
+        '7 : Tidak Ditemukan',
+    ];
 
     /** Stages a voter is still counted as an active part of the roll. */
     public const TAHAPAN_AKTIF = ['dp4', 'dps', 'dptb', 'dpt', 'dpk'];

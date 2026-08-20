@@ -71,9 +71,22 @@ export const BERHAK_MEMILIH = ['dpt', 'dpk'];
 
 /**
  * Keterangan hasil pemeriksaan pemilih. Harus sama persis dengan
- * `Dpt::KETERANGAN` di backend — nilainya tersimpan sebagai enum di basis data.
+ * `Dpt::KETERANGAN` di backend.
  */
-export const KETERANGAN = ['dps', 'meninggal', 'data ganda', 'dibawah umur', 'pindah', 'tni', 'polri'];
+export const KETERANGAN = [
+  '1 : Terverifikasi/Valid',
+  '2 : Belum memiliki KTP-el',
+  '3 : Ubah Elemen Data',
+  '4 : Meninggal',
+  '5 : Ganda',
+  '6 : Dibawah Umur',
+  '7 : Tidak Ditemukan',
+];
 
-/** Keterangan yang berarti pemilih gugur (semua kecuali `dps`). */
-export const KETERANGAN_TMS = KETERANGAN.filter((k) => k !== 'dps');
+/** Keterangan yang berarti pemilih gugur. */
+export const KETERANGAN_TMS = [
+  '4 : Meninggal',
+  '5 : Ganda',
+  '6 : Dibawah Umur',
+  '7 : Tidak Ditemukan',
+];

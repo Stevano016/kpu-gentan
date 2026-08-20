@@ -50,8 +50,8 @@ class TahapanController extends Controller
             'tahapan' => 'dps',
             'diverifikasi_pada' => now(),
             'tms_alasan' => null,
-            // Lolos verifikasi: keterangan pemeriksaannya adalah `dps`.
-            'keterangan' => 'dps',
+            // Lolos verifikasi: keterangan pemeriksaannya adalah Terverifikasi/Valid.
+            'keterangan' => '1 : Terverifikasi/Valid',
         ]);
 
         Broadcaster::trigger('update', ['tps_id' => $request->tps_id ?? 'all']);

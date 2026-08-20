@@ -229,6 +229,7 @@ This file captures the active state, environment variables, completed tasks, and
   - Mengubah bidang isian RT dan RW pada formulir dari kolom teks biasa menjadi pilihan dropdown (select enum) terstruktur (RT 001-010 dan RW 001-014).
   - Memperbaiki kesalahan NKK 17 digit pada sumber data Excel (`RW 5.xlsx` dan `RW 6.xlsx`), meregenerasi `dpt_seed.csv`, serta menyinkronkan data tersebut ke database lokal dan server untuk mengoreksi NKK keluarga Harits (`6372020806120006`) dan Dina Lisa Tantri (`3276052701120005`).
   - Mengembalikan panjang kolom `nkk` di database dan aturan validasi backend dari `30` karakter kembali menjadi `16` karakter.
+  - Memperbarui daftar opsi dropdown bidang Keterangan dan alasan TMS menjadi daftar pilihan bernomor (1: Terverifikasi/Valid s.d. 7: Tidak Ditemukan) di backend (`Dpt.php` & `TahapanController.php`) dan frontend (`tahapan.ts`), serta mengubah kolom `keterangan` di database menjadi `string` (varchar(255)) agar dapat menyimpan isian kategori baru tersebut dengan fleksibel.
 
 ---
 
