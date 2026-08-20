@@ -240,6 +240,7 @@ This file captures the active state, environment variables, completed tasks, and
   - Membuat migrasi database untuk menambahkan kembali kolom `rw` ke tabel `users`, memperbarui Model `User.php`, `UserController.php`, `DptController.php`, `KeluargaController.php`, dan `ExportController.php` untuk membatasi akun Pantarlih berdasarkan RW-nya (baik untuk pencarian data, penambahan data DPTb, penampilan keluarga, maupun pilihan ekspor).
   - Memperbarui `KppsModal.tsx` agar admin memilih RW Tugas saat mendaftarkan akun Pantarlih baru, dan mengupdate tabel `KppsTab.tsx` untuk menampilkan asosiasi RW bagi Pantarlih (misal "RW 006") dan TPS bagi KPPS.
   - Mengubah domain API produksi default dan WebSocket di `api_service.dart` aplikasi Flutter dari `gentan.wujud.id` menjadi `kpps.ysmb.my.id`.
+  - Mengonfigurasi dan mengaktifkan WebSocket server pada `servergentan` melalui pembuatan *systemd service* `gentan-websocket.service` pada port `8090` (bind `0.0.0.0`), membuka port `8090` di firewall UFW, serta membuild ulang frontend web agar terhubung secara *real-time* ke `ws://192.168.111.5:8090/ws`.
 
 ---
 
