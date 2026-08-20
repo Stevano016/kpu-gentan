@@ -218,6 +218,9 @@ This file captures the active state, environment variables, completed tasks, and
   - Menambahkan penghitungan `total_dp4` dan `hadir_dp4` di respon API detail TPS serta ringkasan list TPS pada `DashboardController.php`.
   - Memperbarui komponen web `TpsDetailTab.tsx` dan `DashboardTab.tsx` (tabel Status Laporan per TPS) serta mobile screens `home_screen.dart` serta `dashboard_tab.dart` untuk mengambil, memproses, dan menampilkan statistik kelima tahapan secara teratur.
 
+- **20 Agt 2026 — Penyesuaian Tampilan Hasil Pencarian Landing Page**:
+  - Mengubah urutan penampilan rincian alamat warga pada hasil pencarian mandiri di halaman Landing Page (`LandingPage.tsx`) dari semula RT / RW dahulu baru alamat, menjadi Alamat dahulu baru RT / RW.
+
 ---
 
 ## 🛠️ Local Environment Notes

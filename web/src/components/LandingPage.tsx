@@ -488,16 +488,16 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onGoToLogin }) => {
                           <span className="voter-detail-label">TPS Terdaftar</span>
                           <span className="voter-detail-value" style={{ fontWeight: '700', color: 'var(--primary)' }}>{voter.tps}</span>
                         </div>
-                        <div className="voter-detail-row">
-                          <span className="voter-detail-label">RT / RW</span>
-                          <span className="voter-detail-value">RT {voter.rt} / RW {voter.rw}</span>
-                        </div>
                         {voter.alamat && (
                           <div className="voter-detail-row">
                             <span className="voter-detail-label">Alamat</span>
                             <span className="voter-detail-value">{voter.alamat}</span>
                           </div>
                         )}
+                        <div className="voter-detail-row">
+                          <span className="voter-detail-label">RT / RW</span>
+                          <span className="voter-detail-value">RT {voter.rt} / RW {voter.rw}</span>
+                        </div>
                       </div>
 
                       <div style={{
