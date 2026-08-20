@@ -191,6 +191,7 @@ This file captures the active state, environment variables, completed tasks, and
   - **Kolom Urutan**: Menambahkan kolom `no_urut` ke skema `dpt` via migrasi `2026_08_20_110000_add_no_urut_to_dpt_table.php`, mencatat nomor urutan asli dari berkas Excel saat seeding. Query ekspor di `ExportController.php` diurutkan berdasarkan `no_urut` (voter manual tanpa `no_urut` berada di paling bawah diurutkan berdasarkan nama).
   - **Dua Opsi Ekspor Excel**: Menambahkan modal konfirmasi opsi ekspor di web panel (`PemilihTab.tsx`). Petugas dapat memilih untuk mengekspor "DENGAN NIK & NKK" atau "TANPA NIK & NKK" (menyembunyikan kolom NIK dan No. KK untuk alasan privasi). Logika penyaringan kolom diimplementasikan di `excelPemilih.ts`.
   - **Portal Cek DPT Mandiri Warga**: Membuat rute publik `/pemilih/cek` di backend (`routes/api.php` & `DptController::cekMandiri`) yang membatasi pencarian status (aktif non-TMS) menggunakan NIK (exact) atau Nama (fuzzy) + RT/RW (exact). Hasil pencarian dibatasi maksimal 5 baris dan NIK/NKK di-mask untuk menjaga privasi. Membuat komponen `LandingPage.tsx` di web client untuk pencarian warga secara mandiri tanpa login di rute `/`, dengan opsi tombol pengalihan ke `/login` bagi petugas.
+  - **Pembaruan Watermark**: Mengubah seluruh teks watermark/footer atribusi di `LandingPage.tsx`, `LoginScreen.tsx`, dan `Sidebar.tsx` menjadi "Support by KKN USH-7 2026 Dinaungi Tim Digitalisasi Desa Gentan".
 
 ---
 
