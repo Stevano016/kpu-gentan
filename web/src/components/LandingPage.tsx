@@ -141,23 +141,12 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onGoToLogin }) => {
         }
         .landing-tab-btn {
           flex: 1;
+          width: 50%;
           padding: 10px;
           border: none;
           border-radius: var(--radius-sm);
           cursor: pointer;
           transition: var(--transition);
-          display: inline-flex;
-          flex-direction: column;
-          align-items: center;
-          justify-content: center;
-        }
-        .landing-tab-btn::after {
-          display: block;
-          content: attr(data-text);
-          font-weight: 600;
-          height: 0;
-          overflow: hidden;
-          visibility: hidden;
         }
         .landing-form {
           padding: 24px 32px 32px 32px;
@@ -283,10 +272,9 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onGoToLogin }) => {
               type="button"
               onClick={() => { setSearchMode('nik'); resetForm(); }}
               className="landing-tab-btn"
-              data-text="Cari dengan NIK"
               style={{
                 background: searchMode === 'nik' ? 'var(--surface)' : 'none',
-                fontWeight: searchMode === 'nik' ? '600' : '500',
+                fontWeight: '600',
                 color: searchMode === 'nik' ? 'var(--primary)' : 'var(--text-muted)',
                 boxShadow: searchMode === 'nik' ? 'var(--shadow)' : 'none',
               }}
@@ -297,10 +285,9 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onGoToLogin }) => {
               type="button"
               onClick={() => { setSearchMode('nama'); resetForm(); }}
               className="landing-tab-btn"
-              data-text="Cari dengan Nama & RT/RW"
               style={{
                 background: searchMode === 'nama' ? 'var(--surface)' : 'none',
-                fontWeight: searchMode === 'nama' ? '600' : '500',
+                fontWeight: '600',
                 color: searchMode === 'nama' ? 'var(--primary)' : 'var(--text-muted)',
                 boxShadow: searchMode === 'nama' ? 'var(--shadow)' : 'none',
               }}
