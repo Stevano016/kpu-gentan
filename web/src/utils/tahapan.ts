@@ -85,6 +85,8 @@ export const KETERANGAN = [
 
 /** Keterangan yang berarti pemilih gugur. */
 export const KETERANGAN_TMS = [
+  '2 : Belum memiliki KTP-el',
+  '3 : Ubah Elemen Data',
   '4 : Meninggal',
   '5 : Ganda',
   '6 : Dibawah Umur',

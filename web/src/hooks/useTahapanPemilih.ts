@@ -1,7 +1,7 @@
 import { useCallback, useMemo } from 'react';
 import { ApiService } from '../services/api';
 import { jalankanAksi } from '../utils/request';
-import { KETERANGAN } from '../utils/tahapan';
+import { KETERANGAN_TMS } from '../utils/tahapan';
 import type { Feedback } from '../types/app';
 
 interface Argumen {
@@ -80,7 +80,7 @@ export function useTahapanPemilih({ token, tpsFilter, feedback, onSelesai }: Arg
       `Mengapa ${nama} tidak memenuhi syarat? Alasan ini tersimpan bersama datanya dan bisa dibatalkan.`,
       [],
       (alasan) => jalankan(() => ApiService.tandaiTms(token!, nik, alasan), 'Gagal Menandai TMS'),
-      KETERANGAN,
+      KETERANGAN_TMS,
     );
   }, [mintaAlasan, jalankan, token]);
 
