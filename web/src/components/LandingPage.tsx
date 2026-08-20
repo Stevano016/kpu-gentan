@@ -100,7 +100,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onGoToLogin }) => {
       {/* Header Topbar */}
       <header style={{
         display: 'flex',
-        justifyContent: 'between',
+        justifyContent: 'space-between',
         alignItems: 'center',
         padding: '16px 24px',
         backgroundColor: 'var(--surface)',
