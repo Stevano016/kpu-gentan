@@ -117,6 +117,7 @@ class DatabaseSeeder extends Seeder
                     'asal' => 'dp4',
                     'tahapan' => 'dp4',
                     'id_pemilih' => $idPemilih,
+                    'no_urut' => isset($colMap['no_urut']) && $row[$colMap['no_urut']] !== '' ? intval($row[$colMap['no_urut']]) : null,
                     'umur' => $row[$colMap['umur']] !== '' ? intval($row[$colMap['umur']]) : null,
                     'status_kawin' => $row[$colMap['status_kawin']],
                     'jenis_kelamin' => $row[$colMap['jenis_kelamin']],

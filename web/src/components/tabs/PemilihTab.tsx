@@ -43,7 +43,7 @@ interface PemilihTabProps {
   isAdmin: boolean;
   isPantarlih?: boolean;
   daftarRw: string[];
-  handleExport: (params: Record<string, string>) => Promise<void>;
+  handleExport: (params: Record<string, string>, denganNikNkk?: boolean) => Promise<void>;
 }
 
 const JENIS_OPTIONS = [
@@ -101,6 +101,8 @@ export const PemilihTab: React.FC<PemilihTabProps> = ({
 }) => {
   const [menuEksporTerbuka, setMenuEksporTerbuka] = React.useState(false);
   const [expandedNik, setExpandedNik] = React.useState<string | null>(null);
+  const [exportParams, setExportParams] = React.useState<Record<string, string> | null>(null);
+  const [isExportConfirmOpen, setIsExportConfirmOpen] = React.useState(false);
   const activeJenisLabel = dptJenisFilter ? metaTahapan(dptJenisFilter).singkat : 'Semua Kategori';
 
   return (
@@ -132,7 +134,7 @@ export const PemilihTab: React.FC<PemilihTabProps> = ({
             )}
             {isPantarlih ? (
               <button
-                onClick={() => handleExport({})}
+                onClick={() => { setExportParams({}); setIsExportConfirmOpen(true); }}
                 className="btn btn-secondary"
                 title="Unduh seluruh pemilih di TPS Anda"
               >
@@ -154,7 +156,7 @@ export const PemilihTab: React.FC<PemilihTabProps> = ({
                     <button
                       type="button"
                       className="export-menu-item"
-                      onClick={() => { setMenuEksporTerbuka(false); handleExport({ lingkup: 'all' }); }}
+                      onClick={() => { setMenuEksporTerbuka(false); setExportParams({ lingkup: 'all' }); setIsExportConfirmOpen(true); }}
                     >
                       Semua data pemilih
                     </button>
@@ -165,7 +167,7 @@ export const PemilihTab: React.FC<PemilihTabProps> = ({
                         key={`tps-${t.id}`}
                         type="button"
                         className="export-menu-item"
-                        onClick={() => { setMenuEksporTerbuka(false); handleExport({ lingkup: 'tps', tps_id: String(t.id) }); }}
+                        onClick={() => { setMenuEksporTerbuka(false); setExportParams({ lingkup: 'tps', tps_id: String(t.id) }); setIsExportConfirmOpen(true); }}
                       >
                         {t.nama}
                       </button>
@@ -178,7 +180,7 @@ export const PemilihTab: React.FC<PemilihTabProps> = ({
                         key={`rw-${rw}`}
                         type="button"
                         className="export-menu-item"
-                        onClick={() => { setMenuEksporTerbuka(false); handleExport({ lingkup: 'rw', rw }); }}
+                        onClick={() => { setMenuEksporTerbuka(false); setExportParams({ lingkup: 'rw', rw }); setIsExportConfirmOpen(true); }}
                       >
                         RW {rw}
                       </button>
@@ -526,6 +528,58 @@ export const PemilihTab: React.FC<PemilihTabProps> = ({
             </div>
           </div>
         </>
+      )}
+
+      {isExportConfirmOpen && (
+        <div className="modal-overlay" style={{ zIndex: 1100 }}>
+          <div className="modal-content" style={{ maxWidth: '420px', padding: '24px' }}>
+            <h3 className="modal-title" style={{ marginBottom: '12px', fontSize: '1.2rem', fontWeight: '700' }}>
+              Pilih Opsi Ekspor Excel
+            </h3>
+            <p style={{ fontSize: '0.875rem', color: 'var(--text-muted)', marginBottom: '24px', lineHeight: '1.5' }}>
+              Silakan pilih format berkas Excel yang ingin Anda unduh:
+            </p>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', marginBottom: '24px' }}>
+              <button
+                type="button"
+                className="btn btn-primary"
+                style={{ width: '100%', justifyContent: 'center', padding: '10px' }}
+                onClick={() => {
+                  if (exportParams) handleExport(exportParams, true);
+                  setIsExportConfirmOpen(false);
+                  setExportParams(null);
+                }}
+              >
+                <span>Unduh DENGAN NIK & NKK</span>
+              </button>
+              <button
+                type="button"
+                className="btn btn-secondary"
+                style={{ width: '100%', justifyContent: 'center', padding: '10px', backgroundColor: 'var(--bg-card)', border: '1px solid var(--border-color)' }}
+                onClick={() => {
+                  if (exportParams) handleExport(exportParams, false);
+                  setIsExportConfirmOpen(false);
+                  setExportParams(null);
+                }}
+              >
+                <span>Unduh TANPA NIK & NKK</span>
+              </button>
+            </div>
+            <div className="modal-footer" style={{ display: 'flex', justifyContent: 'flex-end', marginTop: 0 }}>
+              <button
+                type="button"
+                onClick={() => {
+                  setIsExportConfirmOpen(false);
+                  setExportParams(null);
+                }}
+                className="btn btn-secondary"
+                style={{ minWidth: '80px', padding: '8px 16px', fontSize: '0.875rem' }}
+              >
+                Batal
+              </button>
+            </div>
+          </div>
+        </div>
       )}
     </div>
   );

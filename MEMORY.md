@@ -186,6 +186,12 @@ This file captures the active state, environment variables, completed tasks, and
   - Perbaikannya di overlay, bukan di masing-masing modal, jadi seluruh modal (pemilih, akun, paslon, TPS, impor, QR, konfirmasi, peringatan sesi) ikut sembuh tanpa disentuh satu per satu. Terverifikasi di layar 560–620 px: form tambah dan edit bisa digulung sampai tombol Simpan, sementara modal pendek seperti konfirmasi hapus tetap terpusat.
   - Dirilis ke `servergentan` dan produksi — hanya berkas hasil build SPA, tanpa migrasi maupun seed. Jumlah data tetap 7.494.
 
+- **20 Agt 2026 — Seeding data terbaru RW 1-14, opsi ekspor NIK/NKK, & Cek DPT Mandiri**:
+  - **Seeding data RW 1-14 & Pencocokan NIK/NKK**: Memperbarui skrip `bangun_dpt_seed.py` untuk memproses seluruh 14 berkas Excel di folder `DPS PILKADES 2026/` (diurutkan secara numerik). Skrip mencocokkan data baru dengan database SQLite yang ada menggunakan prioritas Nama+RT+RW, lalu Nama-only (jika unik) untuk mempertahankan NIK, NKK, dan tanda sintetis yang sudah ada. NIK/NKK baru dari Excel yang valid (bukan sintetis) langsung memperbarui NIK sintetis lama.
+  - **Kolom Urutan**: Menambahkan kolom `no_urut` ke skema `dpt` via migrasi `2026_08_20_110000_add_no_urut_to_dpt_table.php`, mencatat nomor urutan asli dari berkas Excel saat seeding. Query ekspor di `ExportController.php` diurutkan berdasarkan `no_urut` (voter manual tanpa `no_urut` berada di paling bawah diurutkan berdasarkan nama).
+  - **Dua Opsi Ekspor Excel**: Menambahkan modal konfirmasi opsi ekspor di web panel (`PemilihTab.tsx`). Petugas dapat memilih untuk mengekspor "DENGAN NIK & NKK" atau "TANPA NIK & NKK" (menyembunyikan kolom NIK dan No. KK untuk alasan privasi). Logika penyaringan kolom diimplementasikan di `excelPemilih.ts`.
+  - **Portal Cek DPT Mandiri Warga**: Membuat rute publik `/pemilih/cek` di backend (`routes/api.php` & `DptController::cekMandiri`) yang membatasi pencarian status (aktif non-TMS) menggunakan NIK (exact) atau Nama (fuzzy) + RT/RW (exact). Hasil pencarian dibatasi maksimal 5 baris dan NIK/NKK di-mask untuk menjaga privasi. Membuat komponen `LandingPage.tsx` di web client untuk pencarian warga secara mandiri tanpa login di rute `/`, dengan opsi tombol pengalihan ke `/login` bagi petugas.
+
 ---
 
 ## 🛠️ Local Environment Notes

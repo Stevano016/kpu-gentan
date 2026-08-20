@@ -67,7 +67,7 @@ const KOLOM: { judul: string; ambil: (b: BarisPemilih) => string | number | null
   },
 ];
 
-export async function unduhExcelPemilih(data: DataEksporPemilih): Promise<string> {
+export async function unduhExcelPemilih(data: DataEksporPemilih, denganNikNkk: boolean = true): Promise<string> {
   const Excel = await muatExcelJS();
   const wb = new Excel.Workbook();
   wb.creator = 'GENTARA — Sekretariat Kelurahan Gentan';
@@ -85,7 +85,11 @@ export async function unduhExcelPemilih(data: DataEksporPemilih): Promise<string
     },
   });
 
-  KOLOM.forEach((kolom, i) => {
+  const kolomTersaring = denganNikNkk 
+    ? KOLOM 
+    : KOLOM.filter(k => k.judul !== 'NIK' && k.judul !== 'No. KK');
+
+  kolomTersaring.forEach((kolom, i) => {
     const c = ws.getColumn(i + 1);
     c.width = kolom.lebar;
     // Inilah perbaikannya: kolom nomor identitas dikunci sebagai teks.
@@ -99,7 +103,7 @@ export async function unduhExcelPemilih(data: DataEksporPemilih): Promise<string
   ];
 
   kepala.forEach((teks, i) => {
-    ws.mergeCells(i + 1, 1, i + 1, KOLOM.length);
+    ws.mergeCells(i + 1, 1, i + 1, kolomTersaring.length);
     const sel = ws.getCell(i + 1, 1);
     sel.value = teks;
     sel.alignment = { horizontal: 'center', vertical: 'middle' };
@@ -110,7 +114,7 @@ export async function unduhExcelPemilih(data: DataEksporPemilih): Promise<string
   });
 
   const barisJudul = ws.getRow(4);
-  KOLOM.forEach((kolom, i) => {
+  kolomTersaring.forEach((kolom, i) => {
     const sel = barisJudul.getCell(i + 1);
     sel.value = kolom.judul;
     sel.font = { name: 'Calibri', size: 10, bold: true, color: { argb: 'FFFFFFFF' } };
@@ -120,14 +124,14 @@ export async function unduhExcelPemilih(data: DataEksporPemilih): Promise<string
   });
   barisJudul.height = 28;
 
-  ws.autoFilter = { from: { row: 4, column: 1 }, to: { row: 4, column: KOLOM.length } };
+  ws.autoFilter = { from: { row: 4, column: 1 }, to: { row: 4, column: kolomTersaring.length } };
   ws.pageSetup.printTitlesRow = '4:4';
 
   data.baris.forEach((data_baris, indeks) => {
     const baris = ws.getRow(5 + indeks);
     const perluDilengkapi = data_baris.nik_sintetis || data_baris.nkk_sintetis;
 
-    KOLOM.forEach((kolom, i) => {
+    kolomTersaring.forEach((kolom, i) => {
       const sel = baris.getCell(i + 1);
       const nilai = i === 0 ? indeks + 1 : kolom.ambil(data_baris);
       sel.value = nilai === '' ? null : nilai;
@@ -155,10 +159,15 @@ export async function unduhExcelPemilih(data: DataEksporPemilih): Promise<string
   const barisCatatan = 5 + data.baris.length + 2;
   ws.getCell(barisCatatan, 1).value = 'Keterangan';
   ws.getCell(barisCatatan, 1).font = { name: 'Calibri', size: 10, bold: true };
-  ws.getCell(barisCatatan + 1, 1).value =
-    'Baris berlatar kuning = NIK/NKK masih nomor sementara buatan sistem (awalan 9999/9998), bukan nomor asli.';
-  ws.getCell(barisCatatan + 2, 1).value =
-    'Kolom NIK dan No. KK bertipe teks agar 16 digitnya utuh; jangan diubah formatnya menjadi Angka.';
+  if (denganNikNkk) {
+    ws.getCell(barisCatatan + 1, 1).value =
+      'Baris berlatar kuning = NIK/NKK masih nomor sementara buatan sistem (awalan 9999/9998), bukan nomor asli.';
+    ws.getCell(barisCatatan + 2, 1).value =
+      'Kolom NIK dan No. KK bertipe teks agar 16 digitnya utuh; jangan diubah formatnya menjadi Angka.';
+  } else {
+    ws.getCell(barisCatatan + 1, 1).value =
+      'Data diekspor tanpa memuat kolom NIK dan Nomor KK atas alasan privasi.';
+  }
 
   return unduhWorkbook(wb, `pemilih-${data.label}-${cap()}.xlsx`);
 }

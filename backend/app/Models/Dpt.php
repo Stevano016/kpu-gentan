@@ -31,6 +31,7 @@ class Dpt extends Model
         'dpk_alasan',
         'diverifikasi_pada',
         'id_pemilih',
+        'no_urut',
         'umur',
         'status_kawin',
         'jenis_kelamin',

@@ -74,7 +74,9 @@ class ExportController extends Controller
         $pengguna = $request->user();
         $lingkup = $request->lingkup ?? 'all';
 
-        $query = Dpt::with('tps:id,nama')->orderBy('rw')->orderBy('rt')->orderBy('nama');
+        $query = Dpt::with('tps:id,nama')
+            ->orderByRaw('CASE WHEN no_urut IS NULL THEN 99999999 ELSE no_urut END ASC')
+            ->orderBy('nama');
         $label = 'semua';
         $judul = 'Seluruh Pemilih Kelurahan Gentan';
 

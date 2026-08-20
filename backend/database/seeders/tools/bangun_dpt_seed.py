@@ -1,49 +1,28 @@
 # -*- coding: utf-8 -*-
 """
-Membangun `database/seeders/dpt_seed.csv` dari berkas DP4
-`Data_Utama_Bersih (999) (1).xlsx` (sheet "Data Utama (Bersih)").
+Membangun `database/seeders/dpt_seed.csv` dari berkas-berkas Excel di
+`d:\Coding\KPPS Gentan\DPS PILKADES 2026` (RW 1.xlsx - RW 14.xlsx).
 
-Seluruh 7.494 baris ikut masuk, tidak ada yang dibuang. Dua hal yang dulu
-membuat sebagian baris hilang ditangani di sini, bukan didiamkan:
-
-1.  **627 baris tanpa NIK/NKK.** Kolom `NIK` pada berkas itu tersamar
-    (`317308**********`) sehingga tidak bisa dipakai; NIK asli hanya ada di
-    `NIK_PEMBANDING`, dan 627 orang tidak menemukan padanannya. Karena `nik`
-    adalah primary key tabel `dpt`, mereka dulu tidak bisa dimasukkan sama
-    sekali. Sekarang mereka diberi nomor sementara buatan sistem dan ditandai
-    lewat kolom `nik_sintetis` / `nkk_sintetis`, jadi datanya ada tapi tidak
-    pernah tertukar dengan nomor asli.
-
-2.  **11 NIK kembar.** Dua orang berbeda (tanggal lahir dan alamat berbeda)
-    terlanjur dipetakan ke satu NIK. Baris pertama memakai NIK aslinya, baris
-    berikutnya dapat nomor sementara + catatan, jadi orangnya tetap terdata
-    alih-alih dibuang diam-diam.
-
-Nomor sementara sengaja dibuat berawalan 9999 (NIK) dan 9998 (NKK) — bukan
-kode provinsi yang sah, jadi mustahil bentrok dengan nomor asli dan langsung
-kelihatan palsu saat dibaca manusia. Urutannya deterministik supaya seed ulang
-menghasilkan berkas yang sama persis.
-
-Pakai:  python database/seeders/tools/bangun_dpt_seed.py [path/ke/berkas.xlsx]
+Mencocokkan data baru dengan database untuk mempertahankan NIK dan NKK
+yang sudah ada, serta mencatat nomor urut asli dari berkas Excel.
 """
 
 import csv
 import sys
+import os
+import glob
+import sqlite3
 from pathlib import Path
-
 import openpyxl
 
 AKAR = Path(__file__).resolve().parents[3].parent  # .../KPPS Gentan
-SUMBER_BAWAAN = AKAR / "Data_Utama_Bersih (999) (1).xlsx"
+DB_PATH = Path(__file__).resolve().parents[2] / "database.sqlite"
 TUJUAN = Path(__file__).resolve().parents[1] / "dpt_seed.csv"
-SHEET = "Data Utama (Bersih)"
 
 AWALAN_NIK_SINTETIS = "9999"
 AWALAN_NKK_SINTETIS = "9998"
 
 # Pembagian wilayah TPS, disalin dari surat pembagian TPS Kelurahan Gentan.
-# Kunci = RW; nilainya None berarti seluruh RT masuk TPS itu, selain itu daftar
-# RT yang masuk.
 PETA_TPS = {
     1: {"001": None, "002": None, "010": ["006", "007"]},
     2: {"003": None, "004": None, "014": None, "006": ["002", "004", "006", "008"]},
@@ -53,18 +32,16 @@ PETA_TPS = {
         "009": ["002", "003", "004", "005"],
         "010": ["001", "002", "003", "004", "005"]},
 }
-TPS_CADANGAN = 1  # RT/RW kosong (perumahan yang tidak terdaftar RT-nya)
+TPS_CADANGAN = 1
 
 KOLOM_KELUARAN = [
     "nik", "nkk", "nama", "tps_id", "jenis_kelamin", "umur", "status_kawin",
     "alamat", "rt", "rw", "pekerjaan", "disabilitas", "catatan_impor",
-    "nik_sintetis", "nkk_sintetis",
+    "nik_sintetis", "nkk_sintetis", "no_urut"
 ]
 
 
 def teks(nilai) -> str:
-    """Semua sel dibaca sebagai teks. NIK 16 digit melebihi presisi float dan
-    akan kehilangan digit terakhir kalau sempat menjadi angka."""
     if nilai is None:
         return ""
     if isinstance(nilai, float) and nilai.is_integer():
@@ -73,7 +50,6 @@ def teks(nilai) -> str:
 
 
 def nomor_wilayah(nilai: str) -> str:
-    """`1`, `0001`, dan `001` adalah RT yang sama; `-` berarti kosong."""
     nilai = teks(nilai)
     if not nilai or nilai == "-":
         return ""
@@ -89,88 +65,285 @@ def cari_tps(rw: str, rt: str) -> int:
     return TPS_CADANGAN
 
 
+def muat_data_db():
+    """Memuat data DPT dari SQLite lokal jika ada."""
+    dpt_map_full = {}
+    dpt_map_name = {}
+    if not DB_PATH.exists():
+        print(f"Database tidak ditemukan di {DB_PATH}, pencocokan dilewati.")
+        return dpt_map_full, dpt_map_name
+
+    try:
+        conn = sqlite3.connect(DB_PATH)
+        cursor = conn.cursor()
+        # Cek apakah tabel dpt ada
+        cursor.execute("SELECT name FROM sqlite_master WHERE type='table' AND name='dpt'")
+        if not cursor.fetchone():
+            conn.close()
+            return dpt_map_full, dpt_map_name
+
+        cursor.execute("SELECT nik, nkk, nama, rt, rw, nik_sintetis, nkk_sintetis FROM dpt")
+        for row in cursor.fetchall():
+            nik, nkk, nama, rt, rw, nik_sint, nkk_sint = row
+            nama_clean = nama.strip().upper()
+            rt_clean = nomor_wilayah(rt)
+            rw_clean = nomor_wilayah(rw)
+            
+            val = {
+                "nik": nik,
+                "nkk": nkk,
+                "nik_sintetis": bool(nik_sint),
+                "nkk_sintetis": bool(nkk_sint)
+            }
+            # Map by full (nama, rt, rw)
+            dpt_map_full[(nama_clean, rt_clean, rw_clean)] = val
+            # Map by name
+            dpt_map_name.setdefault(nama_clean, []).append({
+                "nik": nik,
+                "nkk": nkk,
+                "rt": rt_clean,
+                "rw": rw_clean,
+                "nik_sintetis": bool(nik_sint),
+                "nkk_sintetis": bool(nkk_sint)
+            })
+        conn.close()
+        print(f"Berhasil memuat {len(dpt_map_full)} data dari database untuk pencocokan.")
+    except Exception as e:
+        print(f"Gagal membaca database: {e}")
+    return dpt_map_full, dpt_map_name
+
+
 def main() -> int:
-    sumber = Path(sys.argv[1]) if len(sys.argv) > 1 else SUMBER_BAWAAN
-    if not sumber.exists():
-        print(f"Berkas sumber tidak ditemukan: {sumber}")
+    excel_dir = Path(sys.argv[1]) if len(sys.argv) > 1 else AKAR / "DPS PILKADES 2026"
+    if not excel_dir.exists():
+        print(f"Direktori data tidak ditemukan: {excel_dir}")
         return 1
 
-    wb = openpyxl.load_workbook(sumber, read_only=True, data_only=True)
-    ws = wb[SHEET]
-    baris = ws.iter_rows(values_only=True)
-    judul = [teks(h) for h in next(baris)]
-    kolom = {nama: i for i, nama in enumerate(judul)}
+    # Cari berkas RW *.xlsx dan urutkan secara numerik
+    berkas_list = sorted(
+        glob.glob(os.path.join(excel_dir, "RW *.xlsx")),
+        key=lambda x: int(os.path.basename(x).replace("RW ", "").replace(".xlsx", ""))
+    )
+    if not berkas_list:
+        print(f"Tidak ditemukan berkas RW *.xlsx di {excel_dir}")
+        return 1
 
-    def sel(baris_data, nama):
-        return teks(baris_data[kolom[nama]])
+    db_full, db_name = muat_data_db()
 
     hasil = []
     nik_terpakai = set()
+    nkk_terpakai = set()
+
+    # Hitung pembuat nomor sementara untuk data baru yang tidak cocok
+    # dan tidak memiliki NIK/NKK di berkas Excel.
     urut_nik_sintetis = 0
     urut_nkk_sintetis = 0
-    jumlah = {"total": 0, "nik_sintetis": 0, "nkk_sintetis": 0, "nik_kembar": 0}
+    
+    # Simpan NIK/NKK dari DB untuk pengecekan konflik saat pembuatan nomor sementara baru
+    db_niks = set()
+    db_nkks = set()
+    for key, val in db_full.items():
+        if val["nik"]:
+            db_niks.add(val["nik"])
+            if val["nik"].startswith(AWALAN_NIK_SINTETIS):
+                try:
+                    num = int(val["nik"][len(AWALAN_NIK_SINTETIS):])
+                    if num > urut_nik_sintetis:
+                        urut_nik_sintetis = num
+                except ValueError:
+                    pass
+        if val["nkk"]:
+            db_nkks.add(val["nkk"])
+            if val["nkk"].startswith(AWALAN_NKK_SINTETIS):
+                try:
+                    num = int(val["nkk"][len(AWALAN_NKK_SINTETIS):])
+                    if num > urut_nkk_sintetis:
+                        urut_nkk_sintetis = num
+                except ValueError:
+                    pass
 
-    for data in baris:
-        if not any(teks(v) for v in data):
+    # nik_terpakai and nkk_terpakai will track numbers generated/used in this run
+    nik_terpakai = set()
+    nkk_terpakai = set()
+
+    global_no_urut = 0
+    jumlah = {
+        "total": 0,
+        "cocok_full": 0,
+        "cocok_nama": 0,
+        "baru_dari_excel": 0,
+        "nik_sintetis": 0,
+        "nkk_sintetis": 0,
+        "nik_kembar": 0
+    }
+
+    for filepath in berkas_list:
+        fname = os.path.basename(filepath)
+        rw_num = fname.replace("RW ", "").replace(".xlsx", "")
+        sheet_name = "RW " + rw_num
+        print(f"Memproses {fname} sheet {sheet_name}...")
+        
+        wb = openpyxl.load_workbook(filepath, data_only=True)
+        if sheet_name not in wb.sheetnames:
+            print(f"  Warning: sheet {sheet_name} tidak ditemukan di {fname}. Dilewati.")
             continue
-        jumlah["total"] += 1
+            
+        ws = wb[sheet_name]
+        rows = list(ws.iter_rows(values_only=True))
+        
+        header_row = -1
+        for r_idx, r in enumerate(rows):
+            if r and any(str(c).strip().upper() == "NAMA LENGKAP" for c in r if c is not None):
+                header_row = r_idx
+                break
+                
+        if header_row == -1:
+            print(f"  Warning: header 'NAMA LENGKAP' tidak ditemukan. Dilewati.")
+            continue
+            
+        headers = [str(c).strip().upper() if c is not None else "" for c in rows[header_row]]
+        name_idx = headers.index("NAMA LENGKAP")
+        ktp_idx = headers.index("NOMOR KTP") if "NOMOR KTP" in headers else -1
+        kk_idx = headers.index("NOMOR KK") if "NOMOR KK" in headers else -1
+        rt_idx = headers.index("RT") if "RT" in headers else -1
+        rw_idx = headers.index("RW") if "RW" in headers else -1
+        alamat_idx = headers.index("ALAMAT") if "ALAMAT" in headers else -1
+        umur_idx = headers.index("UMUR") if "UMUR" in headers else -1
+        kawin_idx = headers.index("KAWIN/SUDAH PERNAH KAWIN/BELUM") if "KAWIN/SUDAH PERNAH KAWIN/BELUM" in headers else -1
+        gender_idx = headers.index("L/P") if "L/P" in headers else -1
+        pekerjaan_idx = headers.index("PEKERJAAN") if "PEKERJAAN" in headers else -1
+        disabilitas_idx = headers.index("DISABILITAS") if "DISABILITAS" in headers else -1
+        ket_idx = headers.index("KETERANGAN") if "KETERANGAN" in headers else -1
+        
+        for r_idx, r in enumerate(rows[header_row+1:], start=header_row+2):
+            if len(r) > name_idx and r[name_idx]:
+                name_val = teks(r[name_idx]).strip().upper()
+                # Skip header/column number rows
+                if not name_val or name_val in ("NAMA LENGKAP", "NO", "ORI") or name_val.isdigit() or len(name_val) <= 2:
+                    continue
+                if teks(r[0]) == "ORI" or (len(r) > 1 and teks(r[1]) == "ORI"):
+                    continue
+                
+                global_no_urut += 1
+                jumlah["total"] += 1
+                
+                rt = nomor_wilayah(r[rt_idx]) if rt_idx != -1 and len(r) > rt_idx else ""
+                rw = nomor_wilayah(r[rw_idx]) if rw_idx != -1 and len(r) > rw_idx else ""
+                excel_nik = teks(r[ktp_idx]) if ktp_idx != -1 and len(r) > ktp_idx else ""
+                excel_nkk = teks(r[kk_idx]) if kk_idx != -1 and len(r) > kk_idx else ""
+                catatan = [c for c in [teks(r[ket_idx]) if ket_idx != -1 and len(r) > ket_idx else ""] if c]
 
-        nik = sel(data, "NIK_PEMBANDING")
-        nkk = sel(data, "NKK_PEMBANDING")
-        catatan = [c for c in [sel(data, "KETERANGAN")] if c]
+                # Tentukan NIK/NKK dan apakah sintetis
+                nik = ""
+                nkk = ""
+                nik_sintetis = False
+                nkk_sintetis = False
+                
+                # Strategi Pencocokan Database
+                db_match = None
+                
+                # 1. Nama + RT + RW
+                if (name_val, rt, rw) in db_full:
+                    db_match = db_full[(name_val, rt, rw)]
+                    jumlah["cocok_full"] += 1
+                # 2. Nama saja (jika unik di DB)
+                elif name_val in db_name and len(db_name[name_val]) == 1:
+                    db_match = db_name[name_val][0]
+                    jumlah["cocok_nama"] += 1
+                
+                if db_match:
+                    # Memprioritaskan NIK/NKK dari Excel jika ia merupakan NIK/NKK riil (bukan sintetis/kosong)
+                    if excel_nik and not excel_nik.startswith(AWALAN_NIK_SINTETIS):
+                        nik = excel_nik
+                        nik_sintetis = False
+                    else:
+                        nik = db_match["nik"]
+                        nik_sintetis = db_match["nik_sintetis"]
+                        
+                    if excel_nkk and not excel_nkk.startswith(AWALAN_NKK_SINTETIS):
+                        nkk = excel_nkk
+                        nkk_sintetis = False
+                    else:
+                        nkk = db_match["nkk"]
+                        nkk_sintetis = db_match["nkk_sintetis"]
+                else:
+                    # Data Baru dari Excel
+                    jumlah["baru_dari_excel"] += 1
+                    if excel_nik:
+                        nik = excel_nik
+                        nik_sintetis = excel_nik.startswith(AWALAN_NIK_SINTETIS)
+                    if excel_nkk:
+                        nkk = excel_nkk
+                        nkk_sintetis = excel_nkk.startswith(AWALAN_NKK_SINTETIS)
 
-        nik_sintetis = False
-        nkk_sintetis = False
+                # Tangani jika NIK/NKK kosong
+                if not nik:
+                    while True:
+                        urut_nik_sintetis += 1
+                        nik = AWALAN_NIK_SINTETIS + str(urut_nik_sintetis).zfill(12)
+                        if nik not in db_niks and nik not in nik_terpakai:
+                            break
+                    nik_sintetis = True
+                    catatan.append("NIK belum ada di data pembanding — nomor sementara, wajib dilengkapi pantarlih.")
+                
+                if not nkk:
+                    while True:
+                        urut_nkk_sintetis += 1
+                        nkk = AWALAN_NKK_SINTETIS + str(urut_nkk_sintetis).zfill(12)
+                        if nkk not in db_nkks and nkk not in nkk_terpakai:
+                            break
+                    nkk_sintetis = True
+                    catatan.append("NKK belum ada di data pembanding — nomor sementara, keluarganya belum bisa dikelompokkan.")
 
-        if nik and nik in nik_terpakai:
-            # Dua orang berbeda dipetakan ke satu NIK di berkas sumber.
-            catatan.append(
-                f"NIK {nik} sudah dipakai baris lain (dugaan data ganda); "
-                "nomor sementara dibuat sistem agar orangnya tetap terdata."
-            )
-            jumlah["nik_kembar"] += 1
-            nik = ""
+                # Tangani duplikat NIK di hasil penulisan baru
+                if nik in nik_terpakai:
+                    # Jika NIK sudah terpakai oleh record lain, buat sintetis
+                    if not nik.startswith(AWALAN_NIK_SINTETIS):
+                        catatan.append(
+                            f"NIK {nik} sudah dipakai baris lain (dugaan data ganda); "
+                            "nomor sementara dibuat sistem agar orangnya tetap terdata."
+                        )
+                        jumlah["nik_kembar"] += 1
+                        while True:
+                            urut_nik_sintetis += 1
+                            nik = AWALAN_NIK_SINTETIS + str(urut_nik_sintetis).zfill(12)
+                            if nik not in db_niks and nik not in nik_terpakai:
+                                break
+                        nik_sintetis = True
 
-        if not nik:
-            urut_nik_sintetis += 1
-            nik = AWALAN_NIK_SINTETIS + str(urut_nik_sintetis).zfill(12)
-            nik_sintetis = True
-            jumlah["nik_sintetis"] += 1
-            catatan.append("NIK belum ada di data pembanding — nomor sementara, wajib dilengkapi pantarlih.")
+                nik_terpakai.add(nik)
+                nkk_terpakai.add(nkk)
 
-        if not nkk:
-            urut_nkk_sintetis += 1
-            nkk = AWALAN_NKK_SINTETIS + str(urut_nkk_sintetis).zfill(12)
-            nkk_sintetis = True
-            jumlah["nkk_sintetis"] += 1
-            catatan.append("NKK belum ada di data pembanding — nomor sementara, keluarganya belum bisa dikelompokkan.")
+                if nik_sintetis:
+                    jumlah["nik_sintetis"] += 1
+                if nkk_sintetis:
+                    jumlah["nkk_sintetis"] += 1
 
-        nik_terpakai.add(nik)
+                umur = teks(r[umur_idx]) if umur_idx != -1 and len(r) > umur_idx else ""
+                
+                hasil.append({
+                    "nik": nik,
+                    "nkk": nkk,
+                    "nama": teks(r[name_idx]),
+                    "tps_id": cari_tps(rw, rt),
+                    "jenis_kelamin": teks(r[gender_idx]) if gender_idx != -1 and len(r) > gender_idx else "",
+                    "umur": umur if umur.isdigit() else "",
+                    "status_kawin": teks(r[kawin_idx]) if kawin_idx != -1 and len(r) > kawin_idx else "",
+                    "alamat": teks(r[alamat_idx]) if alamat_idx != -1 and len(r) > alamat_idx else "",
+                    "rt": rt,
+                    "rw": rw,
+                    "pekerjaan": teks(r[pekerjaan_idx]) if pekerjaan_idx != -1 and len(r) > pekerjaan_idx else "",
+                    "disabilitas": teks(r[disabilitas_idx]) if disabilitas_idx != -1 and len(r) > disabilitas_idx else "",
+                    "catatan_impor": " | ".join(catatan),
+                    "nik_sintetis": "1" if nik_sintetis else "0",
+                    "nkk_sintetis": "1" if nkk_sintetis else "0",
+                    "no_urut": global_no_urut
+                })
 
-        rt = nomor_wilayah(sel(data, "NO_RT_ALT")) or nomor_wilayah(sel(data, "NO_RT")) or "000"
-        rw = nomor_wilayah(sel(data, "NO_RW_ALT")) or nomor_wilayah(sel(data, "NO_RW")) or "000"
-
-        umur = sel(data, "UMUR")
-        hasil.append({
-            "nik": nik,
-            "nkk": nkk,
-            "nama": sel(data, "NAMA_LGKP"),
-            "tps_id": cari_tps(rw, rt),
-            "jenis_kelamin": sel(data, "JENIS_KLMIN_KET"),
-            "umur": umur if umur.isdigit() else "",
-            "status_kawin": sel(data, "STAT_KWN"),
-            "alamat": sel(data, "ALAMAT"),
-            "rt": rt,
-            "rw": rw,
-            "pekerjaan": sel(data, "JENIS_PKRJN_KET"),
-            "disabilitas": sel(data, "PNYDNG_CCT_KET"),
-            "catatan_impor": " | ".join(catatan),
-            "nik_sintetis": "1" if nik_sintetis else "0",
-            "nkk_sintetis": "1" if nkk_sintetis else "0",
-        })
-
-    # Urutan berkas menentukan urutan id_pemilih (USH-GTN-026xxxx), jadi dibuat
-    # menetap: per TPS, lalu RW/RT, lalu nama.
+    # Urutan CSV dibuat menetap per TPS/RW/RT/nama untuk kenyamanan database/seeder,
+    # tetapi `no_urut` yang tersimpan di baris akan melacak nomor urutan asli Excel.
+    # Namun, agar id_pemilih (dari seeder) mengikuti urutan per TPS/RW/RT/nama secara teratur,
+    # kita tetap mengurutkan CSV seperti semula.
     hasil.sort(key=lambda b: (b["tps_id"], b["rw"], b["rt"], b["nama"], b["nik"]))
 
     with TUJUAN.open("w", encoding="utf-8", newline="") as f:
@@ -178,15 +351,20 @@ def main() -> int:
         penulis.writeheader()
         penulis.writerows(hasil)
 
-    print(f"Ditulis ke {TUJUAN}")
-    print(f"  baris          : {jumlah['total']}")
-    print(f"  NIK sementara  : {jumlah['nik_sintetis']} (termasuk {jumlah['nik_kembar']} NIK kembar)")
-    print(f"  NKK sementara  : {jumlah['nkk_sintetis']}")
+    print(f"\nSelesai! Ditulis ke {TUJUAN}")
+    print(f"  Total baris          : {jumlah['total']}")
+    print(f"  Cocok (Nama+RT+RW)   : {jumlah['cocok_full']}")
+    print(f"  Cocok (Nama saja)    : {jumlah['cocok_nama']}")
+    print(f"  Data baru            : {jumlah['baru_dari_excel']}")
+    print(f"  NIK sementara        : {jumlah['nik_sintetis']} (termasuk {jumlah['nik_kembar']} duplikat)")
+    print(f"  NKK sementara        : {jumlah['nkk_sintetis']}")
+    
     per_tps = {}
     for b in hasil:
         per_tps[b["tps_id"]] = per_tps.get(b["tps_id"], 0) + 1
     for t in sorted(per_tps):
-        print(f"  TPS {t}          : {per_tps[t]}")
+        print(f"  TPS {t}                : {per_tps[t]}")
+        
     return 0
 
 

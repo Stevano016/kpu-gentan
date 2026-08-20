@@ -483,4 +483,87 @@ class DptController extends Controller
             'qrcode' => $base64
         ]);
     }
+
+    public function cekMandiri(Request $request)
+    {
+        $validator = Validator::make($request->all(), [
+            'nik' => 'nullable|string|min:4',
+            'nama' => 'required_without:nik|nullable|string|min:3',
+            'rt' => 'required_with:nama|nullable|string',
+            'rw' => 'required_with:nama|nullable|string',
+        ]);
+
+        if ($validator->fails()) {
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Input tidak valid. Harap masukkan NIK atau Nama Lengkap (minimal 3 karakter) beserta RT dan RW.',
+                'errors' => $validator->errors()
+            ], 422);
+        }
+
+        $query = Dpt::with('tps:id,nama');
+
+        if ($request->filled('nik')) {
+            $nik = $request->nik;
+            $query->where('nik', $nik);
+        } else {
+            $nama = strtoupper(trim($request->nama));
+            $rt = str_pad(ltrim($request->rt, '0'), 3, '0', STR_PAD_LEFT);
+            $rw = str_pad(ltrim($request->rw, '0'), 3, '0', STR_PAD_LEFT);
+
+            $query->where('nama', 'like', "%{$nama}%")
+                  ->where('rt', $rt)
+                  ->where('rw', $rw);
+        }
+
+        // Hanya tampilkan pemilih dengan tahapan aktif (non-TMS)
+        $query->whereIn('tahapan', Dpt::TAHAPAN_AKTIF);
+
+        // Batasi hasil maksimal 5 baris demi keamanan (mencegah scraping massal)
+        $voters = $query->limit(5)->get();
+
+        if ($voters->isEmpty()) {
+            return response()->json([
+                'status' => 'success',
+                'data' => []
+            ]);
+        }
+
+        $formatted = $voters->map(function ($v) {
+            // Masking NIK: 331110**********0001
+            $nikMasked = $v->nik;
+            if (strlen($nikMasked) === 16) {
+                $nikMasked = substr($nikMasked, 0, 6) . '**********' . substr($nikMasked, -4);
+            } else {
+                $nikMasked = substr($nikMasked, 0, 4) . '********' . substr($nikMasked, -2);
+            }
+
+            // Masking NKK: 331110**********0001
+            $nkkMasked = $v->nkk;
+            if ($nkkMasked) {
+                if (strlen($nkkMasked) === 16) {
+                    $nkkMasked = substr($nkkMasked, 0, 6) . '**********' . substr($nkkMasked, -4);
+                } else {
+                    $nkkMasked = substr($nkkMasked, 0, 4) . '********' . substr($nkkMasked, -2);
+                }
+            }
+
+            return [
+                'nama' => strtoupper($v->nama),
+                'nik' => $nikMasked,
+                'nkk' => $nkkMasked,
+                'jenis_kelamin' => $v->jenis_kelamin,
+                'tps' => $v->tps->nama ?? 'TPS Belum Ditentukan',
+                'rt' => $v->rt,
+                'rw' => $v->rw,
+                'alamat' => $v->alamat,
+                'tahapan' => $v->tahapan,
+            ];
+        });
+
+        return response()->json([
+            'status' => 'success',
+            'data' => $formatted
+        ]);
+    }
 }

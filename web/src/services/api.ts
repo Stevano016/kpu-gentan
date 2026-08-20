@@ -264,5 +264,17 @@ export const ApiService = {
     return permintaan(`${API_URL}/keluarga/ekspor${qs ? `?${qs}` : ''}`, {
       headers: getAuthHeaders(token)
     });
+  },
+
+  async cekPemilih(nik?: string, nama?: string, rt?: string, rw?: string) {
+    let url = `${API_URL}/pemilih/cek?`;
+    if (nik) {
+      url += `nik=${encodeURIComponent(nik)}`;
+    } else {
+      url += `nama=${encodeURIComponent(nama || '')}&rt=${encodeURIComponent(rt || '')}&rw=${encodeURIComponent(rw || '')}`;
+    }
+    return fetch(url, {
+      headers: { 'Accept': 'application/json' }
+    });
   }
 };

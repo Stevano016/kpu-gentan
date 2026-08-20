@@ -14,6 +14,7 @@ use App\Http\Controllers\KeluargaController;
 
 // Public routes
 Route::post('/login', [AuthController::class, 'login'])->middleware('throttle:login');
+Route::get('/pemilih/cek', [DptController::class, 'cekMandiri'])->middleware('throttle:api');
 
 // Protected routes (Sanctum)
 Route::middleware(['auth:sanctum', 'throttle:api'])->group(function () {

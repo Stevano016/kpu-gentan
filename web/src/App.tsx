@@ -4,6 +4,7 @@ import { ApiService, daftarkanPenanganSesiBerakhir } from './services/api';
 
 // Shared Layouts & Modals
 import { LoginScreen } from './components/LoginScreen';
+import { LandingPage } from './components/LandingPage';
 import { Sidebar } from './components/Sidebar';
 import { PenjagaSesi, type InfoSesi } from './components/PenjagaSesi';
 import { Icons } from './components/Icons';
@@ -899,7 +900,7 @@ function AppContent() {
    * terakhirnya benar-benar hilang. Server mengirim datanya sebagai JSON dan
    * berkasnya disusun di sini, tempat tipe tiap kolom bisa ditetapkan.
    */
-  const handleExport = async (params: Record<string, string>) => {
+  const handleExport = async (params: Record<string, string>, denganNikNkk: boolean = true) => {
     if (!token) return;
     try {
       const res = await ApiService.exportPemilih(token, { ...params, format: 'json' });
@@ -915,10 +916,10 @@ function AppContent() {
         return;
       }
 
-      const namaBerkas = await unduhExcelPemilih(json.data);
+      const namaBerkas = await unduhExcelPemilih(json.data, denganNikNkk);
       showSuccess(
         'Ekspor Selesai',
-        `Berkas ${namaBerkas} sudah diunduh — ${json.data.jumlah.toLocaleString('id-ID')} pemilih, NIK dan No. KK tersimpan sebagai teks.`,
+        `Berkas ${namaBerkas} sudah diunduh — ${json.data.jumlah.toLocaleString('id-ID')} pemilih, NIK dan No. KK ${denganNikNkk ? 'tersimpan sebagai teks' : 'dihilangkan'}.`,
       );
     } catch {
       showError('Gagal menyusun berkas Excel.', 'Gagal Mengekspor');
@@ -1169,7 +1170,8 @@ function AppContent() {
   if (!token) {
     return (
       <Routes>
-        <Route path="*" element={
+        <Route path="/" element={<LandingPage onGoToLogin={() => navigate('/login')} />} />
+        <Route path="/login" element={
           <LoginScreen 
             handleLogin={handleLogin}
             username={username}
@@ -1182,6 +1184,7 @@ function AppContent() {
             sisaKunci={sisaKunci}
           />
         } />
+        <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
     );
   }
