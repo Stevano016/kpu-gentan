@@ -241,6 +241,7 @@ This file captures the active state, environment variables, completed tasks, and
   - Memperbarui `KppsModal.tsx` agar admin memilih RW Tugas saat mendaftarkan akun Pantarlih baru, dan mengupdate tabel `KppsTab.tsx` untuk menampilkan asosiasi RW bagi Pantarlih (misal "RW 006") dan TPS bagi KPPS.
   - Mengubah domain API produksi default dan WebSocket di `api_service.dart` aplikasi Flutter dari `gentan.wujud.id` menjadi `kpps.ysmb.my.id`.
   - Mengonfigurasi dan mengaktifkan WebSocket server pada `servergentan` melalui pembuatan *systemd service* `gentan-websocket.service` pada port `8090` (bind `0.0.0.0`), membuka port `8090` di firewall UFW, serta menambahkan aturan `ProxyPass` pada konfigurasi Apache `gentan.conf` di server agar memforward path `/ws` secara aman ke port `8090` lokal. Membuild ulang frontend web dengan socket URL `wss://kpps.ysmb.my.id/ws` agar mendukung koneksi aman HTTPS di lingkungan LAN.
+  - Mengatasi masalah perubahan ukuran (layout shift) tombol pencarian di landing page saat diklik dengan menerapkan trik pseudo-element `::after` pada CSS class `.landing-tab-btn` dan menambahkan atribut `data-text` pada tombol di `LandingPage.tsx`, sehingga lebar tombol tetap konsisten ketika ketebalan font (*font-weight*) berganti antara 500 dan 600.
 
 ---
 
