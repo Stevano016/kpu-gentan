@@ -115,7 +115,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onGoToLogin }) => {
           display: flex;
           align-items: center;
           justify-content: center;
-          padding: 40px 24px;
+          padding: 40px 24px 92px 24px;
         }
         .landing-card {
           width: 100%;
@@ -192,7 +192,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onGoToLogin }) => {
             margin-right: 0 !important;
           }
           .landing-main {
-            padding: 16px 12px !important;
+            padding: 16px 12px 68px 12px !important;
           }
           .landing-card-header {
             padding: 20px 20px 16px 20px !important;
@@ -546,13 +546,18 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onGoToLogin }) => {
 
       {/* Footer bar */}
       <footer style={{
+        position: 'fixed',
+        bottom: 0,
+        left: 0,
+        right: 0,
         textAlign: 'center',
         padding: '16px',
         fontSize: '0.8rem',
         fontWeight: '700',
         color: 'var(--text-muted)',
         borderTop: '1px solid var(--border)',
-        backgroundColor: 'var(--surface)'
+        backgroundColor: 'var(--surface)',
+        zIndex: 1000
       }}>
         Support by KKN USH-7 2026 Dinaungi Tim Digitalisasi Desa Gentan
       </footer>
