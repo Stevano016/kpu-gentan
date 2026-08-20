@@ -215,8 +215,8 @@ This file captures the active state, environment variables, completed tasks, and
 
 - **20 Agt 2026 — Penataan Urutan Kategori Pemilih**:
   - Mengubah urutan penampilan kategori pemilih di dashboard monitor dari acak (`DPT | DPK | DPS | DPTb`) menjadi kronologis sesuai alur tahapan pendataan (`DP4 | DPS | DPTb | DPT | DPK`).
-  - Menambahkan penghitungan `total_dp4` dan `hadir_dp4` di respon API detail TPS pada `DashboardController.php`.
-  - Memperbarui komponen web `TpsDetailTab.tsx` dan mobile screens `home_screen.dart` serta `dashboard_tab.dart` untuk mengambil, memproses, dan menampilkan statistik kelima tahapan secara teratur.
+  - Menambahkan penghitungan `total_dp4` dan `hadir_dp4` di respon API detail TPS serta ringkasan list TPS pada `DashboardController.php`.
+  - Memperbarui komponen web `TpsDetailTab.tsx` dan `DashboardTab.tsx` (tabel Status Laporan per TPS) serta mobile screens `home_screen.dart` serta `dashboard_tab.dart` untuk mengambil, memproses, dan menampilkan statistik kelima tahapan secara teratur.
 
 ---
 

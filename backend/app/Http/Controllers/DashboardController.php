@@ -52,6 +52,9 @@ class DashboardController extends Controller
         // List of all TPS with stats (optimized using withCount to prevent N+1 queries)
         $tpsList = Tps::with(['quickCount'])
             ->withCount([
+                'dpt as total_dp4' => function ($query) {
+                    $query->where('tahapan', 'dp4');
+                },
                 'dpt as total_dpt' => function ($query) {
                     $query->where('tahapan', 'dpt');
                 },
@@ -63,6 +66,9 @@ class DashboardController extends Controller
                 },
                 'dpt as total_dptb' => function ($query) {
                     $query->where('tahapan', 'dptb');
+                },
+                'dpt as hadir_dp4' => function ($query) {
+                    $query->where('tahapan', 'dp4')->where('status_hadir', true);
                 },
                 'dpt as hadir_dpt' => function ($query) {
                     $query->where('tahapan', 'dpt')->where('status_hadir', true);
@@ -83,11 +89,13 @@ class DashboardController extends Controller
                     'id' => $tps->id,
                     'nama' => $tps->nama,
                     'wilayah' => $tps->wilayah,
+                    'total_dp4' => (int)$tps->total_dp4,
                     'total_dpt' => (int)$tps->total_dpt,
                     'total_dpk' => (int)$tps->total_dpk,
                     'total_dps' => (int)$tps->total_dps,
                     'total_dptb' => (int)$tps->total_dptb,
-                    'hadir' => (int)($tps->hadir_dpt + $tps->hadir_dpk + $tps->hadir_dps + $tps->hadir_dptb),
+                    'hadir' => (int)($tps->hadir_dp4 + $tps->hadir_dpt + $tps->hadir_dpk + $tps->hadir_dps + $tps->hadir_dptb),
+                    'hadir_dp4' => (int)$tps->hadir_dp4,
                     'hadir_dpt' => (int)$tps->hadir_dpt,
                     'hadir_dpk' => (int)$tps->hadir_dpk,
                     'hadir_dps' => (int)$tps->hadir_dps,

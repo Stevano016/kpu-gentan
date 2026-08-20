@@ -200,10 +200,11 @@ export const DashboardTab: React.FC<DashboardTabProps> = ({
                 <tr>
                   <th>Nama TPS</th>
                   <th>Wilayah</th>
-                  <th>DPT</th>
-                  <th>DPK</th>
+                  <th>DP4</th>
                   <th>DPS</th>
                   <th>DPTb</th>
+                  <th>DPT</th>
+                  <th>DPK</th>
                   <th>Total Pemilih</th>
                   <th>Hadir (Check-In)</th>
                   <th>% Kehadiran</th>
@@ -213,20 +214,21 @@ export const DashboardTab: React.FC<DashboardTabProps> = ({
               </thead>
               <tbody>
                 {dashboardData.tps_list.map((t: any) => {
-                  const totalVoters = t.total_dpt + t.total_dpk + t.total_dps + t.total_dptb;
+                  const totalVoters = (t.total_dp4 ?? 0) + t.total_dps + t.total_dptb + t.total_dpt + t.total_dpk;
                   return (
                     <tr key={t.id}>
                       <td style={{ fontWeight: '600' }}>{t.nama}</td>
                       <td>{t.wilayah}</td>
-                      <td>{t.total_dpt}</td>
-                      <td>{t.total_dpk}</td>
+                      <td>{t.total_dp4 ?? 0}</td>
                       <td>{t.total_dps}</td>
                       <td>{t.total_dptb}</td>
+                      <td>{t.total_dpt}</td>
+                      <td>{t.total_dpk}</td>
                       <td>{totalVoters}</td>
                       <td>
                         {t.hadir}
                         <div style={{ fontSize: '0.70rem', color: 'var(--text-muted)' }}>
-                          DPT:{t.hadir_dpt}|DPK:{t.hadir_dpk}|DPS:{t.hadir_dps}|DPTb:{t.hadir_dptb}
+                          DP4:{t.hadir_dp4 ?? 0}|DPS:{t.hadir_dps}|DPTb:{t.hadir_dptb}|DPT:{t.hadir_dpt}|DPK:{t.hadir_dpk}
                         </div>
                       </td>
                       <td>
