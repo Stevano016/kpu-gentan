@@ -225,6 +225,8 @@ This file captures the active state, environment variables, completed tasks, and
   - Mengubah teks watermark support agar terpusat di halaman login dan tebal (bold) di halaman landing page.
   - Mengubah judul dokumen (`<title>`) pada `index.html` dari "Gentara - KPPS Gentan" menjadi "Gentara".
   - Menghilangkan input manual bidang "Umur" dan "Jenis Kelamin" di modal Tambah/Edit Pemilih (`DptModal.tsx`), serta mengintegrasikan efek otomatisasi (`React.useEffect`) yang mengkalkulasi umur dan mendeteksi jenis kelamin secara instan dari NIK 16-digit riil milik pemilih.
+  - Menambahkan otomatisasi huruf kapital (auto-uppercase) pada isian nama pemilih, pekerjaan, dan alamat di formulir tambah pemilih baru.
+  - Mengubah bidang isian RT dan RW pada formulir dari kolom teks biasa menjadi pilihan dropdown (select enum) terstruktur (RT 001-010 dan RW 001-014).
 
 ---
 

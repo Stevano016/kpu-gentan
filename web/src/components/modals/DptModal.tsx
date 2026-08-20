@@ -195,7 +195,7 @@ export const DptModal: React.FC<DptModalProps> = ({
                   required
                   placeholder="Masukkan nama lengkap pemilih"
                   value={dptFormNama}
-                  onChange={e => setDptFormNama(e.target.value)}
+                  onChange={e => setDptFormNama(e.target.value.toUpperCase())}
                 />
               </div>
 
@@ -264,30 +264,36 @@ export const DptModal: React.FC<DptModalProps> = ({
                   className="form-control"
                   placeholder="Contoh: WIRASWASTA"
                   value={dptFormPekerjaan}
-                  onChange={e => setDptFormPekerjaan(e.target.value)}
+                  onChange={e => setDptFormPekerjaan(e.target.value.toUpperCase())}
                 />
               </div>
 
               <div className="form-group" style={{ gridColumn: 'span 1', marginBottom: 0 }}>
                 <label className="form-label">RT</label>
-                <input
-                  type="text"
+                <select
                   className="form-control"
-                  placeholder="Contoh: 001"
                   value={dptFormRt}
                   onChange={e => setDptFormRt(e.target.value)}
-                />
+                >
+                  <option value="">Pilih RT...</option>
+                  {Array.from({ length: 10 }, (_, i) => String(i + 1).padStart(3, '0')).map(num => (
+                    <option key={num} value={num}>RT {num}</option>
+                  ))}
+                </select>
               </div>
 
               <div className="form-group" style={{ gridColumn: 'span 1', marginBottom: 0 }}>
                 <label className="form-label">RW</label>
-                <input
-                  type="text"
+                <select
                   className="form-control"
-                  placeholder="Contoh: 014"
                   value={dptFormRw}
                   onChange={e => setDptFormRw(e.target.value)}
-                />
+                >
+                  <option value="">Pilih RW...</option>
+                  {Array.from({ length: 14 }, (_, i) => String(i + 1).padStart(3, '0')).map(num => (
+                    <option key={num} value={num}>RW {num}</option>
+                  ))}
+                </select>
               </div>
 
               <div className="form-group" style={{ gridColumn: 'span 2', marginBottom: 0 }}>
@@ -297,7 +303,7 @@ export const DptModal: React.FC<DptModalProps> = ({
                   className="form-control"
                   placeholder="Contoh: GENTAN CITRA INDAH"
                   value={dptFormAlamat}
-                  onChange={e => setDptFormAlamat(e.target.value)}
+                  onChange={e => setDptFormAlamat(e.target.value.toUpperCase())}
                 />
               </div>
 
