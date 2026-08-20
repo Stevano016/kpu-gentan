@@ -156,10 +156,12 @@ class DashboardController extends Controller
             ->limit(10)
             ->get();
 
+        $dp4Count = $voters->where('tahapan', 'dp4')->count();
         $dptCount = $voters->where('tahapan', 'dpt')->count();
         $dpkCount = $voters->where('tahapan', 'dpk')->count();
         $dpsCount = $voters->where('tahapan', 'dps')->count();
         $dptbCount = $voters->where('tahapan', 'dptb')->count();
+        $hadirDp4 = $voters->where('tahapan', 'dp4')->where('status_hadir', true)->count();
         $hadirDpt = $voters->where('tahapan', 'dpt')->where('status_hadir', true)->count();
         $hadirDpk = $voters->where('tahapan', 'dpk')->where('status_hadir', true)->count();
         $hadirDps = $voters->where('tahapan', 'dps')->where('status_hadir', true)->count();
@@ -178,12 +180,14 @@ class DashboardController extends Controller
                     'wilayah' => $tps->wilayah,
                 ],
                 'stats' => [
+                    'total_dp4' => $dp4Count,
                     'total_dpt' => $dptCount,
                     'total_dpk' => $dpkCount,
                     'total_dps' => $dpsCount,
                     'total_dptb' => $dptbCount,
                     'total_pemilih' => $totalVal,
                     'hadir' => $hadirVal,
+                    'hadir_dp4' => $hadirDp4,
                     'hadir_dpt' => $hadirDpt,
                     'hadir_dpk' => $hadirDpk,
                     'hadir_dps' => $hadirDps,

@@ -49,6 +49,8 @@ class _HomeScreenState extends State<HomeScreen> {
   String? _syncAction;
 
   // Dashboard stats
+  int _totalDp4Count = 0;
+  int _hadirDp4Count = 0;
   int _totalDptCount = 0;
   int _hadirDptCount = 0;
   int _totalDpkCount = 0;
@@ -188,25 +190,29 @@ class _HomeScreenState extends State<HomeScreen> {
     bool hadirNya(dynamic e) =>
         e['status_hadir'] == true || e['status_hadir'] == 1 || e['status_hadir'] == '1';
 
+    final totalDp4 = dptList.where((e) => tahapanDari(e) == 'dp4').length;
     final totalDpt = dptList.where((e) => tahapanDari(e) == 'dpt').length;
     final totalDpk = dptList.where((e) => tahapanDari(e) == 'dpk').length;
     final totalDps = dptList.where((e) => tahapanDari(e) == 'dps').length;
     final totalDptb = dptList.where((e) => tahapanDari(e) == 'dptb').length;
-    final totalAll = totalDpt + totalDpk + totalDps + totalDptb;
+    final totalAll = totalDp4 + totalDpt + totalDpk + totalDps + totalDptb;
 
+    final hadirDp4 = dptList.where((e) => tahapanDari(e) == 'dp4' && hadirNya(e)).length;
     final hadirDpt = dptList.where((e) => tahapanDari(e) == 'dpt' && hadirNya(e)).length;
     final hadirDpk = dptList.where((e) => tahapanDari(e) == 'dpk' && hadirNya(e)).length;
     final hadirDps = dptList.where((e) => tahapanDari(e) == 'dps' && hadirNya(e)).length;
     final hadirDptb = dptList.where((e) => tahapanDari(e) == 'dptb' && hadirNya(e)).length;
-    final hadirAll = hadirDpt + hadirDpk + hadirDps + hadirDptb;
+    final hadirAll = hadirDp4 + hadirDpt + hadirDpk + hadirDps + hadirDptb;
 
     final percentage = totalAll > 0 ? (hadirAll / totalAll) * 100 : 0.0;
 
     setState(() {
+      _totalDp4Count = totalDp4;
       _totalDptCount = totalDpt;
       _totalDpkCount = totalDpk;
       _totalDpsCount = totalDps;
       _totalDptbCount = totalDptb;
+      _hadirDp4Count = hadirDp4;
       _hadirDptCount = hadirDpt;
       _hadirDpkCount = hadirDpk;
       _hadirDpsCount = hadirDps;
@@ -589,10 +595,12 @@ class _HomeScreenState extends State<HomeScreen> {
   Widget _buildDashboardTab() {
     return DashboardTab(
       tpsName: _tpsName,
+      totalDp4Count: _totalDp4Count,
       totalDptCount: _totalDptCount,
       totalDpkCount: _totalDpkCount,
       totalDpsCount: _totalDpsCount,
       totalDptbCount: _totalDptbCount,
+      hadirDp4Count: _hadirDp4Count,
       hadirDptCount: _hadirDptCount,
       hadirDpkCount: _hadirDpkCount,
       hadirDpsCount: _hadirDpsCount,

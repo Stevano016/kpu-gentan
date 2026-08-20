@@ -213,6 +213,11 @@ This file captures the active state, environment variables, completed tasks, and
   - Membuat perintah Artisan baru `php artisan dpt:sync-csv` di `app/Console/Commands/SyncDptFromCsv.php` untuk membandingkan CSV dan memperbarui basis data secara in-place (mendukung opsi `--dry-run`).
   - Menjalankan sinkronisasi secara penuh pada database SQLite lokal, berhasil memperbarui 294 baris data (293 NIK dan 283 NKK diperbaiki).
 
+- **20 Agt 2026 — Penataan Urutan Kategori Pemilih**:
+  - Mengubah urutan penampilan kategori pemilih di dashboard monitor dari acak (`DPT | DPK | DPS | DPTb`) menjadi kronologis sesuai alur tahapan pendataan (`DP4 | DPS | DPTb | DPT | DPK`).
+  - Menambahkan penghitungan `total_dp4` dan `hadir_dp4` di respon API detail TPS pada `DashboardController.php`.
+  - Memperbarui komponen web `TpsDetailTab.tsx` dan mobile screens `home_screen.dart` serta `dashboard_tab.dart` untuk mengambil, memproses, dan menampilkan statistik kelima tahapan secara teratur.
+
 ---
 
 ## 🛠️ Local Environment Notes

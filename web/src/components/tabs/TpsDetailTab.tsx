@@ -31,14 +31,14 @@ export const TpsDetailTab: React.FC<TpsDetailTabProps> = ({
           <div className="card-title">Total Pemilih (Voters)</div>
           <div className="card-value">{tpsDetailData.stats.total_pemilih}</div>
           <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)', marginTop: '4px', fontWeight: '500' }}>
-            DPT: {tpsDetailData.stats.total_dpt} | DPK: {tpsDetailData.stats.total_dpk} | DPS: {tpsDetailData.stats.total_dps} | DPTb: {tpsDetailData.stats.total_dptb}
+            DP4: {tpsDetailData.stats.total_dp4 ?? 0} | DPS: {tpsDetailData.stats.total_dps} | DPTb: {tpsDetailData.stats.total_dptb} | DPT: {tpsDetailData.stats.total_dpt} | DPK: {tpsDetailData.stats.total_dpk}
           </div>
         </div>
         <div className="card">
           <div className="card-title">Check-in Hadir</div>
           <div className="card-value" style={{ color: 'var(--success)' }}>{tpsDetailData.stats.hadir}</div>
           <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)', marginTop: '4px', fontWeight: '500' }}>
-            DPT: {tpsDetailData.stats.hadir_dpt} | DPK: {tpsDetailData.stats.hadir_dpk} | DPS: {tpsDetailData.stats.hadir_dps} | DPTb: {tpsDetailData.stats.hadir_dptb}
+            DP4: {tpsDetailData.stats.hadir_dp4 ?? 0} | DPS: {tpsDetailData.stats.hadir_dps} | DPTb: {tpsDetailData.stats.hadir_dptb} | DPT: {tpsDetailData.stats.hadir_dpt} | DPK: {tpsDetailData.stats.hadir_dpk}
           </div>
         </div>
         <div className="card">
