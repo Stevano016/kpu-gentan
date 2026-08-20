@@ -232,10 +232,13 @@ This file captures the active state, environment variables, completed tasks, and
   - Memperbarui daftar opsi dropdown bidang Keterangan dan alasan TMS menjadi daftar pilihan bernomor (1: Terverifikasi/Valid s.d. 7: Tidak Ditemukan) di backend (`Dpt.php` & `TahapanController.php`) dan frontend (`tahapan.ts`), serta mengubah kolom `keterangan` di database menjadi `string` (varchar(255)) agar dapat menyimpan isian kategori baru tersebut dengan fleksibel.
   - Membuka akses opsi nomor 2 s.d. 7 (menghilangkan opsi `1 : Terverifikasi/Valid`) agar tampil di dialog penandaan "Tidak Memenuhi Syarat" (TMS) di frontend (`useTahapanPemilih.ts`) dan diterima oleh backend validator (`TahapanController.php`), karena pemilih yang ditandai TMS tidak boleh beratribut Terverifikasi/Valid.
 
-- **20 Agt 2026 — Pembaruan Footer & Otomatisasi Formulir Pemilih**:
+- **20 Agt 2026 — Pembaruan Footer, Otomatisasi Formulir Pemilih & Pantarlih Per RW**:
   - Mengubah properti CSS footer di `LandingPage.tsx` menjadi `position: fixed` di bagian bawah layar agar tidak bisa digeser/scroll (stuck).
   - Menyesuaikan padding bawah `.landing-main` baik untuk tampilan desktop maupun mobile (menggunakan `@media` query) untuk mencegah konten utama tertutup/tumpang tindih dengan footer yang melayang di bagian bawah.
   - Menambahkan fitur auto-select pada input DPT baru/edit di `DptModal.tsx` berdasarkan aturan pemetaan wilayah RT/RW dari seeder (`PETA_TPS`). Kolom "Alokasi TPS" otomatis terkunci (disabled) dan memilih TPS yang tepat secara instan begitu kolom RT dan RW selesai diisi oleh Admin/Sekretariat, guna menghemat waktu input dan mencegah kesalahan manusia.
+  - Mengubah penugasan tugas Pantarlih dari berbasis **TPS** menjadi berbasis **RW** kembali (karena wilayah tugas Pantarlih diputuskan per RW pada rapat, sedangkan beberapa RW seperti RW 006, 009, 010 beririsan dengan beberapa TPS).
+  - Membuat migrasi database untuk menambahkan kembali kolom `rw` ke tabel `users`, memperbarui Model `User.php`, `UserController.php`, `DptController.php`, `KeluargaController.php`, dan `ExportController.php` untuk membatasi akun Pantarlih berdasarkan RW-nya (baik untuk pencarian data, penambahan data DPTb, penampilan keluarga, maupun pilihan ekspor).
+  - Memperbarui `KppsModal.tsx` agar admin memilih RW Tugas saat mendaftarkan akun Pantarlih baru, dan mengupdate tabel `KppsTab.tsx` untuk menampilkan asosiasi RW bagi Pantarlih (misal "RW 006") dan TPS bagi KPPS.
 
 ---
 

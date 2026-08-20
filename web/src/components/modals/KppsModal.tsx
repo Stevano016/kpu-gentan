@@ -11,6 +11,8 @@ interface KppsModalProps {
   setKppsFormPassword: (val: string) => void;
   kppsFormTps: string;
   setKppsFormTps: (val: string) => void;
+  kppsFormRw: string;
+  setKppsFormRw: (val: string) => void;
   kppsFormRole: string;
   setKppsFormRole: (val: string) => void;
   kppsFormAccountType: string;
@@ -30,6 +32,8 @@ export const KppsModal: React.FC<KppsModalProps> = ({
   setKppsFormPassword,
   kppsFormTps,
   setKppsFormTps,
+  kppsFormRw,
+  setKppsFormRw,
   kppsFormRole,
   setKppsFormRole,
   kppsFormAccountType,
@@ -126,20 +130,20 @@ export const KppsModal: React.FC<KppsModalProps> = ({
             </>
           ) : isPantarlih ? (
             <div className="form-group">
-              <label className="form-label">TPS Wilayah Tugas</label>
+              <label className="form-label">RW Wilayah Tugas</label>
               <select
                 className="form-control"
                 required
-                value={kppsFormTps}
-                onChange={e => setKppsFormTps(e.target.value)}
+                value={kppsFormRw}
+                onChange={e => setKppsFormRw(e.target.value)}
               >
-                <option value="">Pilih TPS...</option>
-                {tpsList.map(t => (
-                  <option key={t.id} value={t.id}>{t.nama} ({t.wilayah})</option>
+                <option value="">Pilih RW...</option>
+                {Array.from({ length: 14 }, (_, i) => String(i + 1).padStart(3, '0')).map(num => (
+                  <option key={num} value={num}>RW {num}</option>
                 ))}
               </select>
               <p style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginTop: '6px' }}>
-                Pantarlih hanya bisa melihat dan mendata pemilih di TPS ini.
+                Pantarlih hanya bisa melihat dan mendata pemilih di RW tugas ini.
               </p>
             </div>
           ) : (

@@ -38,11 +38,11 @@ class DptController extends Controller
             $query->where('asal', $request->asal);
         }
 
-        // Pantarlih bertugas di satu TPS; daftarnya dibatasi di server, bukan
+        // Pantarlih bertugas di satu RW; daftarnya dibatasi di server, bukan
         // sekadar disaring di antarmuka.
         $pengguna = $request->user();
         if ($pengguna?->role === 'pantarlih') {
-            $query->where('tps_id', $pengguna->tps_id);
+            $query->where('rw', $pengguna->rw);
         } elseif ($request->filled('rw')) {
             $query->where('rw', $request->rw);
         }
@@ -61,7 +61,7 @@ class DptController extends Controller
             'nik' => 'required|string|size:16|unique:dpt,nik',
             'nkk' => 'nullable|string|size:16',
             'nama' => 'required|string|max:255',
-            'tps_id' => 'required|exists:tps,id',
+            'tps_id' => 'nullable|exists:tps,id',
             'tahapan' => 'nullable|string|in:dp4,dps,dptb,dpt,dpk',
             'umur' => 'nullable|integer|min:0',
             'status_kawin' => 'nullable|string|max:50',
@@ -89,17 +89,39 @@ class DptController extends Controller
         if ($pengguna?->role === 'pantarlih') {
             $tahapan = 'dptb';
 
-            if (blank($pengguna->tps_id)) {
+            if (blank($pengguna->rw)) {
                 return response()->json([
                     'status' => 'error',
-                    'message' => 'Akun pantarlih ini belum ditetapkan TPS-nya. Hubungi sekretariat.',
+                    'message' => 'Akun pantarlih ini belum ditetapkan RW tugasnya. Hubungi sekretariat.',
                 ], 422);
             }
 
-            // Diambil dari akunnya, bukan dari isian form: pantarlih tidak boleh
-            // mendaftarkan pemilih di TPS orang lain.
-            $tpsId = $pengguna->tps_id;
+            if (blank($request->rt)) {
+                return response()->json([
+                    'status' => 'error',
+                    'errors' => ['rt' => ['Kolom RT wajib diisi.']]
+                ], 422);
+            }
+
+            // Dipaksa dari akun pantarlih
+            $rw = $pengguna->rw;
+            $rt = $request->rt;
+            $tpsId = $this->cariTpsIdDariRtRw($rt, $rw);
+
+            if (blank($tpsId)) {
+                return response()->json([
+                    'status' => 'error',
+                    'message' => "RT {$rt} / RW {$rw} tidak terdaftar dalam wilayah TPS Kelurahan Gentan.",
+                ], 422);
+            }
         } else {
+            if (blank($tpsId)) {
+                return response()->json([
+                    'status' => 'error',
+                    'errors' => ['tps_id' => ['Kolom alokasi TPS wajib diisi.']]
+                ], 422);
+            }
+
             // Penambahan manual setelah verifikasi DP4 berjalan juga terhitung
             // susulan — kecuali admin sengaja memilih tahapan lain.
             $verifikasiSudahJalan = Dpt::whereIn('tahapan', ['dps', 'dpt', 'dpk'])->exists();
@@ -138,7 +160,7 @@ class DptController extends Controller
             'jenis_kelamin' => $request->jenis_kelamin,
             'alamat' => $request->alamat,
             'rt' => $request->rt,
-            'rw' => $request->rw,
+            'rw' => $pengguna?->role === 'pantarlih' ? $pengguna->rw : $request->rw,
             'pekerjaan' => $request->pekerjaan,
             'disabilitas' => $request->disabilitas,
             'keterangan' => $request->keterangan,
@@ -146,10 +168,10 @@ class DptController extends Controller
 
         // Increment total_dpt in TPS only if voter is DPT/DPS/DPTb
         if (in_array($tahapan, ['dp4', 'dps', 'dptb', 'dpt'])) {
-            Tps::where('id', $request->tps_id)->increment('total_dpt');
+            Tps::where('id', $tpsId)->increment('total_dpt');
         }
 
-        \App\Utils\Broadcaster::trigger('update', ['tps_id' => $request->tps_id]);
+        \App\Utils\Broadcaster::trigger('update', ['tps_id' => $tpsId]);
 
         return response()->json([
             'status' => 'success',
@@ -565,5 +587,38 @@ class DptController extends Controller
             'status' => 'success',
             'data' => $formatted
         ]);
+    }
+
+    private function cariTpsIdDariRtRw(string $rt, string $rw): ?int
+    {
+        $cleanRt = str_pad(preg_replace('/\D/', '', $rt), 3, '0', STR_PAD_LEFT);
+        $cleanRw = str_pad(preg_replace('/\D/', '', $rw), 3, '0', STR_PAD_LEFT);
+
+        // Pemetaan wilayah TPS Kelurahan Gentan
+        if ($cleanRw === '001' || $cleanRw === '002') {
+            return 1;
+        } elseif ($cleanRw === '010' && ($cleanRt === '006' || $cleanRt === '007')) {
+            return 1;
+        } elseif ($cleanRw === '003' || $cleanRw === '004' || $cleanRw === '014') {
+            return 2;
+        } elseif ($cleanRw === '006' && in_array($cleanRt, ['002', '004', '006', '008'])) {
+            return 2;
+        } elseif ($cleanRw === '007' || $cleanRw === '013') {
+            return 3;
+        } elseif ($cleanRw === '006' && in_array($cleanRt, ['001', '003', '005', '007'])) {
+            return 3;
+        } elseif ($cleanRw === '009' && $cleanRt === '001') {
+            return 3;
+        } elseif ($cleanRw === '008' || $cleanRw === '012') {
+            return 4;
+        } elseif ($cleanRw === '005' || $cleanRw === '011') {
+            return 5;
+        } elseif ($cleanRw === '009' && in_array($cleanRt, ['002', '003', '004', '005'])) {
+            return 5;
+        } elseif ($cleanRw === '010' && in_array($cleanRt, ['001', '002', '003', '004', '005'])) {
+            return 5;
+        }
+
+        return null;
     }
 }

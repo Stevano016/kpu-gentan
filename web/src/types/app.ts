@@ -93,6 +93,7 @@ export interface KppsForm {
   username: string;
   password: string;
   tps: string;
+  rw: string;
   /** full | validasi */
   role: string;
   /** kpps | sekretariat | pantarlih */
@@ -104,6 +105,7 @@ export const KPPS_FORM_KOSONG: KppsForm = {
   username: '',
   password: '',
   tps: '',
+  rw: '',
   role: 'full',
   accountType: 'kpps',
   sekretariatRole: 'admin',

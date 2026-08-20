@@ -19,6 +19,7 @@ class User extends Authenticatable
         'kpps_role',
         'sekretariat_role',
         'tps_id',
+        'rw',
     ];
 
     protected $hidden = [

@@ -37,8 +37,9 @@ class UserController extends Controller
             'password' => 'required|string|min:6',
             'role' => 'required|string|in:kpps,sekretariat,pantarlih',
             // TPS & hak akses hanya relevan untuk akun KPPS
-            // Pantarlih maupun KPPS sama-sama terikat satu TPS.
-            'tps_id' => 'required_if:role,kpps|required_if:role,pantarlih|nullable|exists:tps,id',
+            'tps_id' => 'required_if:role,kpps|nullable|exists:tps,id',
+            // RW tugas hanya relevan untuk akun Pantarlih
+            'rw' => 'required_if:role,pantarlih|nullable|string|max:10',
             'kpps_role' => 'nullable|string|in:validasi,full',
             // admin = akses penuh, viewer = hanya lihat
             'sekretariat_role' => 'required_if:role,sekretariat|nullable|string|in:admin,viewer',
@@ -53,15 +54,16 @@ class UserController extends Controller
 
         $isKpps = $request->role === 'kpps';
         $isSekretariat = $request->role === 'sekretariat';
+        $isPantarlih = $request->role === 'pantarlih';
 
         $user = User::create([
             'username' => $request->username,
             'password' => Hash::make($request->password),
             'role' => $request->role,
             'kpps_role' => $isKpps ? ($request->kpps_role ?? 'full') : null,
-            // Pantarlih tidak punya sub-peran; tugasnya tunggal.
             'sekretariat_role' => $isSekretariat ? $request->sekretariat_role : null,
-            'tps_id' => in_array($request->role, ['kpps', 'pantarlih'], true) ? $request->tps_id : null,
+            'tps_id' => $isKpps ? $request->tps_id : null,
+            'rw' => $isPantarlih ? $request->rw : null,
         ]);
 
         return response()->json([
@@ -78,6 +80,7 @@ class UserController extends Controller
                 'kpps_role' => $user->kpps_role,
                 'sekretariat_role' => $user->sekretariat_role,
                 'tps_id' => $user->tps_id,
+                'rw' => $user->rw,
             ]
         ], 201);
     }

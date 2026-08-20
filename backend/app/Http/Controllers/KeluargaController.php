@@ -173,7 +173,10 @@ class KeluargaController extends Controller
             $query->where('tps_id', $tpsId);
         }
 
-        if ($request->filled('rw')) {
+        $pengguna = $request->user();
+        if ($pengguna?->role === 'pantarlih') {
+            $query->where('rw', $pengguna->rw);
+        } elseif ($request->filled('rw')) {
             $query->where('rw', $request->rw);
         }
 
@@ -188,6 +191,7 @@ class KeluargaController extends Controller
             // nama yang cocok harus memunculkan seisi rumahnya.
             $query->whereIn('nkk', Dpt::query()
                 ->when($tpsId, fn ($q) => $q->where('tps_id', $tpsId))
+                ->when($pengguna?->role === 'pantarlih', fn ($q) => $q->where('rw', $pengguna->rw))
                 ->where(function ($q) use ($cari) {
                     $q->where('nama', 'like', "%{$cari}%")
                         ->orWhere('nik', 'like', "%{$cari}%")
@@ -205,7 +209,7 @@ class KeluargaController extends Controller
         $pengguna = $request->user();
 
         if ($pengguna?->role === 'pantarlih') {
-            return $pengguna->tps_id;
+            return null;
         }
 
         return $request->filled('tps_id') ? (int) $request->tps_id : null;

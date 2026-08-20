@@ -20,7 +20,7 @@ const RoleBadge: React.FC<{ user: any }> = ({ user }) => {
   if (user.role === 'pantarlih') {
     return (
       <span className="badge" style={{ backgroundColor: 'oklch(0.93 0.04 200)', color: 'oklch(0.38 0.13 200)' }}>
-        Pantarlih — Pendata {user.tps?.nama || 'TPS ?'}
+        Pantarlih — Pendata RW {user.rw || '?'}
       </span>
     );
   }
@@ -100,7 +100,13 @@ export const KppsTab: React.FC<KppsTabProps> = ({
                       )}
                     </td>
                     <td><RoleBadge user={u} /></td>
-                    <td>{u.role === 'sekretariat' ? '—' : (u.tps?.nama || 'Tidak Terhubung')}</td>
+                    <td>
+                      {u.role === 'sekretariat' 
+                        ? '—' 
+                        : (u.role === 'pantarlih' 
+                          ? `RW ${u.rw || '?'}` 
+                          : (u.tps?.nama || 'Tidak Terhubung'))}
+                    </td>
                     <td>{new Date(u.created_at).toLocaleString('id-ID')}</td>
                     {isAdmin && (
                       <td>

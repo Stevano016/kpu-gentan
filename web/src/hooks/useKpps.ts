@@ -39,9 +39,9 @@ const susunPayload = (f: KppsForm) => {
   if (f.accountType === 'kpps') {
     return { ...dasar, role: 'kpps', tps_id: f.tps, kpps_role: f.role };
   }
-  // Pantarlih tidak punya sub-peran, tapi tetap terikat TPS pendataannya.
+  // Pantarlih diubah menjadi berbasis RW tugasnya.
   if (f.accountType === 'pantarlih') {
-    return { ...dasar, role: 'pantarlih', tps_id: f.tps };
+    return { ...dasar, role: 'pantarlih', rw: f.rw };
   }
   return { ...dasar, role: 'sekretariat', sekretariat_role: f.sekretariatRole };
 };
@@ -57,7 +57,7 @@ const pesanSukses = (f: KppsForm): [string, string] => {
   if (f.accountType === 'pantarlih') {
     return [
       'Akun Pantarlih Dibuat',
-      `Akun "${f.username}" berhasil disimpan. Ia hanya bisa mendata di TPS yang dipilih, dan hasilnya otomatis tercatat sebagai DPTb.`,
+      `Akun "${f.username}" berhasil disimpan. Ia hanya bisa melihat dan mendata di RW tugasnya (RW ${f.rw}), dan hasilnya otomatis tercatat sebagai DPTb.`,
     ];
   }
   return [

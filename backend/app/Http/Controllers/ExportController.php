@@ -80,13 +80,12 @@ class ExportController extends Controller
         $label = 'semua';
         $judul = 'Seluruh Pemilih Kelurahan Gentan';
 
-        // Pantarlih hanya boleh mengunduh TPS-nya sendiri, apa pun yang diminta
+        // Pantarlih hanya boleh mengunduh RW-nya sendiri, apa pun yang diminta
         // di parameter.
         if ($pengguna?->role === 'pantarlih') {
-            $query->where('tps_id', $pengguna->tps_id);
-            $namaTpsnya = Tps::find($pengguna->tps_id)?->nama ?? ('tps-' . $pengguna->tps_id);
-            $label = $this->amankan($namaTpsnya);
-            $judul = 'Pemilih ' . $namaTpsnya;
+            $query->where('rw', $pengguna->rw);
+            $label = 'rw-' . $this->amankan($pengguna->rw);
+            $judul = 'Pemilih RW ' . $pengguna->rw;
         } elseif ($lingkup === 'tps') {
             $query->where('tps_id', $request->tps_id);
             $namaTps = Tps::find($request->tps_id)?->nama ?? ('tps-' . $request->tps_id);
@@ -207,8 +206,11 @@ class ExportController extends Controller
     {
         $pengguna = $request->user();
 
+        if ($pengguna?->role === 'pantarlih') {
+            return response()->json(['status' => 'success', 'data' => [$pengguna->rw]]);
+        }
+
         $daftar = Dpt::query()
-            ->when($pengguna?->role === 'pantarlih', fn ($q) => $q->where('tps_id', $pengguna->tps_id))
             ->whereNotNull('rw')
             ->where('rw', '!=', '')
             ->distinct()
