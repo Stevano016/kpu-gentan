@@ -20,7 +20,6 @@ interface DptModalProps {
   setDptFormUmur: (val: string) => void;
   dptFormStatusKawin: string;
   setDptFormStatusKawin: (val: string) => void;
-  dptFormJenisKelamin: string;
   setDptFormJenisKelamin: (val: string) => void;
   dptFormAlamat: string;
   setDptFormAlamat: (val: string) => void;
@@ -58,7 +57,6 @@ export const DptModal: React.FC<DptModalProps> = ({
   setDptFormUmur,
   dptFormStatusKawin,
   setDptFormStatusKawin,
-  dptFormJenisKelamin,
   setDptFormJenisKelamin,
   dptFormAlamat,
   setDptFormAlamat,
@@ -245,19 +243,6 @@ export const DptModal: React.FC<DptModalProps> = ({
               </div>
 
               <div className="form-group" style={{ gridColumn: 'span 1', marginBottom: 0 }}>
-                <label className="form-label">Jenis Kelamin (L/P)</label>
-                <select
-                  className="form-control"
-                  value={dptFormJenisKelamin}
-                  onChange={e => setDptFormJenisKelamin(e.target.value)}
-                >
-                  <option value="">-- Pilih L/P --</option>
-                  <option value="LAKI-LAKI">Laki-laki</option>
-                  <option value="PEREMPUAN">Perempuan</option>
-                </select>
-              </div>
-
-              <div className="form-group" style={{ gridColumn: 'span 1', marginBottom: 0 }}>
                 <label className="form-label">Status Perkawinan</label>
                 <select
                   className="form-control"
@@ -284,28 +269,6 @@ export const DptModal: React.FC<DptModalProps> = ({
               </div>
 
               <div className="form-group" style={{ gridColumn: 'span 1', marginBottom: 0 }}>
-                <label className="form-label">Disabilitas</label>
-                <input
-                  type="text"
-                  className="form-control"
-                  placeholder="Contoh: - (jika tidak ada)"
-                  value={dptFormDisabilitas}
-                  onChange={e => setDptFormDisabilitas(e.target.value)}
-                />
-              </div>
-
-              <div className="form-group" style={{ gridColumn: 'span 2', marginBottom: 0 }}>
-                <label className="form-label">Alamat</label>
-                <input
-                  type="text"
-                  className="form-control"
-                  placeholder="Contoh: GENTAN CITRA INDAH"
-                  value={dptFormAlamat}
-                  onChange={e => setDptFormAlamat(e.target.value)}
-                />
-              </div>
-
-              <div className="form-group" style={{ gridColumn: 'span 1', marginBottom: 0 }}>
                 <label className="form-label">RT</label>
                 <input
                   type="text"
@@ -324,6 +287,28 @@ export const DptModal: React.FC<DptModalProps> = ({
                   placeholder="Contoh: 014"
                   value={dptFormRw}
                   onChange={e => setDptFormRw(e.target.value)}
+                />
+              </div>
+
+              <div className="form-group" style={{ gridColumn: 'span 2', marginBottom: 0 }}>
+                <label className="form-label">Alamat</label>
+                <input
+                  type="text"
+                  className="form-control"
+                  placeholder="Contoh: GENTAN CITRA INDAH"
+                  value={dptFormAlamat}
+                  onChange={e => setDptFormAlamat(e.target.value)}
+                />
+              </div>
+
+              <div className="form-group" style={{ gridColumn: 'span 2', marginBottom: 0 }}>
+                <label className="form-label">Disabilitas</label>
+                <input
+                  type="text"
+                  className="form-control"
+                  placeholder="Contoh: - (jika tidak ada)"
+                  value={dptFormDisabilitas}
+                  onChange={e => setDptFormDisabilitas(e.target.value)}
                 />
               </div>
 
