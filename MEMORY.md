@@ -192,6 +192,7 @@ This file captures the active state, environment variables, completed tasks, and
   - **Dua Opsi Ekspor Excel**: Menambahkan modal konfirmasi opsi ekspor di web panel (`PemilihTab.tsx`). Petugas dapat memilih untuk mengekspor "DENGAN NIK & NKK" atau "TANPA NIK & NKK" (menyembunyikan kolom NIK dan No. KK untuk alasan privasi). Logika penyaringan kolom diimplementasikan di `excelPemilih.ts`.
   - **Portal Cek DPT Mandiri Warga**: Membuat rute publik `/pemilih/cek` di backend (`routes/api.php` & `DptController::cekMandiri`) yang membatasi pencarian status (aktif non-TMS) menggunakan NIK (exact) atau Nama (fuzzy) + RT/RW (exact). Hasil pencarian dibatasi maksimal 5 baris dan NIK/NKK di-mask untuk menjaga privasi. Membuat komponen `LandingPage.tsx` di web client untuk pencarian warga secara mandiri tanpa login di rute `/`, dengan opsi tombol pengalihan ke `/login` bagi petugas.
   - **Pembaruan Watermark**: Mengubah seluruh teks watermark/footer atribusi di `LandingPage.tsx`, `LoginScreen.tsx`, dan `Sidebar.tsx` menjadi "Support by KKN USH-7 2026 Dinaungi Tim Digitalisasi Desa Gentan".
+  - **Pembaruan Subtitle Header**: Mengubah teks subtitle di header `LandingPage.tsx` dari "Portal Warga Gentan" menjadi "Bersama, Transparan, untuk Gentan.".
 
 ---
 
