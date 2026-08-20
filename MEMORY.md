@@ -224,6 +224,7 @@ This file captures the active state, environment variables, completed tasks, and
   - Menghapus teks subtitle lama "Pemilihan Kepala Desa Gentan, Kecamatan Baki Tahun 2026" dari dalam card.
   - Mengubah teks watermark support agar terpusat di halaman login dan tebal (bold) di halaman landing page.
   - Mengubah judul dokumen (`<title>`) pada `index.html` dari "Gentara - KPPS Gentan" menjadi "Gentara".
+  - Menghilangkan input manual bidang "Umur" di modal Tambah/Edit Pemilih (`DptModal.tsx`), serta mengintegrasikan efek otomatisasi (`React.useEffect`) yang mengkalkulasi umur dan jenis kelamin secara instan dari NIK 16-digit riil milik pemilih.
 
 ---
 

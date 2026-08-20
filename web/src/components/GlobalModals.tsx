@@ -78,7 +78,6 @@ export const GlobalModals: React.FC<GlobalModalsProps> = ({
         setDptFormTps={setDpt.tps}
         dptFormJenis={dpt.jenis}
         setDptFormJenis={setDpt.jenis}
-        dptFormUmur={dpt.umur}
         setDptFormUmur={setDpt.umur}
         dptFormStatusKawin={dpt.statusKawin}
         setDptFormStatusKawin={setDpt.statusKawin}

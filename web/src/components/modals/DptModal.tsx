@@ -17,7 +17,6 @@ interface DptModalProps {
   dptFormJenis: string;
   isPantarlih?: boolean;
   setDptFormJenis: (val: string) => void;
-  dptFormUmur: string;
   setDptFormUmur: (val: string) => void;
   dptFormStatusKawin: string;
   setDptFormStatusKawin: (val: string) => void;
@@ -56,7 +55,6 @@ export const DptModal: React.FC<DptModalProps> = ({
   dptFormJenis,
   isPantarlih = false,
   setDptFormJenis,
-  dptFormUmur,
   setDptFormUmur,
   dptFormStatusKawin,
   setDptFormStatusKawin,
@@ -84,6 +82,51 @@ export const DptModal: React.FC<DptModalProps> = ({
   // Nomor sementara buatan sistem berawalan 9999 (NIK) / 9998 (NKK); lihat
   // migrasi `tandai_nik_nkk_sintetis_pada_dpt` di backend.
   const nikSementara = !!editingDpt?.nik_sintetis;
+
+  React.useEffect(() => {
+    if (dptFormNik && dptFormNik.length === 16 && /^\d+$/.test(dptFormNik)) {
+      if (dptFormNik.startsWith('9999') || dptFormNik.startsWith('9998')) {
+        return;
+      }
+
+      const dayStr = dptFormNik.substring(6, 8);
+      const monthStr = dptFormNik.substring(8, 10);
+      const yearStr = dptFormNik.substring(10, 12);
+
+      const dayVal = parseInt(dayStr, 10);
+      const monthVal = parseInt(monthStr, 10);
+      const yearVal = parseInt(yearStr, 10);
+
+      if (!isNaN(dayVal) && !isNaN(monthVal) && !isNaN(yearVal)) {
+        if (monthVal >= 1 && monthVal <= 12) {
+          let isFemale = false;
+          let day = dayVal;
+          if (day > 40) {
+            isFemale = true;
+            day = day - 40;
+          }
+
+          if (day >= 1 && day <= 31) {
+            const birthYear = yearVal <= 9 ? 2000 + yearVal : 1900 + yearVal;
+            const today = new Date();
+            const birthDate = new Date(birthYear, monthVal - 1, day);
+            
+            let age = today.getFullYear() - birthDate.getFullYear();
+            const m = today.getMonth() - birthDate.getMonth();
+            if (m < 0 || (m === 0 && today.getDate() < birthDate.getDate())) {
+              age--;
+            }
+
+            if (age >= 0) {
+              setDptFormUmur(age.toString());
+            }
+
+            setDptFormJenisKelamin(isFemale ? 'PEREMPUAN' : 'LAKI-LAKI');
+          }
+        }
+      }
+    }
+  }, [dptFormNik, setDptFormUmur, setDptFormJenisKelamin]);
 
   return (
     <div className="modal-overlay">
@@ -202,17 +245,6 @@ export const DptModal: React.FC<DptModalProps> = ({
               </div>
 
               <div className="form-group" style={{ gridColumn: 'span 1', marginBottom: 0 }}>
-                <label className="form-label">Umur</label>
-                <input
-                  type="text"
-                  className="form-control"
-                  placeholder="Contoh: 32"
-                  value={dptFormUmur}
-                  onChange={e => setDptFormUmur(e.target.value.replace(/\D/g, ''))}
-                />
-              </div>
-
-              <div className="form-group" style={{ gridColumn: 'span 1', marginBottom: 0 }}>
                 <label className="form-label">Jenis Kelamin (L/P)</label>
                 <select
                   className="form-control"
@@ -251,6 +283,17 @@ export const DptModal: React.FC<DptModalProps> = ({
                 />
               </div>
 
+              <div className="form-group" style={{ gridColumn: 'span 1', marginBottom: 0 }}>
+                <label className="form-label">Disabilitas</label>
+                <input
+                  type="text"
+                  className="form-control"
+                  placeholder="Contoh: - (jika tidak ada)"
+                  value={dptFormDisabilitas}
+                  onChange={e => setDptFormDisabilitas(e.target.value)}
+                />
+              </div>
+
               <div className="form-group" style={{ gridColumn: 'span 2', marginBottom: 0 }}>
                 <label className="form-label">Alamat</label>
                 <input
@@ -284,20 +327,8 @@ export const DptModal: React.FC<DptModalProps> = ({
                 />
               </div>
 
-              <div className="form-group" style={{ gridColumn: 'span 1', marginBottom: 0 }}>
-                <label className="form-label">Disabilitas</label>
-                <input
-                  type="text"
-                  className="form-control"
-                  placeholder="Contoh: - (jika tidak ada)"
-                  value={dptFormDisabilitas}
-                  onChange={e => setDptFormDisabilitas(e.target.value)}
-                />
-              </div>
-
-              <div className="form-group" style={{ gridColumn: 'span 1', marginBottom: 0 }}>
+              <div className="form-group" style={{ gridColumn: 'span 2', marginBottom: 0 }}>
                 <label className="form-label">Keterangan</label>
-                {/* Kategori tetap: nilainya tersimpan sebagai enum di basis data. */}
                 <select
                   className="form-control"
                   value={dptFormKeterangan}
