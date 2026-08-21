@@ -69,11 +69,12 @@ export const ApiService = {
   },
 
   // type kosong = tampilkan DPT dan DPK sekaligus
-  async getDpts(token: string, page: number, search = '', tpsId = '', type = '') {
+  async getDpts(token: string, page: number, search = '', tpsId = '', type = '', keterangan = '') {
     let url = `${API_URL}/dpt?page=${page}`;
     if (search) url += `&search=${encodeURIComponent(search)}`;
     if (tpsId) url += `&tps_id=${tpsId}`;
     if (type) url += `&jenis_pemilih=${type}`;
+    if (keterangan) url += `&keterangan=${encodeURIComponent(keterangan)}`;
     return permintaan(url, { headers: getAuthHeaders(token) });
   },
 

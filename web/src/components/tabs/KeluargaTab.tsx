@@ -275,7 +275,11 @@ export const KeluargaTab: React.FC<KeluargaTabProps> = ({
                           </span>
                         )}
                       </div>
-                      <div className="kk-alamat">{k.alamat || 'Alamat belum terdata'}</div>
+                      <div className="kk-kepala" style={{ fontSize: '0.875rem', color: 'var(--text)', marginTop: '4px' }}>
+                        <span style={{ fontWeight: '500', color: 'var(--text-muted)' }}>Kepala Keluarga: </span>
+                        <span style={{ fontWeight: '600' }}>{k.anggota && k.anggota.length > 0 ? k.anggota[0].nama : '-'}</span>
+                      </div>
+                      <div className="kk-alamat" style={{ marginTop: '2px' }}>{k.alamat || 'Alamat belum terdata'}</div>
                     </div>
                     <div className="kk-head-meta">
                       <span className="kk-chip">RT {k.rt || '-'} / RW {k.rw || '-'}</span>

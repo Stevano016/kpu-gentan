@@ -13,7 +13,6 @@ interface Argumen {
 export interface PemilihController {
   dptData: any;
   dptLoading: boolean;
-  /** Penyaring tabel; perubahannya langsung menarik ulang datanya. */
   filter: {
     search: string;
     setSearch: (val: string) => void;
@@ -22,6 +21,8 @@ export interface PemilihController {
     /** '' = semua tahapan. */
     jenis: string;
     setJenis: (val: string) => void;
+    keteranganFilter: string;
+    setKeteranganFilter: (val: string) => void;
     page: number;
     setPage: (page: number) => void;
   };
@@ -75,6 +76,7 @@ export function usePemilih({ token, path, feedback }: Argumen): PemilihControlle
   const [search, setSearch] = useState('');
   const [tpsId, setTpsId] = useState('');
   const [jenis, setJenis] = useState('');
+  const [keteranganFilter, setKeteranganFilter] = useState('');
   const [page, setPage] = useState(1);
 
   const [editingDpt, setEditingDpt] = useState<any>(null);
@@ -84,13 +86,18 @@ export function usePemilih({ token, path, feedback }: Argumen): PemilihControlle
 
   const form = useFormState(DPT_FORM_KOSONG);
 
+  const handleSetJenis = useCallback((val: string) => {
+    setJenis(val);
+    setKeteranganFilter('');
+  }, []);
+
   const fetchDpts = useCallback(async () => {
     if (!token) return;
     setDptLoading(true);
-    const data = await ambilData(() => ApiService.getDpts(token, page, search, tpsId, jenis));
+    const data = await ambilData(() => ApiService.getDpts(token, page, search, tpsId, jenis, keteranganFilter));
     if (data) setDptData(data);
     setDptLoading(false);
-  }, [token, page, search, tpsId, jenis]);
+  }, [token, page, search, tpsId, jenis, keteranganFilter]);
 
   useEffect(() => {
     if (!token || path !== '/pemilih') return;
@@ -185,7 +192,18 @@ export function usePemilih({ token, path, feedback }: Argumen): PemilihControlle
   return {
     dptData,
     dptLoading,
-    filter: { search, setSearch, tpsId, setTpsId, jenis, setJenis, page, setPage },
+    filter: {
+      search,
+      setSearch,
+      tpsId,
+      setTpsId,
+      jenis,
+      setJenis: handleSetJenis,
+      keteranganFilter,
+      setKeteranganFilter,
+      page,
+      setPage
+    },
     form,
     editingDpt,
     setEditingDpt,

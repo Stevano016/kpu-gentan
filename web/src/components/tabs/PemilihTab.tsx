@@ -12,6 +12,8 @@ interface PemilihTabProps {
   setDptTpsFilter: (val: string) => void;
   dptJenisFilter: string;
   setDptJenisFilter: (val: string) => void;
+  dptKeteranganFilter: string;
+  setDptKeteranganFilter: (val: string) => void;
   setDptPage: (page: number) => void;
   tpsList: any[];
   setIsImportModalOpen: (open: boolean) => void;
@@ -66,6 +68,8 @@ export const PemilihTab: React.FC<PemilihTabProps> = ({
   setDptTpsFilter,
   dptJenisFilter,
   setDptJenisFilter,
+  dptKeteranganFilter,
+  setDptKeteranganFilter,
   setDptPage,
   tpsList,
   setIsImportModalOpen,
@@ -269,6 +273,26 @@ export const PemilihTab: React.FC<PemilihTabProps> = ({
             ))}
           </select>
         </div>
+        {dptJenisFilter === 'tms' && (
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+            <label style={{ fontSize: '0.875rem', fontWeight: '600', color: 'var(--text-muted)', whiteSpace: 'nowrap' }}>Alasan TMS:</label>
+            <select
+              className="form-control"
+              style={{ width: '180px', padding: '8px 12px' }}
+              value={dptKeteranganFilter}
+              onChange={e => {
+                setDptKeteranganFilter(e.target.value);
+                setDptPage(1);
+              }}
+            >
+              <option value="">Semua Alasan</option>
+              <option value="4 : Meninggal">Meninggal</option>
+              <option value="5 : Ganda">Ganda</option>
+              <option value="6 : Dibawah Umur">Dibawah Umur</option>
+              <option value="7 : Tidak Ditemukan">Tidak Ditemukan</option>
+            </select>
+          </div>
+        )}
       </div>
 
       <LoadingHint show={dptLoading} label="Memuat data pemilih..." />

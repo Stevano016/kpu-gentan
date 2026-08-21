@@ -44,6 +44,10 @@ class DptController extends Controller
             $query->where('asal', $request->asal);
         }
 
+        if ($request->filled('keterangan')) {
+            $query->where('keterangan', $request->keterangan);
+        }
+
         // Pantarlih bertugas di satu RW; daftarnya dibatasi di server, bukan
         // sekadar disaring di antarmuka.
         $pengguna = $request->user();

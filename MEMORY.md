@@ -257,6 +257,11 @@ This file captures the active state, environment variables, completed tasks, and
   - Menambahkan validasi keamanan sisi server di controller backend (`store`, `update`, dan `tandaiTms`) untuk memvalidasi kesesuaian data umur dan keunikan nama secara ketat sebelum menyimpan pilihan *Dibawah Umur* atau *Ganda*.
   - Melakukan perbaikan passing data prop `dptFormUmur` ke `DptModal` di `GlobalModals.tsx` sehingga kompilasi build frontend sukses 100%.
 
+- **21 Agt 2026 — Filtering Alasan TMS & Nama Kepala Keluarga**:
+  - Menambahkan filtering dropdown baru "Alasan TMS" pada tab halaman TMS di panel admin frontend (`PemilihTab.tsx`), terintegrasi dengan filter parameter `keterangan` di backend (`DptController.php`).
+  - Menampilkan nama kepala keluarga (menggunakan data anggota keluarga tertua/pertama) pada header kartu keluarga di tab Data Keluarga (`KeluargaTab.tsx`).
+  - Memastikan seluruh kode terkompilasi bersih tanpa error TypeScript/Vite.
+
 ---
 
 ## 🛠️ Local Environment Notes
