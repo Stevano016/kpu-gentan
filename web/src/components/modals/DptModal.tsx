@@ -17,6 +17,7 @@ interface DptModalProps {
   dptFormJenis: string;
   isPantarlih?: boolean;
   setDptFormJenis: (val: string) => void;
+  dptFormUmur: string;
   setDptFormUmur: (val: string) => void;
   dptFormStatusKawin: string;
   setDptFormStatusKawin: (val: string) => void;
@@ -101,6 +102,7 @@ export const DptModal: React.FC<DptModalProps> = ({
   dptFormJenis,
   isPantarlih = false,
   setDptFormJenis,
+  dptFormUmur,
   setDptFormUmur,
   dptFormStatusKawin,
   setDptFormStatusKawin,
@@ -388,9 +390,32 @@ export const DptModal: React.FC<DptModalProps> = ({
                   onChange={e => setDptFormKeterangan(e.target.value)}
                 >
                   <option value="">— Belum ditentukan —</option>
-                  {KETERANGAN.map((k) => (
-                    <option key={k} value={k}>{k}</option>
-                  ))}
+                  {KETERANGAN.map((k) => {
+                    let isDisabled = false;
+
+                    if (k.includes('Dibawah Umur')) {
+                      const ageVal = parseInt(dptFormUmur || '', 10);
+                      if (!isNaN(ageVal) && ageVal >= 17) {
+                        isDisabled = true;
+                      }
+                    }
+
+                    if (k.includes('Ganda')) {
+                      if (editingDpt) {
+                        if (!editingDpt.is_ganda) {
+                          isDisabled = true;
+                        }
+                      } else {
+                        isDisabled = true;
+                      }
+                    }
+
+                    return (
+                      <option key={k} value={k} disabled={isDisabled}>
+                        {k}{isDisabled ? ' (Tidak sesuai data)' : ''}
+                      </option>
+                    );
+                  })}
                 </select>
               </div>
 

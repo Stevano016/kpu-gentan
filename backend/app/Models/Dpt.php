@@ -83,13 +83,21 @@ class Dpt extends Model
 
     /** Keterangan yang berarti pemilih gugur. */
     public const KETERANGAN_TMS = [
-        '2 : Belum memiliki KTP-el',
-        '3 : Ubah Elemen Data',
         '4 : Meninggal',
         '5 : Ganda',
         '6 : Dibawah Umur',
         '7 : Tidak Ditemukan',
     ];
+
+    public function getIsGandaAttribute()
+    {
+        if (array_key_exists('is_ganda', $this->attributes)) {
+            return (bool) $this->attributes['is_ganda'];
+        }
+        return Dpt::where('nama', $this->nama)
+            ->where('nik', '!=', $this->nik)
+            ->exists();
+    }
 
     /** Stages a voter is still counted as an active part of the roll. */
     public const TAHAPAN_AKTIF = ['dp4', 'dps', 'dptb', 'dpt', 'dpk'];

@@ -8,7 +8,7 @@ interface CustomPromptModalProps {
   btnText?: string;
   saran?: string[];
   /** Bila diisi, jawaban dibatasi pada daftar ini (bukan teks bebas). */
-  pilihan?: string[];
+  pilihan?: any[];
   onCancel: () => void;
   onSubmit: (value: string) => void;
 }
@@ -67,9 +67,15 @@ export const CustomPromptModal: React.FC<CustomPromptModalProps> = ({
             style={{ width: '100%', marginBottom: '24px' }}
           >
             <option value="">Pilih alasan...</option>
-            {pilihan.map((o) => (
-              <option key={o} value={o}>{o}</option>
-            ))}
+            {pilihan.map((o) => {
+              const val = typeof o === 'string' ? o : o.value;
+              const isDisabled = typeof o === 'string' ? false : !!o.disabled;
+              return (
+                <option key={val} value={val} disabled={isDisabled}>
+                  {val}{isDisabled ? ' (Tidak sesuai data)' : ''}
+                </option>
+              );
+            })}
           </select>
         ) : (
           <input

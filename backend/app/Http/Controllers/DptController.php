@@ -14,7 +14,13 @@ class DptController extends Controller
 {
     public function index(Request $request)
     {
-        $query = Dpt::with('tps');
+        $query = Dpt::with('tps')
+            ->select('dpt.*')
+            ->selectSub(function ($q) {
+                $q->selectRaw('count(*) > 1')
+                  ->from('dpt as d2')
+                  ->whereColumn('d2.nama', 'dpt.nama');
+            }, 'is_ganda');
 
         if ($request->filled('search')) {
             $search = $request->search;
@@ -48,6 +54,7 @@ class DptController extends Controller
         }
 
         $dpts = $query->paginate(20);
+        $dpts->getCollection()->each->append('is_ganda');
 
         return response()->json([
             'status' => 'success',
@@ -129,6 +136,26 @@ class DptController extends Controller
         }
         $asal = $tahapan === 'dp4' ? 'dp4' : 'dptb';
 
+        if ($request->filled('keterangan')) {
+            if (str_contains($request->keterangan, 'Dibawah Umur')) {
+                if ($request->filled('umur') && $request->umur >= 17) {
+                    return response()->json([
+                        'status' => 'error',
+                        'message' => 'Keterangan "Dibawah Umur" tidak sesuai dengan data umur pemilih (>= 17).'
+                    ], 422);
+                }
+            }
+            if (str_contains($request->keterangan, 'Ganda')) {
+                $queryGanda = Dpt::where('nama', $request->nama);
+                if (!$queryGanda->exists()) {
+                    return response()->json([
+                        'status' => 'error',
+                        'message' => 'Keterangan "Ganda" tidak sesuai karena tidak ditemukan nama ganda di database.'
+                    ], 422);
+                }
+            }
+        }
+
         // Auto-generate the next id_pemilih (format USH-GTN-026xxxx)
         $latestVoter = Dpt::where('id_pemilih', 'like', 'USH-GTN-026%')
             ->orderBy('id_pemilih', 'desc')
@@ -172,6 +199,8 @@ class DptController extends Controller
         }
 
         \App\Utils\Broadcaster::trigger('update', ['tps_id' => $tpsId]);
+
+        $dpt->append('is_ganda');
 
         return response()->json([
             'status' => 'success',
@@ -237,6 +266,28 @@ class DptController extends Controller
             ], 422);
         }
 
+        if ($request->filled('keterangan')) {
+            if (str_contains($request->keterangan, 'Dibawah Umur')) {
+                $age = $request->has('umur') ? $request->umur : $dpt->umur;
+                if ($age >= 17) {
+                    return response()->json([
+                        'status' => 'error',
+                        'message' => 'Keterangan "Dibawah Umur" tidak sesuai dengan data umur pemilih (>= 17).'
+                    ], 422);
+                }
+            }
+            if (str_contains($request->keterangan, 'Ganda')) {
+                $name = $request->nama ?? $dpt->nama;
+                $queryGanda = Dpt::where('nama', $name)->where('nik', '!=', $dpt->nik);
+                if (!$queryGanda->exists()) {
+                    return response()->json([
+                        'status' => 'error',
+                        'message' => 'Keterangan "Ganda" tidak sesuai karena tidak ditemukan nama ganda di database.'
+                    ], 422);
+                }
+            }
+        }
+
         $updateData = [
             'nama' => $request->nama,
             'tps_id' => $newTpsId,
@@ -276,6 +327,8 @@ class DptController extends Controller
         if ($oldTpsId !== $newTpsId) {
             \App\Utils\Broadcaster::trigger('update', ['tps_id' => $oldTpsId]);
         }
+
+        $dpt->append('is_ganda');
 
         return response()->json([
             'status' => 'success',

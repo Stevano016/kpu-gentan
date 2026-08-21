@@ -36,7 +36,7 @@ export interface Feedback {
     message: string,
     saran: string[],
     onSubmit: (alasan: string) => void,
-    pilihan?: string[],
+    pilihan?: any[],
   ) => void;
 }
 

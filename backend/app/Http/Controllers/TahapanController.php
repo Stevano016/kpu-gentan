@@ -75,6 +75,27 @@ class TahapanController extends Controller
         $dpt = Dpt::where('nik', $nik)->firstOrFail();
         $this->pastikanBisaPindah($dpt->tahapan, 'tms');
 
+        if (str_contains($request->alasan, 'Dibawah Umur')) {
+            if ($dpt->umur >= 17) {
+                return response()->json([
+                    'status' => 'error',
+                    'message' => 'Alasan "Dibawah Umur" tidak sesuai dengan data umur pemilih (>= 17).'
+                ], 422);
+            }
+        }
+
+        if (str_contains($request->alasan, 'Ganda')) {
+            $existsGanda = Dpt::where('nama', $dpt->nama)
+                ->where('nik', '!=', $dpt->nik)
+                ->exists();
+            if (!$existsGanda) {
+                return response()->json([
+                    'status' => 'error',
+                    'message' => 'Alasan "Ganda" tidak sesuai karena tidak ditemukan nama ganda di database.'
+                ], 422);
+            }
+        }
+
         $dpt->update([
             'tahapan' => 'tms',
             'tms_alasan' => $request->alasan,

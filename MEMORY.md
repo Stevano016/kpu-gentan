@@ -247,9 +247,15 @@ This file captures the active state, environment variables, completed tasks, and
   - Memperbarui watermark di Landing Page (`LandingPage.tsx`) dan halaman Login (`LoginScreen.tsx`) menjadi bertumpuk: "Ruang Komunitas Digital Desa" di baris pertama dan "Support by KKN USH-7 2026" di baris kedua.
   - Memperbarui peringatan hasil pencarian kosong di Landing Page menjadi: "Pastikan ejaan nama, RT, dan RW sudah sesuai. Jika anda warga gentan, yang memenuhi syarat, dan belum terdaftar silahkan hubungi pantarlih, ketua Rt, RW, atau sekertariat desa."
   - Menambahkan tombol "Syarat Pemilih" di bawah teks peringatan kosong yang menampilkan modal interaktif berisi daftar kriteria pemilih baru (sesuai data dari Carik Gentan) serta tabel daftar lengkap 14 petugas Pantarlih Desa Gentan beserta wilayah RW tugasnya masing-masing.
-  - Memverifikasi fungsionalitas dan konsistensi visual modal agar seragam menggunakan class modal default (`modal-overlay` dan `modal-content`) dengan transisi halus dan ramah aksesibilitas.
   - Membungkus teks watermark "Support by KKN USH-7 2026" di halaman Landing Page dan Login menggunakan lencana (badge/pill) berlatar belakang visual lembut yang harmonis (`var(--primary-light)`) dengan border tipis dan font-weight 600 demi nilai estetika yang tinggi.
   - Memastikan kelancaran proses kompilasi kode frontend lewat `npm run build` yang sukses tanpa error.
+
+- **21 Agt 2026 — Pembatasan Alasan TMS & Validasi Kondisi Data**:
+  - Mengubah opsi alasan TMS (Tidak Memenuhi Syarat) di backend (`Dpt.php` & `TahapanController.php`) dan frontend (`tahapan.ts`) menjadi hanya 4 pilihan: *Meninggal*, *Ganda*, *Dibawah Umur*, dan *Tidak Ditemukan*.
+  - Menerapkan pembatasan interaktif di frontend (modal TMS dan form Tambah/Edit DptModal): menonaktifkan (disable) opsi *Dibawah Umur* bila umur pemilih >= 17 tahun, dan menonaktifkan opsi *Ganda* jika nama pemilih tidak terdeteksi ganda di database.
+  - Mengoptimasi pendeteksian nama ganda pada API list DPT (`DptController.php`) menggunakan subquery `selectSub` database demi kepatuhan aturan *Anti-N+1 Protection* dan kinerja maksimal.
+  - Menambahkan validasi keamanan sisi server di controller backend (`store`, `update`, dan `tandaiTms`) untuk memvalidasi kesesuaian data umur dan keunikan nama secara ketat sebelum menyimpan pilihan *Dibawah Umur* atau *Ganda*.
+  - Melakukan perbaikan passing data prop `dptFormUmur` ke `DptModal` di `GlobalModals.tsx` sehingga kompilasi build frontend sukses 100%.
 
 ---
 

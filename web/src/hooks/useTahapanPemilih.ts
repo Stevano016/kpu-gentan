@@ -16,7 +16,7 @@ interface Argumen {
 export interface TahapanController {
   handleVerifikasiDp4: () => void;
   handleTetapkanDpt: () => void;
-  handleTandaiTms: (nik: string, nama: string) => void;
+  handleTandaiTms: (voter: any) => void;
   handleBatalkanTms: (nik: string) => void;
   handleTandaiDpk: (nik: string, nama: string) => void;
   handleBatalkanDpk: (nik: string) => void;
@@ -74,13 +74,24 @@ export function useTahapanPemilih({ token, tpsFilter, feedback, onSelesai }: Arg
     );
   }, [showConfirm, namaLingkup, jalankan, token, lingkupTps]);
 
-  const handleTandaiTms = useCallback((nik: string, nama: string) => {
+  const handleTandaiTms = useCallback((voter: any) => {
+    const options = KETERANGAN_TMS.map(val => {
+      let disabled = false;
+      if (val.includes('Ganda') && !voter.is_ganda) {
+        disabled = true;
+      }
+      if (val.includes('Dibawah Umur') && voter.umur >= 17) {
+        disabled = true;
+      }
+      return { value: val, disabled };
+    });
+
     mintaAlasan(
       'Tandai Tidak Memenuhi Syarat',
-      `Mengapa ${nama} tidak memenuhi syarat? Alasan ini tersimpan bersama datanya dan bisa dibatalkan.`,
+      `Mengapa ${voter.nama} tidak memenuhi syarat? Alasan ini tersimpan bersama datanya dan bisa dibatalkan.`,
       [],
-      (alasan) => jalankan(() => ApiService.tandaiTms(token!, nik, alasan), 'Gagal Menandai TMS'),
-      KETERANGAN_TMS,
+      (alasan) => jalankan(() => ApiService.tandaiTms(token!, voter.nik, alasan), 'Gagal Menandai TMS'),
+      options,
     );
   }, [mintaAlasan, jalankan, token]);
 

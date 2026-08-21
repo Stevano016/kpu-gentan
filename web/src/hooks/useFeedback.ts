@@ -22,7 +22,7 @@ interface KondisiPrompt {
   title: string;
   message: string;
   saran: string[];
-  pilihan?: string[];
+  pilihan?: any[];
 }
 
 export interface FeedbackController extends Feedback {
@@ -92,7 +92,7 @@ export function useFeedback(): FeedbackController {
       message: string,
       saran: string[],
       onSubmit: (alasan: string) => void,
-      pilihan?: string[],
+      pilihan?: any[],
     ) => {
       aksiPrompt.current = onSubmit;
       setPrompt({ open: true, title, message, saran, pilihan });

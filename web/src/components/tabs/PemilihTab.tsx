@@ -36,7 +36,7 @@ interface PemilihTabProps {
   handleDeleteDpt: (nik: string) => Promise<void>;
   handleVerifikasiDp4: () => void;
   handleTetapkanDpt: () => void;
-  handleTandaiTms: (nik: string, nama: string) => void;
+  handleTandaiTms: (voter: any) => void;
   handleBatalkanTms: (nik: string) => void;
   handleTandaiDpk: (nik: string, nama: string) => void;
   handleBatalkanDpk: (nik: string) => void;
@@ -359,7 +359,7 @@ export const PemilihTab: React.FC<PemilihTabProps> = ({
                           {isAdmin && v.tahapan === 'dp4' && (
                             <button
                               type="button"
-                              onClick={() => handleTandaiTms(v.nik, v.nama)}
+                              onClick={() => handleTandaiTms(v)}
                               className="btn btn-secondary"
                               style={{ color: 'var(--danger)' }}
                               title="Tandai tidak memenuhi syarat"
