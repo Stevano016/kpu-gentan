@@ -588,8 +588,22 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onGoToLogin }) => {
         zIndex: 1000,
         lineHeight: '1.4'
       }}>
-        <div>Ruang Komunitas Digital Desa</div>
-        <div style={{ fontWeight: '500', marginTop: '2px' }}>Support by KKN USH-7 2026</div>
+        <div style={{ marginBottom: '6px' }}>Ruang Komunitas Digital Desa</div>
+        <div>
+          <span style={{
+            display: 'inline-block',
+            padding: '2px 10px',
+            backgroundColor: 'var(--primary-light)',
+            color: 'var(--primary)',
+            borderRadius: 'var(--radius-sm)',
+            fontSize: '0.75rem',
+            fontWeight: '600',
+            border: '1px solid oklch(0.55 0.16 165 / 0.15)',
+            letterSpacing: '0.02em'
+          }}>
+            Support by KKN USH-7 2026
+          </span>
+        </div>
       </footer>
 
       {showSyaratModal && (

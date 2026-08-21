@@ -7,7 +7,7 @@ This file captures the active state, environment variables, completed tasks, and
 ## 📍 Last Known State
 
 - **Laravel Backend API (`/backend`)**: Running at `http://localhost:8000`. Added server-side validation to support four voter types (`dpt`, `dpk`, `dps`, `dptb`) in `DptController`. Adjusted `DashboardController` (`getSummary` and `getTpsDetails`) to compute stats for all four categories. Seeded 7,475 voters from Excel as `dp4` by default. Created a sync command `php artisan dpt:sync-csv` to update synthetic NIKs/NKKs to real ones in-place from updated Excel data.
-- **Web Dashboard (`/web`)**: Running at `http://localhost:5173`. Added DPS and DPTb options in `DptModal.tsx` dropdown, filter buttons in `PemilihTab.tsx`, and extended components to display stats for four voter types. Updated Landing Page and Login Page footers with stacked watermark ("Ruang Komunitas Digital Desa \n Support by KKN USH-7 2026"). Modified search error warning box with updated text, and integrated a "Syarat Pemilih" button that opens an rule-based criteria and Pantarlih assignment modal.
+- **Web Dashboard (`/web`)**: Running at `http://localhost:5173`. Added DPS and DPTb options in `DptModal.tsx` dropdown, filter buttons in `PemilihTab.tsx`, and extended components to display stats for four voter types. Updated Landing Page and Login Page footers with stacked watermark ("Ruang Komunitas Digital Desa \n Support by KKN USH-7 2026") where the KKN watermark is wrapped in a beautiful badge styled with an OKLCH primary-light background and thin border. Modified search error warning box with updated text, and integrated a "Syarat Pemilih" button that opens an rule-based criteria and Pantarlih assignment modal.
 - **Mobile Client (`/mobile`)**: Analyzer is 100% clean (`No issues found!`). Extended `home_screen.dart` and `dashboard_tab.dart` to compute, validate, and display stats (Total and Check-in) for DPT, DPK, DPS, and DPTb.
 
 ---
@@ -248,6 +248,7 @@ This file captures the active state, environment variables, completed tasks, and
   - Memperbarui peringatan hasil pencarian kosong di Landing Page menjadi: "Pastikan ejaan nama, RT, dan RW sudah sesuai. Jika anda warga gentan, yang memenuhi syarat, dan belum terdaftar silahkan hubungi pantarlih, ketua Rt, RW, atau sekertariat desa."
   - Menambahkan tombol "Syarat Pemilih" di bawah teks peringatan kosong yang menampilkan modal interaktif berisi daftar kriteria pemilih baru (sesuai data dari Carik Gentan) serta tabel daftar lengkap 14 petugas Pantarlih Desa Gentan beserta wilayah RW tugasnya masing-masing.
   - Memverifikasi fungsionalitas dan konsistensi visual modal agar seragam menggunakan class modal default (`modal-overlay` dan `modal-content`) dengan transisi halus dan ramah aksesibilitas.
+  - Membungkus teks watermark "Support by KKN USH-7 2026" di halaman Landing Page dan Login menggunakan lencana (badge/pill) berlatar belakang visual lembut yang harmonis (`var(--primary-light)`) dengan border tipis dan font-weight 600 demi nilai estetika yang tinggi.
   - Memastikan kelancaran proses kompilasi kode frontend lewat `npm run build` yang sukses tanpa error.
 
 ---

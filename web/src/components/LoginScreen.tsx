@@ -102,8 +102,22 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({
       </div>
 
       <div className="login-watermark" style={{ lineHeight: '1.4' }}>
-        <div>Ruang Komunitas Digital Desa</div>
-        <div style={{ fontWeight: '500', marginTop: '2px' }}>Support by KKN USH-7 2026</div>
+        <div style={{ marginBottom: '6px' }}>Ruang Komunitas Digital Desa</div>
+        <div>
+          <span style={{
+            display: 'inline-block',
+            padding: '2px 10px',
+            backgroundColor: 'var(--primary-light)',
+            color: 'var(--primary)',
+            borderRadius: 'var(--radius-sm)',
+            fontSize: '0.725rem',
+            fontWeight: '600',
+            border: '1px solid oklch(0.55 0.16 165 / 0.15)',
+            letterSpacing: '0.02em'
+          }}>
+            Support by KKN USH-7 2026
+          </span>
+        </div>
       </div>
     </div>
   );
