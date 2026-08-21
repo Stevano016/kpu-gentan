@@ -48,7 +48,9 @@ export const TpsTab: React.FC<TpsTabProps> = ({
                   <th>ID</th>
                   <th>Nama TPS</th>
                   <th>Wilayah / Alamat</th>
-                  <th>Jumlah Pemilih (DPT)</th>
+                  <th>DPT</th>
+                  <th>DPK</th>
+                  <th>Total Pemilih</th>
                   <th>Kehadiran (Hadir)</th>
                   <th>% Kehadiran</th>
                   <th>Jumlah Akun KPPS</th>
@@ -61,7 +63,9 @@ export const TpsTab: React.FC<TpsTabProps> = ({
                     <td>{t.id}</td>
                     <td style={{ fontWeight: '600' }}>{t.nama}</td>
                     <td>{t.wilayah}</td>
-                    <td>{t.dpt_count ?? t.total_dpt}</td>
+                    <td>{t.total_dpt ?? 0}</td>
+                    <td>{t.total_dpk ?? 0}</td>
+                    <td>{t.dpt_count ?? 0}</td>
                     <td>{t.hadir_count ?? 0}</td>
                     <td>
                       {t.dpt_count > 0 ? `${roundVal(((t.hadir_count ?? 0) / t.dpt_count) * 100)}%` : '0%'}
@@ -83,7 +87,7 @@ export const TpsTab: React.FC<TpsTabProps> = ({
                 ))}
                 {tpsPageData.data.length === 0 && (
                   <tr>
-                    <td colSpan={8} style={{ textAlign: 'center', color: 'var(--text-muted)' }}>Belum ada data TPS.</td>
+                    <td colSpan={10} style={{ textAlign: 'center', color: 'var(--text-muted)' }}>Belum ada data TPS.</td>
                   </tr>
                 )}
               </tbody>

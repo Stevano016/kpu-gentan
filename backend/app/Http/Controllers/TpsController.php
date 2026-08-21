@@ -13,6 +13,12 @@ class TpsController extends Controller
         $query = Tps::withCount([
             'dpt', 
             'users',
+            'dpt as total_dpt' => function ($q) {
+                $q->where('tahapan', 'dpt');
+            },
+            'dpt as total_dpk' => function ($q) {
+                $q->where('tahapan', 'dpk');
+            },
             'dpt as hadir_count' => function ($q) {
                 $q->where('status_hadir', true);
             }
@@ -61,18 +67,22 @@ class TpsController extends Controller
     {
         $tps = Tps::with(['quickCount', 'users'])->findOrFail($id);
         
+        $totalDptOnly = $tps->dpt()->where('tahapan', 'dpt')->count();
+        $totalDpkOnly = $tps->dpt()->where('tahapan', 'dpk')->count();
         $attendanceCount = $tps->dpt()->where('status_hadir', true)->count();
-        $totalDpt = $tps->dpt()->count();
+        $totalPemilih = $tps->dpt()->count();
 
         return response()->json([
             'status' => 'success',
             'data' => [
                 'tps' => $tps,
                 'stats' => [
-                    'total_dpt' => $totalDpt,
+                    'total_dpt' => $totalDptOnly,
+                    'total_dpk' => $totalDpkOnly,
+                    'total_pemilih' => $totalPemilih,
                     'hadir' => $attendanceCount,
-                    'tidak_hadir' => $totalDpt - $attendanceCount,
-                    'persentase_kehadiran' => $totalDpt > 0 ? round(($attendanceCount / $totalDpt) * 100, 2) : 0
+                    'tidak_hadir' => $totalPemilih - $attendanceCount,
+                    'persentase_kehadiran' => $totalPemilih > 0 ? round(($attendanceCount / $totalPemilih) * 100, 2) : 0
                 ]
             ]
         ]);

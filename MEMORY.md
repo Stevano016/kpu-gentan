@@ -262,6 +262,11 @@ This file captures the active state, environment variables, completed tasks, and
   - Menampilkan nama kepala keluarga (menggunakan data anggota keluarga tertua/pertama) pada header kartu keluarga di tab Data Keluarga (`KeluargaTab.tsx`).
   - Memastikan seluruh kode terkompilasi bersih tanpa error TypeScript/Vite.
 
+- **21 Agt 2026 — Menambahkan DPK di Halaman TPS & Monitoring**:
+  - Memperbarui query pada `TpsController.php` method `index` dan `show` untuk menyertakan perhitungan jumlah `total_dpt` dan `total_dpk` menggunakan Eloquent `withCount` demi performa optimal dan perlindungan N+1.
+  - Memperbarui tabel monitoring TPS di `TpsTab.tsx` dengan menambahkan kolom `DPT` (pemilih DPT), `DPK` (pemilih DPK), dan `Total Pemilih` (total seluruh pemilih dalam TPS), serta memperbarui jumlah kolom (`colSpan`) di state kosong tabel.
+  - Memastikan seluruh kode frontend berhasil dikompilasi dengan sukses (`npm run build` berhasil 100%).
+
 ---
 
 ## 🛠️ Local Environment Notes
