@@ -7,7 +7,7 @@ This file captures the active state, environment variables, completed tasks, and
 ## 📍 Last Known State
 
 - **Laravel Backend API (`/backend`)**: Running at `http://localhost:8000`. Added server-side validation to support four voter types (`dpt`, `dpk`, `dps`, `dptb`) in `DptController`. Adjusted `DashboardController` (`getSummary` and `getTpsDetails`) to compute stats for all four categories. Seeded 7,475 voters from Excel as `dp4` by default. Created a sync command `php artisan dpt:sync-csv` to update synthetic NIKs/NKKs to real ones in-place from updated Excel data.
-- **Web Dashboard (`/web`)**: Running at `http://localhost:5173`. Added DPS and DPTb options in `DptModal.tsx` dropdown, added filter buttons in `PemilihTab.tsx`, and extended cards/tables in `DashboardTab.tsx` and `TpsDetailTab.tsx` to display statistics for all four voter types.
+- **Web Dashboard (`/web`)**: Running at `http://localhost:5173`. Added DPS and DPTb options in `DptModal.tsx` dropdown, filter buttons in `PemilihTab.tsx`, and extended components to display stats for four voter types. Updated Landing Page and Login Page footers with stacked watermark ("Ruang Komunitas Digital Desa \n Support by KKN USH-7 2026"). Modified search error warning box with updated text, and integrated a "Syarat Pemilih" button that opens an rule-based criteria and Pantarlih assignment modal.
 - **Mobile Client (`/mobile`)**: Analyzer is 100% clean (`No issues found!`). Extended `home_screen.dart` and `dashboard_tab.dart` to compute, validate, and display stats (Total and Check-in) for DPT, DPK, DPS, and DPTb.
 
 ---
@@ -242,6 +242,13 @@ This file captures the active state, environment variables, completed tasks, and
   - Mengubah domain API produksi default dan WebSocket di `api_service.dart` aplikasi Flutter dari `gentan.wujud.id` menjadi `kpps.ysmb.my.id`.
   - Mengonfigurasi dan mengaktifkan WebSocket server pada `servergentan` melalui pembuatan *systemd service* `gentan-websocket.service` pada port `8090` (bind `0.0.0.0`), membuka port `8090` di firewall UFW, serta menambahkan aturan `ProxyPass` pada konfigurasi Apache `gentan.conf` di server agar memforward path `/ws` secara aman ke port `8090` lokal. Membuild ulang frontend web dengan socket URL `wss://kpps.ysmb.my.id/ws` agar mendukung koneksi aman HTTPS di lingkungan LAN.
   - Mengatasi masalah perubahan ukuran (layout shift) tombol pencarian di landing page saat diklik dengan menyetel lebar tombol secara eksplisit (`width: 50%` pada desktop) dan menjaga ketebalan font (*font-weight*) tetap konisten di `600` baik untuk status aktif maupun tidak aktif di `LandingPage.tsx`. Hal ini benar-benar menghilangkan layout jitter di semua browser.
+
+- **21 Agt 2026 — Pembaruan Watermark & Penambahan Fitur Syarat Pemilih**:
+  - Memperbarui watermark di Landing Page (`LandingPage.tsx`) dan halaman Login (`LoginScreen.tsx`) menjadi bertumpuk: "Ruang Komunitas Digital Desa" di baris pertama dan "Support by KKN USH-7 2026" di baris kedua.
+  - Memperbarui peringatan hasil pencarian kosong di Landing Page menjadi: "Pastikan ejaan nama, RT, dan RW sudah sesuai. Jika anda warga gentan, yang memenuhi syarat, dan belum terdaftar silahkan hubungi pantarlih, ketua Rt, RW, atau sekertariat desa."
+  - Menambahkan tombol "Syarat Pemilih" di bawah teks peringatan kosong yang menampilkan modal interaktif berisi daftar kriteria pemilih baru (sesuai data dari Carik Gentan) serta tabel daftar lengkap 14 petugas Pantarlih Desa Gentan beserta wilayah RW tugasnya masing-masing.
+  - Memverifikasi fungsionalitas dan konsistensi visual modal agar seragam menggunakan class modal default (`modal-overlay` dan `modal-content`) dengan transisi halus dan ramah aksesibilitas.
+  - Memastikan kelancaran proses kompilasi kode frontend lewat `npm run build` yang sukses tanpa error.
 
 ---
 

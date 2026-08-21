@@ -28,6 +28,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onGoToLogin }) => {
   const [hasil, setHasil] = useState<VoterData[] | null>(null);
   const [errorMsg, setErrorMsg] = useState('');
   const [sudahCek, setSudahCek] = useState(false);
+  const [showSyaratModal, setShowSyaratModal] = useState(false);
 
   const handleSearch = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -535,8 +536,34 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onGoToLogin }) => {
                     Nama atau NIK yang Anda masukkan tidak terdaftar dalam sistem.
                   </p>
                   <p style={{ marginTop: '8px', color: 'var(--text-muted)' }}>
-                    Pastikan ejaan nama, RT, dan RW sudah sesuai. Jika Anda warga Gentan dan belum terdaftar, silakan hubungi petugas Pantarlih/Sekretariat Desa Gentan untuk melakukan pendataan.
+                    Pastikan ejaan nama, RT, dan RW sudah sesuai. Jika anda warga gentan, yang memenuhi syarat, dan belum terdaftar silahkan hubungi pantarlih, ketua Rt, RW, atau sekertariat desa.
                   </p>
+                  <button
+                    type="button"
+                    onClick={() => setShowSyaratModal(true)}
+                    style={{
+                      marginTop: '12px',
+                      padding: '8px 16px',
+                      backgroundColor: 'var(--primary)',
+                      color: 'var(--surface)',
+                      border: 'none',
+                      borderRadius: 'var(--radius-sm)',
+                      fontSize: '0.85rem',
+                      fontWeight: '600',
+                      cursor: 'pointer',
+                      display: 'inline-flex',
+                      alignItems: 'center',
+                      gap: '6px',
+                      transition: 'var(--transition)'
+                    }}
+                    onMouseOver={(e) => (e.currentTarget.style.backgroundColor = 'var(--primary-hover)')}
+                    onMouseOut={(e) => (e.currentTarget.style.backgroundColor = 'var(--primary)')}
+                  >
+                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" style={{ width: '16px', height: '16px' }}>
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                    </svg>
+                    Syarat Pemilih
+                  </button>
                 </div>
               )}
             </div>
@@ -552,16 +579,126 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onGoToLogin }) => {
         left: 0,
         right: 0,
         textAlign: 'center',
-        padding: '16px',
+        padding: '12px 16px',
         fontSize: '0.8rem',
         fontWeight: '700',
         color: 'var(--text-muted)',
         borderTop: '1px solid var(--border)',
         backgroundColor: 'var(--surface)',
-        zIndex: 1000
+        zIndex: 1000,
+        lineHeight: '1.4'
       }}>
-        Support by KKN USH-7 2026 Dinaungi Tim Digitalisasi Desa Gentan
+        <div>Ruang Komunitas Digital Desa</div>
+        <div style={{ fontWeight: '500', marginTop: '2px' }}>Support by KKN USH-7 2026</div>
       </footer>
+
+      {showSyaratModal && (
+        <div className="modal-overlay" onClick={() => setShowSyaratModal(false)}>
+          <div className="modal-content" style={{ maxWidth: '600px', width: '100%', display: 'flex', flexDirection: 'column', gap: '16px' }} onClick={(e) => e.stopPropagation()}>
+            <div className="modal-header" style={{ marginBottom: '8px' }}>
+              <h3 className="modal-title" style={{ color: 'var(--primary)' }}>Syarat Pemilih & Daftar Pantarlih</h3>
+              <button onClick={() => setShowSyaratModal(false)} className="modal-close" style={{ padding: '4px' }} title="Tutup">
+                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" style={{ width: '20px', height: '20px' }}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
+            </div>
+            
+            <div style={{ maxHeight: '60vh', overflowY: 'auto', paddingRight: '8px', display: 'flex', flexDirection: 'column', gap: '20px' }}>
+              <div>
+                <h4 style={{ fontSize: '0.95rem', fontWeight: '700', color: 'var(--text)', marginBottom: '10px' }}>
+                  Persyaratan Pemilih (Belum Terdaftar di DP4):
+                </h4>
+                <ul style={{ listStyleType: 'none', paddingLeft: '0', display: 'flex', flexDirection: 'column', gap: '8px', fontSize: '0.875rem', lineHeight: '1.4' }}>
+                  <li style={{ display: 'flex', gap: '8px', alignItems: 'flex-start' }}>
+                    <span style={{ color: 'var(--primary)', fontWeight: 'bold' }}>a.</span>
+                    <span>Penduduk Desa yang pada hari H pencoblosan ( 10 Des 2026 ) sudah berumur 17 tahun</span>
+                  </li>
+                  <li style={{ display: 'flex', gap: '8px', alignItems: 'flex-start' }}>
+                    <span style={{ color: 'var(--primary)', fontWeight: 'bold' }}>b.</span>
+                    <span>Tidak terganggu jiwanya</span>
+                  </li>
+                  <li style={{ display: 'flex', gap: '8px', alignItems: 'flex-start' }}>
+                    <span style={{ color: 'var(--primary)', fontWeight: 'bold' }}>c.</span>
+                    <span>tidak sedang dicabut hak pilihnya berdasarkan putusan pengadilan yang telah memperoleh kekuatan hukum tetap;</span>
+                  </li>
+                  <li style={{ display: 'flex', gap: '8px', alignItems: 'flex-start' }}>
+                    <span style={{ color: 'var(--primary)', fontWeight: 'bold' }}>d.</span>
+                    <span>berdomisili di desa sekurang-kurangnya 6 (enam) bulan sebelum disahkannya daftar pemilih sementara yang dibuktikan dengan Kartu Tanda Penduduk atau surat keterangan penduduk</span>
+                  </li>
+                </ul>
+              </div>
+
+              <div style={{
+                padding: '12px 16px',
+                backgroundColor: 'var(--danger-light)',
+                border: '1px solid var(--danger)',
+                borderRadius: 'var(--radius-sm)',
+                color: 'var(--danger)',
+                fontSize: '0.85rem',
+                fontWeight: '500',
+                lineHeight: '1.4'
+              }}>
+                <strong>Penting:</strong> Maksimal Pindah datang ditanggal 8 Maret 2026. Pindah Datang setelah 8 Maret 2026 Tidak memiliki Hak Pilih.
+              </div>
+
+              <div>
+                <h4 style={{ fontSize: '0.95rem', fontWeight: '700', color: 'var(--text)', marginBottom: '10px' }}>
+                  Silakan Menghubungi Pantarlih:
+                </h4>
+                <div style={{ overflowX: 'auto', border: '1px solid var(--border)', borderRadius: 'var(--radius-sm)' }}>
+                  <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.85rem', textAlign: 'left' }}>
+                    <thead>
+                      <tr style={{ backgroundColor: 'var(--surface-alt)', borderBottom: '1px solid var(--border)' }}>
+                        <th style={{ padding: '8px 12px', fontWeight: '600', width: '40px' }}>No</th>
+                        <th style={{ padding: '8px 12px', fontWeight: '600' }}>Nama</th>
+                        <th style={{ padding: '8px 12px', fontWeight: '600' }}>Kedudukan</th>
+                        <th style={{ padding: '8px 12px', fontWeight: '600' }}>Wilayah Kerja (RW)</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {[
+                        { no: 1, nama: "DANANG SUPRIYDI", kedudukan: "PANTARLIH", wilayah: "RW. 001" },
+                        { no: 2, nama: "DWI SETIAWAN", kedudukan: "PANTARLIH", wilayah: "RW. 002" },
+                        { no: 3, nama: "YOGI YUNIANTO", kedudukan: "PANTARLIH", wilayah: "RW. 003" },
+                        { no: 4, nama: "RAHAYU EMBONG W", kedudukan: "PANTARLIH", wilayah: "RW. 004" },
+                        { no: 5, nama: "AGUS SUTAMTOMO", kedudukan: "PANTARLIH", wilayah: "RW. 005" },
+                        { no: 6, nama: "MUHAMMAD KRISNA MUKTI", kedudukan: "PANTARLIH", wilayah: "RW. 006" },
+                        { no: 7, nama: "SUROSO", kedudukan: "PANTARLIH", wilayah: "RW. 007" },
+                        { no: 8, nama: "TRI HARYONO", kedudukan: "PANTARLIH", wilayah: "RW. 008" },
+                        { no: 9, nama: "KALIKTUS TUNA", kedudukan: "PANTARLIH", wilayah: "RW. 009" },
+                        { no: 10, nama: "EKA RAHMAWAN", kedudukan: "PANTARLIH", wilayah: "RW. 010" },
+                        { no: 11, nama: "TRI UTOMO", kedudukan: "PANTARLIH", wilayah: "RW. 011" },
+                        { no: 12, nama: "TEGUH SUPRIANTO", kedudukan: "PANTARLIH", wilayah: "RW. 012" },
+                        { no: 13, nama: "DIANA ASRININGRUM", kedudukan: "PANTARLIH", wilayah: "RW. 013" },
+                        { no: 14, nama: "SUNARYO", kedudukan: "PANTARLIH", wilayah: "RW. 014" }
+                      ].map((p, idx) => (
+                        <tr key={idx} style={{ borderBottom: idx < 13 ? '1px solid var(--border)' : 'none' }}>
+                          <td style={{ padding: '8px 12px' }}>{p.no}</td>
+                          <td style={{ padding: '8px 12px', fontWeight: '600' }}>{p.nama}</td>
+                          <td style={{ padding: '8px 12px', color: 'var(--text-muted)' }}>{p.kedudukan}</td>
+                          <td style={{ padding: '8px 12px', fontWeight: '600', color: 'var(--primary)' }}>{p.wilayah}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            </div>
+
+            <div className="modal-footer" style={{ marginTop: '8px' }}>
+              <button 
+                type="button" 
+                className="btn btn-secondary" 
+                onClick={() => setShowSyaratModal(false)}
+                style={{ padding: '8px 16px', fontSize: '0.85rem' }}
+              >
+                Tutup
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

@@ -101,7 +101,10 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({
         </form>
       </div>
 
-      <p className="login-watermark">Support by KKN USH-7 2026 Dinaungi Tim Digitalisasi Desa Gentan</p>
+      <div className="login-watermark" style={{ lineHeight: '1.4' }}>
+        <div>Ruang Komunitas Digital Desa</div>
+        <div style={{ fontWeight: '500', marginTop: '2px' }}>Support by KKN USH-7 2026</div>
+      </div>
     </div>
   );
 };
