@@ -633,6 +633,30 @@ class DptController extends Controller
                 }
             }
 
+            $totalDptTps = \App\Models\Dpt::where('tps_id', $v->tps_id)
+                ->whereIn('tahapan', \App\Models\Dpt::TAHAPAN_AKTIF)
+                ->count();
+            
+            $voterIndex = 0;
+            if ($v->no_urut !== null) {
+                $voterIndex = \App\Models\Dpt::where('tps_id', $v->tps_id)
+                    ->whereIn('tahapan', \App\Models\Dpt::TAHAPAN_AKTIF)
+                    ->where(function($q) use ($v) {
+                        $q->where('no_urut', '<', $v->no_urut)
+                          ->orWhere(function($sub) use ($v) {
+                              $sub->whereNull('no_urut')
+                                  ->where('id_pemilih', '<', $v->id_pemilih);
+                          });
+                    })
+                    ->count();
+            } else {
+                $voterIndex = \App\Models\Dpt::where('tps_id', $v->tps_id)
+                    ->whereIn('tahapan', \App\Models\Dpt::TAHAPAN_AKTIF)
+                    ->whereNull('no_urut')
+                    ->where('id_pemilih', '<', $v->id_pemilih)
+                    ->count();
+            }
+
             return [
                 'nama' => strtoupper($v->nama),
                 'nik' => $nikMasked,
@@ -643,6 +667,10 @@ class DptController extends Controller
                 'rw' => $v->rw,
                 'alamat' => $v->alamat,
                 'tahapan' => $v->tahapan,
+                'id_pemilih' => $v->id_pemilih,
+                'no_urut' => $v->no_urut,
+                'tps_total_dpt' => $totalDptTps,
+                'tps_voter_index' => $voterIndex,
             ];
         });
 

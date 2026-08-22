@@ -1,5 +1,7 @@
 import React, { useState } from 'react';
 import { ApiService } from '../services/api';
+import { PDFDocument } from 'pdf-lib';
+import QRCode from 'qrcode';
 
 interface VoterData {
   nama: string;
@@ -11,6 +13,10 @@ interface VoterData {
   rw: string;
   alamat: string;
   tahapan: string;
+  id_pemilih: string;
+  no_urut: number | null;
+  tps_total_dpt: number;
+  tps_voter_index: number;
 }
 
 interface LandingPageProps {
@@ -35,6 +41,91 @@ const getTpsMapLink = (tpsName: string): string | null => {
       return "https://maps.app.goo.gl/woGtfTiZyNAsfZgg8";
     default:
       return null;
+  }
+};
+
+const downloadUndangan = async (voter: VoterData) => {
+  try {
+    const response = await fetch('/undangan.pdf');
+    if (!response.ok) {
+      throw new Error("Gagal mengunduh template undangan.");
+    }
+    const pdfBytes = await response.arrayBuffer();
+
+    const pdfDoc = await PDFDocument.load(pdfBytes);
+    const form = pdfDoc.getForm();
+
+    form.getTextField('nomor').setText(voter.no_urut !== null && voter.no_urut !== undefined ? String(voter.no_urut) : '');
+    form.getTextField('nama').setText(voter.nama);
+    form.getTextField('jenis_kelamin').setText(voter.jenis_kelamin === 'LAKI-LAKI' ? 'Laki-laki' : 'Perempuan');
+    form.getTextField('dusun').setText(voter.alamat || '');
+    form.getTextField('rt').setText(voter.rt || '');
+    form.getTextField('rw').setText(voter.rw || '');
+    form.getTextField('hari_tanggal').setText("Kamis, 10 Desember 2026");
+
+    const tpsTotal = voter.tps_total_dpt || 1;
+    const voterIdx = voter.tps_voter_index || 0;
+    const segmentSize = Math.ceil(tpsTotal / 6);
+    const session = Math.min(6, Math.max(1, Math.floor(voterIdx / segmentSize) + 1));
+    const timeSlots = [
+      "07:00 - 08:00 WIB",
+      "08:00 - 09:00 WIB",
+      "09:00 - 10:00 WIB",
+      "10:00 - 11:00 WIB",
+      "11:00 - 12:00 WIB",
+      "12:00 - 13:00 WIB"
+    ];
+    const waktuStr = timeSlots[session - 1];
+    form.getTextField('waktu').setText(waktuStr);
+
+    const getTpsLocationName = (tpsName: string) => {
+      if (!tpsName) return "Balai Desa Gentan";
+      const match = tpsName.match(/\d+/);
+      if (!match) return "Balai Desa Gentan";
+      const num = parseInt(match[0], 10);
+      switch (num) {
+        case 1: return "Ngemplak RT. 3/1";
+        case 2: return "JOGLO SATRIO PINAYUNGAN RT. 1/3";
+        case 3: return "PAUD SRIKANDI KEDEN RT. 1/7";
+        case 4: return "NGENDEN RT. 1/8";
+        case 5: return "GEDUNG BULU TANGKIS KANTOR DESA";
+        default: return "Balai Desa Gentan";
+      }
+    };
+    form.getTextField('tempat1').setText(getTpsLocationName(voter.tps));
+    form.getTextField('tempat2').setText("Gentan, Baki, Sukoharjo");
+    form.getTextField('tgl_dikeluarkan').setText("04 Desember 2026");
+    form.getTextField('nama_ketua').setText("MOCH. SUTOPO, S. H., M. H.");
+
+    const qrDataUrl = await QRCode.toDataURL(voter.id_pemilih || voter.nik || "", {
+      margin: 1,
+      width: 150
+    });
+    
+    const qrImageBytes = await fetch(qrDataUrl).then(res => res.arrayBuffer());
+    const qrImage = await pdfDoc.embedPng(qrImageBytes);
+
+    const page = pdfDoc.getPages()[0];
+    page.drawImage(qrImage, {
+      x: 470,
+      y: 725,
+      width: 80,
+      height: 80
+    });
+
+    form.flatten();
+
+    const modifiedPdfBytes = await pdfDoc.save();
+    const blob = new Blob([modifiedPdfBytes as any], { type: 'application/pdf' });
+    const link = document.createElement('a');
+    link.href = URL.createObjectURL(blob);
+    link.download = `Undangan_${voter.nama.replace(/\s+/g, '_')}.pdf`;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  } catch (error) {
+    console.error("Gagal membuat undangan:", error);
+    alert("Terjadi kesalahan saat membuat file undangan PDF.");
   }
 };
 
@@ -574,8 +665,47 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onGoToLogin }) => {
                         textAlign: 'center',
                         border: '1px solid oklch(0.85 0.05 145)'
                       }}>
-                        Terdaftar sebagai Pemilih
+                        Terdaftar sebagai Pemilih ({voter.tahapan.toUpperCase()})
                       </div>
+
+                      {(voter.tahapan === 'dpt' || voter.tahapan === 'dpk') && (
+                        <button
+                          type="button"
+                          onClick={() => downloadUndangan(voter)}
+                          style={{
+                            marginTop: '12px',
+                            width: '100%',
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            gap: '8px',
+                            padding: '10px 16px',
+                            fontSize: '0.875rem',
+                            fontWeight: '600',
+                            backgroundColor: 'var(--primary)',
+                            color: 'var(--surface)',
+                            border: 'none',
+                            borderRadius: 'var(--radius-sm)',
+                            cursor: 'pointer',
+                            transition: 'var(--transition)'
+                          }}
+                          onMouseEnter={(e) => {
+                            e.currentTarget.style.backgroundColor = 'var(--primary-hover)';
+                          }}
+                          onMouseLeave={(e) => {
+                            e.currentTarget.style.backgroundColor = 'var(--primary)';
+                          }}
+                        >
+                          <svg
+                            viewBox="0 0 24 24"
+                            fill="currentColor"
+                            style={{ width: '16px', height: '16px' }}
+                          >
+                            <path d="M19.35 10.04C18.67 6.59 15.64 4 12 4 9.11 4 6.6 5.64 5.35 8.04 2.34 8.36 0 10.91 0 14c0 3.31 2.69 6 6 6h13c2.76 0 5-2.24 5-5 0-2.64-2.05-4.78-4.65-4.96zM17 13l-5 5-5-5h3V9h4v4h3z" />
+                          </svg>
+                          Unduh Surat Pemberitahuan (C6)
+                        </button>
+                      )}
                     </div>
                   ))}
                 </div>
