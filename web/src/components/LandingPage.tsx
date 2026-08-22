@@ -17,6 +17,27 @@ interface LandingPageProps {
   onGoToLogin: () => void;
 }
 
+const getTpsMapLink = (tpsName: string): string | null => {
+  if (!tpsName) return null;
+  const match = tpsName.match(/\d+/);
+  if (!match) return null;
+  const num = parseInt(match[0], 10);
+  switch (num) {
+    case 1:
+      return "https://maps.app.goo.gl/9YHcDxAozyhNCs4s7";
+    case 2:
+      return "https://maps.app.goo.gl/vi53HNZ2U6j567jy6";
+    case 3:
+      return "https://maps.app.goo.gl/P64tA2GycyTEkMBt7";
+    case 4:
+      return "https://maps.app.goo.gl/4yijrPFXTH9WsMuq7";
+    case 5:
+      return "https://maps.app.goo.gl/woGtfTiZyNAsfZgg8";
+    default:
+      return null;
+  }
+};
+
 export const LandingPage: React.FC<LandingPageProps> = ({ onGoToLogin }) => {
   const [searchMode, setSearchMode] = useState<'nik' | 'nama'>('nik');
   const [nik, setNik] = useState('');
@@ -257,7 +278,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onGoToLogin }) => {
       <main className="landing-main">
         <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '20px', width: '100%', maxWidth: '540px' }}>
           <h1 style={{ fontSize: '1.5rem', fontWeight: '700', color: 'var(--warning)', textAlign: 'center', textTransform: 'uppercase' }}>
-            PILKADES GENTAN 2026 GENTAN BAKI
+            PILKADES GENTAN 2026 BAKI SUKOHARJO
           </h1>
           <div className="landing-card">
             {/* Card Header */}
@@ -487,9 +508,48 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onGoToLogin }) => {
                           <span className="voter-detail-label">Jenis Kelamin</span>
                           <span className="voter-detail-value">{voter.jenis_kelamin === 'LAKI-LAKI' ? 'Laki-laki' : 'Perempuan'}</span>
                         </div>
-                        <div className="voter-detail-row">
+                        <div className="voter-detail-row" style={{ alignItems: 'center' }}>
                           <span className="voter-detail-label">TPS Terdaftar</span>
-                          <span className="voter-detail-value" style={{ fontWeight: '700', color: 'var(--primary)' }}>{voter.tps}</span>
+                          <div style={{ display: 'inline-flex', alignItems: 'center', gap: '10px', flexWrap: 'wrap' }}>
+                            <span className="voter-detail-value" style={{ fontWeight: '700', color: 'var(--primary)' }}>{voter.tps}</span>
+                            {getTpsMapLink(voter.tps) && (
+                              <a
+                                href={getTpsMapLink(voter.tps)!}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                style={{
+                                  display: 'inline-flex',
+                                  alignItems: 'center',
+                                  gap: '4px',
+                                  fontSize: '0.725rem',
+                                  fontWeight: '600',
+                                  color: 'var(--primary)',
+                                  textDecoration: 'none',
+                                  backgroundColor: 'var(--primary-light)',
+                                  padding: '4px 8px',
+                                  borderRadius: 'var(--radius-sm)',
+                                  border: '1px solid var(--border)',
+                                  transition: 'var(--transition)'
+                                }}
+                                onMouseEnter={(e) => {
+                                  e.currentTarget.style.backgroundColor = 'var(--border)';
+                                }}
+                                onMouseLeave={(e) => {
+                                  e.currentTarget.style.backgroundColor = 'var(--primary-light)';
+                                }}
+                                title="Buka Lokasi TPS di Google Maps"
+                              >
+                                <svg
+                                  viewBox="0 0 24 24"
+                                  fill="currentColor"
+                                  style={{ width: '12px', height: '12px' }}
+                                >
+                                  <path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5z" />
+                                </svg>
+                                Lokasi TPS
+                              </a>
+                            )}
+                          </div>
                         </div>
                         {voter.alamat && (
                           <div className="voter-detail-row">
