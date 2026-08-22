@@ -2,6 +2,9 @@ import React from 'react';
 import { Icons } from '../Icons';
 import { LoadingHint } from '../LoadingHint';
 import { TAHAPAN, URUTAN_TAHAPAN, metaTahapan } from '../../utils/tahapan';
+import { ApiService } from '../../services/api';
+import { PDFDocument, TextAlignment, StandardFonts, PDFName, rgb } from 'pdf-lib';
+import QRCode from 'qrcode';
 
 interface PemilihTabProps {
   dptData: any;
@@ -107,6 +110,151 @@ export const PemilihTab: React.FC<PemilihTabProps> = ({
   const [expandedNik, setExpandedNik] = React.useState<string | null>(null);
   const [exportParams, setExportParams] = React.useState<Record<string, string> | null>(null);
   const [isExportConfirmOpen, setIsExportConfirmOpen] = React.useState(false);
+  const [downloadingNik, setDownloadingNik] = React.useState<string | null>(null);
+
+  const handleDownloadC6 = async (v: any) => {
+    if (downloadingNik) return;
+    setDownloadingNik(v.nik);
+    try {
+      const apiResponse = await ApiService.cekPemilih(v.nik);
+      if (!apiResponse.ok) {
+        alert("Gagal menghubungi server untuk memverifikasi data pemilih.");
+        return;
+      }
+      
+      const res = await apiResponse.json();
+      if (!res || !res.success || !res.data || res.data.length === 0) {
+        alert("Data pemilih tidak ditemukan atau belum terverifikasi.");
+        return;
+      }
+      
+      const voter = res.data[0];
+      
+      const response = await fetch('/undangan.pdf');
+      if (!response.ok) {
+        throw new Error("Gagal mengunduh template undangan.");
+      }
+      const pdfBytes = await response.arrayBuffer();
+
+      const pdfDoc = await PDFDocument.load(pdfBytes);
+      const form = pdfDoc.getForm();
+
+      form.getTextField('nomor').setText(voter.no_urut !== null && voter.no_urut !== undefined ? String(voter.no_urut) : '');
+      form.getTextField('nama').setText(voter.nama);
+      form.getTextField('jenis_kelamin').setText(voter.jenis_kelamin === 'LAKI-LAKI' ? 'Laki-laki' : 'Perempuan');
+      form.getTextField('dusun').setText(voter.alamat || '');
+      form.getTextField('rt').setText(voter.rt || '');
+      form.getTextField('rw').setText(voter.rw || '');
+      form.getTextField('hari_tanggal').setText("Kamis, 10 Desember 2026");
+
+      const tpsTotal = voter.tps_total_dpt || 1;
+      const voterIdx = voter.tps_voter_index || 0;
+      const segmentSize = Math.ceil(tpsTotal / 6);
+      const session = Math.min(6, Math.max(1, Math.floor(voterIdx / segmentSize) + 1));
+      const timeSlots = [
+        "07:00 - 08:00 WIB",
+        "08:00 - 09:00 WIB",
+        "09:00 - 10:00 WIB",
+        "10:00 - 11:00 WIB",
+        "11:00 - 12:00 WIB",
+        "12:00 - 13:00 WIB"
+      ];
+      const waktuStr = timeSlots[session - 1];
+      form.getTextField('waktu').setText(waktuStr);
+
+      const getTpsLocationName = (tpsName: string) => {
+        if (!tpsName) return "Balai Desa Gentan";
+        const match = tpsName.match(/\d+/);
+        if (!match) return "Balai Desa Gentan";
+        const num = parseInt(match[0], 10);
+        switch (num) {
+          case 1: return "Ngemplak RT. 3/1";
+          case 2: return "JOGLO SATRIO PINAYUNGAN RT. 1/3";
+          case 3: return "PAUD SRIKANDI KEDEN RT. 1/7";
+          case 4: return "NGENDEN RT. 1/8";
+          case 5: return "GEDUNG BULU TANGKIS KANTOR DESA";
+          default: return "Balai Desa Gentan";
+        }
+      };
+      form.getTextField('tempat1').setText(getTpsLocationName(voter.tps));
+      form.getTextField('tempat2').setText("Gentan, Baki, Sukoharjo");
+
+      const fieldTgl = form.getTextField('tgl_dikeluarkan');
+      fieldTgl.setText("04 Desember 2026");
+      fieldTgl.setAlignment(TextAlignment.Center);
+
+      const fieldKetua = form.getTextField('nama_ketua');
+      fieldKetua.setText("MOCH. SUTOPO, S. H., M. H.");
+      fieldKetua.setAlignment(TextAlignment.Center);
+
+      const qrDataUrl = await QRCode.toDataURL(voter.id_pemilih || voter.nik || "", {
+        margin: 1,
+        width: 150
+      });
+      
+      const qrImageBytes = await fetch(qrDataUrl).then(res => res.arrayBuffer());
+      const qrImage = await pdfDoc.embedPng(qrImageBytes);
+
+      const page = pdfDoc.getPages()[0];
+      page.drawImage(qrImage, {
+        x: 470,
+        y: 725,
+        width: 80,
+        height: 80
+      });
+
+      const helveticaBold = await pdfDoc.embedFont(StandardFonts.HelveticaBold);
+      const helvetica = await pdfDoc.embedFont(StandardFonts.Helvetica);
+
+      page.drawRectangle({
+        x: 35,
+        y: 150,
+        width: 190,
+        height: 25,
+        color: rgb(1, 1, 1),
+      });
+
+      page.drawText('Telah diterima pada tanggal :', {
+        x: 80,
+        y: 160,
+        size: 11.5,
+        font: helvetica,
+      });
+
+      const fieldTglDiterima = form.getTextField('tgl_diterima');
+      const widgetTglDiterima = fieldTglDiterima.acroField.getWidgets()[0];
+      widgetTglDiterima.setRectangle({ x: 235, y: 156.8898, width: 320, height: 16 });
+
+      form.getFields().forEach(field => {
+        if (typeof (field as any).setText === 'function') {
+          (field as any).setText((field as any).getText() || '');
+        }
+        field.acroField.getWidgets().forEach(widget => {
+          const mk = widget.dict.get(PDFName.of('MK'));
+          if (mk && typeof (mk as any).delete === 'function') {
+            (mk as any).delete(PDFName.of('BG'));
+          }
+        });
+      });
+
+      form.updateFieldAppearances(helveticaBold);
+      form.flatten();
+
+      const modifiedPdfBytes = await pdfDoc.save();
+      const blob = new Blob([modifiedPdfBytes as any], { type: 'application/pdf' });
+      const link = document.createElement('a');
+      link.href = URL.createObjectURL(blob);
+      link.download = `Undangan_${voter.nama.replace(/\s+/g, '_')}.pdf`;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+    } catch (error) {
+      console.error("Gagal mengunduh C6:", error);
+      alert("Terjadi kesalahan saat membuat undangan C6.");
+    } finally {
+      setDownloadingNik(null);
+    }
+  };
   const activeJenisLabel = dptJenisFilter ? metaTahapan(dptJenisFilter).singkat : 'Semua Kategori';
 
   return (
@@ -372,6 +520,18 @@ export const PemilihTab: React.FC<PemilihTabProps> = ({
                           >
                             QR
                           </button>
+                          {(v.tahapan === 'dpt' || v.tahapan === 'dpk') && (
+                            <button
+                              type="button"
+                              onClick={() => handleDownloadC6(v)}
+                              className="btn btn-secondary"
+                              style={{ color: downloadingNik === v.nik ? 'var(--text-muted)' : 'oklch(0.5 0.15 140)', fontWeight: '600' }}
+                              disabled={downloadingNik !== null}
+                              title="Unduh Undangan C6"
+                            >
+                              {downloadingNik === v.nik ? '...' : 'C6'}
+                            </button>
+                          )}
                           <button
                             type="button"
                             onClick={() => setExpandedNik(expandedNik === v.nik ? null : v.nik)}

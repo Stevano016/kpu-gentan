@@ -1,7 +1,5 @@
 import React, { useState } from 'react';
 import { ApiService } from '../services/api';
-import { PDFDocument, TextAlignment, StandardFonts, PDFName, rgb } from 'pdf-lib';
-import QRCode from 'qrcode';
 
 interface VoterData {
   nama: string;
@@ -44,146 +42,6 @@ const getTpsMapLink = (tpsName: string): string | null => {
   }
 };
 
-const downloadUndangan = async (voter: VoterData) => {
-  try {
-    const response = await fetch('/undangan.pdf');
-    if (!response.ok) {
-      throw new Error("Gagal mengunduh template undangan.");
-    }
-    const pdfBytes = await response.arrayBuffer();
-
-    const pdfDoc = await PDFDocument.load(pdfBytes);
-    const form = pdfDoc.getForm();
-
-    // Fill the text fields
-    form.getTextField('nomor').setText(voter.no_urut !== null && voter.no_urut !== undefined ? String(voter.no_urut) : '');
-    form.getTextField('nama').setText(voter.nama);
-    form.getTextField('jenis_kelamin').setText(voter.jenis_kelamin === 'LAKI-LAKI' ? 'Laki-laki' : 'Perempuan');
-    form.getTextField('dusun').setText(voter.alamat || '');
-    form.getTextField('rt').setText(voter.rt || '');
-    form.getTextField('rw').setText(voter.rw || '');
-    form.getTextField('hari_tanggal').setText("Kamis, 10 Desember 2026");
-
-    const tpsTotal = voter.tps_total_dpt || 1;
-    const voterIdx = voter.tps_voter_index || 0;
-    const segmentSize = Math.ceil(tpsTotal / 6);
-    const session = Math.min(6, Math.max(1, Math.floor(voterIdx / segmentSize) + 1));
-    const timeSlots = [
-      "07:00 - 08:00 WIB",
-      "08:00 - 09:00 WIB",
-      "09:00 - 10:00 WIB",
-      "10:00 - 11:00 WIB",
-      "11:00 - 12:00 WIB",
-      "12:00 - 13:00 WIB"
-    ];
-    const waktuStr = timeSlots[session - 1];
-    form.getTextField('waktu').setText(waktuStr);
-
-    const getTpsLocationName = (tpsName: string) => {
-      if (!tpsName) return "Balai Desa Gentan";
-      const match = tpsName.match(/\d+/);
-      if (!match) return "Balai Desa Gentan";
-      const num = parseInt(match[0], 10);
-      switch (num) {
-        case 1: return "Ngemplak RT. 3/1";
-        case 2: return "JOGLO SATRIO PINAYUNGAN RT. 1/3";
-        case 3: return "PAUD SRIKANDI KEDEN RT. 1/7";
-        case 4: return "NGENDEN RT. 1/8";
-        case 5: return "GEDUNG BULU TANGKIS KANTOR DESA";
-        default: return "Balai Desa Gentan";
-      }
-    };
-    form.getTextField('tempat1').setText(getTpsLocationName(voter.tps));
-    form.getTextField('tempat2').setText("Gentan, Baki, Sukoharjo");
-
-    // Center tgl_dikeluarkan and nama_ketua text fields
-    const fieldTgl = form.getTextField('tgl_dikeluarkan');
-    fieldTgl.setText("04 Desember 2026");
-    fieldTgl.setAlignment(TextAlignment.Center);
-
-    const fieldKetua = form.getTextField('nama_ketua');
-    fieldKetua.setText("MOCH. SUTOPO, S. H., M. H.");
-    fieldKetua.setAlignment(TextAlignment.Center);
-
-    const qrDataUrl = await QRCode.toDataURL(voter.id_pemilih || voter.nik || "", {
-      margin: 1,
-      width: 150
-    });
-    
-    const qrImageBytes = await fetch(qrDataUrl).then(res => res.arrayBuffer());
-    const qrImage = await pdfDoc.embedPng(qrImageBytes);
-
-    const page = pdfDoc.getPages()[0];
-    page.drawImage(qrImage, {
-      x: 470,
-      y: 725,
-      width: 80,
-      height: 80
-    });
-
-    // Make all filled values bold, and clear background highlights
-    const helveticaBold = await pdfDoc.embedFont(StandardFonts.HelveticaBold);
-    const helvetica = await pdfDoc.embedFont(StandardFonts.Helvetica);
-
-    // Draw white rectangle to cover the original "Telah diterima pada tanggal :" label
-    // The label starts around x: 38. We start the rectangle at x: 35 to fully cover "Te"
-    page.drawRectangle({
-      x: 35,
-      y: 150,
-      width: 190,
-      height: 25,
-      color: rgb(1, 1, 1), // White color
-    });
-
-    // Draw the new label shifted to the right (toward the middle)
-    // Shifted from x: ~40 to x: 80, size increased to 11.5 for visual balance
-    page.drawText('Telah diterima pada tanggal :', {
-      x: 80,
-      y: 160,
-      size: 11.5,
-      font: helvetica,
-    });
-
-    // Reposition/resize the tgl_diterima field widget to line up with the new label
-    const fieldTglDiterima = form.getTextField('tgl_diterima');
-    const widgetTglDiterima = fieldTglDiterima.acroField.getWidgets()[0];
-    widgetTglDiterima.setRectangle({ x: 235, y: 156.8898, width: 320, height: 16 });
-
-    // Remove background colors and force appearance regeneration for all fields (including empty/unfilled ones)
-    form.getFields().forEach(field => {
-      // Force appearance regeneration by resetting text to its current value or empty string
-      if (typeof (field as any).setText === 'function') {
-        (field as any).setText((field as any).getText() || '');
-      }
-
-      // Delete background highlights from the widget annotation's MK dictionary
-      field.acroField.getWidgets().forEach(widget => {
-        const mk = widget.dict.get(PDFName.of('MK'));
-        if (mk && typeof (mk as any).delete === 'function') {
-          (mk as any).delete(PDFName.of('BG'));
-        }
-      });
-    });
-
-    // Re-generate appearances using the bold font
-    form.updateFieldAppearances(helveticaBold);
-
-    // Flatten form so they become flat static elements and lose all field outlines
-    form.flatten();
-
-    const modifiedPdfBytes = await pdfDoc.save();
-    const blob = new Blob([modifiedPdfBytes as any], { type: 'application/pdf' });
-    const link = document.createElement('a');
-    link.href = URL.createObjectURL(blob);
-    link.download = `Undangan_${voter.nama.replace(/\s+/g, '_')}.pdf`;
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-  } catch (error) {
-    console.error("Gagal membuat undangan:", error);
-    alert("Terjadi kesalahan saat membuat file undangan PDF.");
-  }
-};
 
 export const LandingPage: React.FC<LandingPageProps> = ({ onGoToLogin }) => {
   const [searchMode, setSearchMode] = useState<'nik' | 'nama'>('nik');
@@ -724,44 +582,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onGoToLogin }) => {
                         Terdaftar sebagai Pemilih ({voter.tahapan.toUpperCase()})
                       </div>
 
-                      {(voter.tahapan === 'dpt' || voter.tahapan === 'dpk') && (
-                        <button
-                          type="button"
-                          onClick={() => downloadUndangan(voter)}
-                          style={{
-                            marginTop: '12px',
-                            width: '100%',
-                            display: 'flex',
-                            alignItems: 'center',
-                            justifyContent: 'center',
-                            gap: '8px',
-                            padding: '10px 16px',
-                            fontSize: '0.875rem',
-                            fontWeight: '600',
-                            backgroundColor: 'var(--primary)',
-                            color: 'var(--surface)',
-                            border: 'none',
-                            borderRadius: 'var(--radius-sm)',
-                            cursor: 'pointer',
-                            transition: 'var(--transition)'
-                          }}
-                          onMouseEnter={(e) => {
-                            e.currentTarget.style.backgroundColor = 'var(--primary-hover)';
-                          }}
-                          onMouseLeave={(e) => {
-                            e.currentTarget.style.backgroundColor = 'var(--primary)';
-                          }}
-                        >
-                          <svg
-                            viewBox="0 0 24 24"
-                            fill="currentColor"
-                            style={{ width: '16px', height: '16px' }}
-                          >
-                            <path d="M19.35 10.04C18.67 6.59 15.64 4 12 4 9.11 4 6.6 5.64 5.35 8.04 2.34 8.36 0 10.91 0 14c0 3.31 2.69 6 6 6h13c2.76 0 5-2.24 5-5 0-2.64-2.05-4.78-4.65-4.96zM17 13l-5 5-5-5h3V9h4v4h3z" />
-                          </svg>
-                          Unduh Surat Pemberitahuan (C6)
-                        </button>
-                      )}
+
                     </div>
                   ))}
                 </div>
