@@ -318,7 +318,13 @@ class DptController extends Controller
                 && str_starts_with($request->nkk, Dpt::AWALAN_NKK_SINTETIS);
         }
 
-        $dpt->update($updateData);
+        $originalNik = $dpt->nik;
+        if (filled($nikBaru) && $nikBaru !== $originalNik) {
+            DB::table('dpt')->where('nik', $originalNik)->update($updateData);
+            $dpt = Dpt::where('nik', $nikBaru)->firstOrFail();
+        } else {
+            $dpt->update($updateData);
+        }
 
         // Tahapan tidak bisa berubah lewat form ini, jadi penghitung TPS hanya
         // perlu disesuaikan ketika pemilihnya benar-benar pindah TPS.
