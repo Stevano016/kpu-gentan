@@ -271,6 +271,7 @@ This file captures the active state, environment variables, completed tasks, and
   - Mengubah tulisan watermark di halaman Landing Page (`LandingPage.tsx`) dan Login Page (`LoginScreen.tsx`) dari "Support by KKN USH-7 2026" menjadi "Support by KKN Universitas Sugeng Hartono(USH) Kel-7 2026".
   - Mengubah tabel petugas Pantarlih pada modal "Silakan Menghubungi Pantarlih:" di Landing Page dengan menghapus kolom "No" dan "Kedudukan" sehingga hanya menampilkan kolom "Nama" dan "Wilayah Kerja (RW)".
   - Membangun ulang (rebuild) frontend dengan mengaktifkan koneksi WebSocket ke URL tunnel publik `wss://kpps.ysmb.my.id/ws`, lalu mengunggahnya kembali ke `servergentan` agar real-time WebSocket dapat diakses baik dari dalam maupun luar jaringan LAN.
+  - Mengubah tata letak kartu "Total Pemilih Berhak" di dashboard monitor (`DashboardTab.tsx`) agar menampilkan jumlah DPT dan DPK dengan ukuran font besar/tebal (`DPT: X | DPK: X` sebagai card value) dan jumlah keseluruhan `Total Pemilih : X` di bawahnya sebagai card subtext.
 
 ---
 

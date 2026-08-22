@@ -72,10 +72,12 @@ export const DashboardTab: React.FC<DashboardTabProps> = ({
           <div className="grid-cols-4">
             <div className="card">
               <div className="card-title">Total Pemilih Berhak</div>
-              <div className="card-value">{dashboardData.stats.total_pemilih}</div>
+              <div className="card-value" style={{ fontSize: '1.5rem', whiteSpace: 'nowrap' }}>
+                DPT: {dashboardData.stats.total_dpt} | DPK: {dashboardData.stats.total_dpk}
+              </div>
               {/* DP4 dan DPS masih proses, TMS sudah gugur — hanya DPT dan DPK
                   yang berhak memilih, jadi hanya keduanya yang dijumlahkan. */}
-              <div className="card-subtext">DPT: {dashboardData.stats.total_dpt} | DPK: {dashboardData.stats.total_dpk}</div>
+              <div className="card-subtext">Total Pemilih : {dashboardData.stats.total_pemilih}</div>
             </div>
             <div className="card">
               <div className="card-title">Kehadiran (Check-In)</div>
