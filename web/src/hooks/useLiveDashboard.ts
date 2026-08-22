@@ -19,7 +19,15 @@ interface Argumen {
 const alamatSocket = () => {
   const host = window.location.hostname || 'localhost';
   const isLocalHost = host === 'localhost' || host === '127.0.0.1';
-  return isLocalHost ? `ws://${host}:8080` : LIVE_SOCKET_URL;
+  if (isLocalHost) {
+    return `ws://${host}:8080`;
+  }
+  if (LIVE_SOCKET_URL) {
+    return LIVE_SOCKET_URL;
+  }
+  // Dinamis: Ikuti protokol (ws/wss) dan domain/port aktif yang diakses browser
+  const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+  return `${protocol}//${window.location.host}/ws`;
 };
 
 /**
