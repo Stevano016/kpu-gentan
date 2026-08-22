@@ -1,5 +1,5 @@
 import { Navigate, Route, Routes } from 'react-router-dom';
-import { LandingPage } from '../LandingPage';
+import { LandingPage } from '../landing/LandingPage';
 import { LoginScreen } from '../LoginScreen';
 import type { AuthController } from '../../hooks/useAuth';
 

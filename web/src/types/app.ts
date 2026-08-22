@@ -128,3 +128,21 @@ export interface ImportStatus {
   success?: string;
   errors?: string[];
 }
+
+/**
+ * Baris pemilih seperti yang dikembalikan endpoint publik `pemilih/cek`.
+ *
+ * Respons server memuat bidang lain (nomor urut, rekap DPT per TPS) yang tidak
+ * dipakai halaman publik; hanya yang benar-benar ditampilkan disebut di sini.
+ */
+export interface PemilihPublik {
+  nama: string;
+  nik: string;
+  nkk: string | null;
+  jenis_kelamin: string;
+  tps: string;
+  rt: string;
+  rw: string;
+  alamat: string;
+  tahapan: string;
+}
