@@ -53,6 +53,8 @@ class SyncDptFromCsv extends Command
 
         $this->info("Reading CSV and checking database...");
 
+        $rowsToUpdate = [];
+
         while (($row = fgetcsv($handle)) !== false) {
             $noUrut = isset($colMap['no_urut']) && $row[$colMap['no_urut']] !== '' ? intval($row[$colMap['no_urut']]) : null;
             if ($noUrut === null) {
@@ -80,8 +82,6 @@ class SyncDptFromCsv extends Command
 
             // Compare NIK
             if ($dbVoter->nik !== $csvNik) {
-                $this->line("  [no_urut: {$noUrut}] {$csvNama}:");
-                $this->line("    NIK: {$dbVoter->nik} -> {$csvNik}");
                 $updateData['nik'] = $csvNik;
                 $needsUpdate = true;
                 $updatedNikCount++;
@@ -90,20 +90,12 @@ class SyncDptFromCsv extends Command
             // Compare NIK Sintetis
             $dbNikSintetis = (bool) $dbVoter->nik_sintetis;
             if ($dbNikSintetis !== $csvNikSintetis) {
-                if (!isset($updateData['nik'])) {
-                    $this->line("  [no_urut: {$noUrut}] {$csvNama}:");
-                }
-                $this->line("    NIK Sintetis: " . ($dbNikSintetis ? 'true' : 'false') . " -> " . ($csvNikSintetis ? 'true' : 'false'));
                 $updateData['nik_sintetis'] = $csvNikSintetis ? 1 : 0;
                 $needsUpdate = true;
             }
 
             // Compare NKK
             if ($dbVoter->nkk !== $csvNkk) {
-                if (!isset($updateData['nik']) && !isset($updateData['nik_sintetis'])) {
-                    $this->line("  [no_urut: {$noUrut}] {$csvNama}:");
-                }
-                $this->line("    NKK: " . ($dbVoter->nkk ?: 'NULL') . " -> " . ($csvNkk ?: 'NULL'));
                 $updateData['nkk'] = $csvNkk;
                 $needsUpdate = true;
                 $updatedNkkCount++;
@@ -112,29 +104,71 @@ class SyncDptFromCsv extends Command
             // Compare NKK Sintetis
             $dbNkkSintetis = (bool) $dbVoter->nkk_sintetis;
             if ($dbNkkSintetis !== $csvNkkSintetis) {
-                if (!isset($updateData['nik']) && !isset($updateData['nik_sintetis']) && !isset($updateData['nkk'])) {
-                    $this->line("  [no_urut: {$noUrut}] {$csvNama}:");
-                }
-                $this->line("    NKK Sintetis: " . ($dbNkkSintetis ? 'true' : 'false') . " -> " . ($csvNkkSintetis ? 'true' : 'false'));
                 $updateData['nkk_sintetis'] = $csvNkkSintetis ? 1 : 0;
                 $needsUpdate = true;
             }
 
             // Compare Catatan Impor
             if ($dbVoter->catatan_impor !== $csvCatatanImpor) {
-                if (!isset($updateData['nik']) && !isset($updateData['nik_sintetis']) && !isset($updateData['nkk']) && !isset($updateData['nkk_sintetis'])) {
-                    $this->line("  [no_urut: {$noUrut}] {$csvNama}:");
-                }
-                $this->line("    Catatan Impor: '" . ($dbVoter->catatan_impor ?: '') . "' -> '" . ($csvCatatanImpor ?: '') . "'");
                 $updateData['catatan_impor'] = $csvCatatanImpor;
                 $needsUpdate = true;
             }
 
             if ($needsUpdate) {
                 $updatedRecords++;
-                if (!$dryRun) {
-                    DB::table('dpt')->where('no_urut', $noUrut)->update($updateData);
+                $rowsToUpdate[] = [
+                    'no_urut' => $noUrut,
+                    'nama' => $csvNama,
+                    'current_nik' => $dbVoter->nik,
+                    'new_nik' => $csvNik,
+                    'update_data' => $updateData,
+                    'db_voter' => $dbVoter,
+                ];
+            }
+        }
+
+        // Pass 1: For any row where NIK is changing, temporarily update the NIK to a unique temporary NIK.
+        // This prevents integrity constraint violations when NIKs are swapped/freed.
+        if (!$dryRun && count($rowsToUpdate) > 0) {
+            foreach ($rowsToUpdate as $item) {
+                if (isset($item['update_data']['nik'])) {
+                    $tempNik = '999999' . sprintf('%010d', $item['no_urut']);
+                    DB::table('dpt')->where('no_urut', $item['no_urut'])->update(['nik' => $tempNik]);
                 }
+            }
+        }
+
+        // Pass 2: Apply the final changes and print output.
+        foreach ($rowsToUpdate as $item) {
+            $noUrut = $item['no_urut'];
+            $csvNama = $item['nama'];
+            $updateData = $item['update_data'];
+            $dbVoter = $item['db_voter'];
+
+            $this->line("  [no_urut: {$noUrut}] {$csvNama}:");
+            
+            if (isset($updateData['nik'])) {
+                $this->line("    NIK: {$dbVoter->nik} -> {$updateData['nik']}");
+            }
+            if (isset($updateData['nik_sintetis'])) {
+                $dbNikSintetis = (bool) $dbVoter->nik_sintetis;
+                $csvNikSintetis = $updateData['nik_sintetis'] === 1;
+                $this->line("    NIK Sintetis: " . ($dbNikSintetis ? 'true' : 'false') . " -> " . ($csvNikSintetis ? 'true' : 'false'));
+            }
+            if (isset($updateData['nkk'])) {
+                $this->line("    NKK: " . ($dbVoter->nkk ?: 'NULL') . " -> " . ($updateData['nkk'] ?: 'NULL'));
+            }
+            if (isset($updateData['nkk_sintetis'])) {
+                $dbNkkSintetis = (bool) $dbVoter->nkk_sintetis;
+                $csvNkkSintetis = $updateData['nkk_sintetis'] === 1;
+                $this->line("    NKK Sintetis: " . ($dbNkkSintetis ? 'true' : 'false') . " -> " . ($csvNkkSintetis ? 'true' : 'false'));
+            }
+            if (isset($updateData['catatan_impor'])) {
+                $this->line("    Catatan Impor: '" . ($dbVoter->catatan_impor ?: '') . "' -> '" . ($csvCatatanImpor ?: '') . "'");
+            }
+
+            if (!$dryRun) {
+                DB::table('dpt')->where('no_urut', $noUrut)->update($updateData);
             }
         }
 
