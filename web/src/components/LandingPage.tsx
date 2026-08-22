@@ -601,7 +601,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onGoToLogin }) => {
             border: '1px solid oklch(0.55 0.16 165 / 0.15)',
             letterSpacing: '0.02em'
           }}>
-            Support by KKN USH-7 2026
+            Support by KKN Universitas Sugeng Hartono(USH) Kel-7 2026
           </span>
         </div>
       </footer>
@@ -664,9 +664,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onGoToLogin }) => {
                   <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.85rem', textAlign: 'left' }}>
                     <thead>
                       <tr style={{ backgroundColor: 'var(--surface-alt)', borderBottom: '1px solid var(--border)' }}>
-                        <th style={{ padding: '8px 12px', fontWeight: '600', width: '40px' }}>No</th>
                         <th style={{ padding: '8px 12px', fontWeight: '600' }}>Nama</th>
-                        <th style={{ padding: '8px 12px', fontWeight: '600' }}>Kedudukan</th>
                         <th style={{ padding: '8px 12px', fontWeight: '600' }}>Wilayah Kerja (RW)</th>
                       </tr>
                     </thead>
@@ -688,9 +686,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onGoToLogin }) => {
                         { no: 14, nama: "SUNARYO", kedudukan: "PANTARLIH", wilayah: "RW. 014" }
                       ].map((p, idx) => (
                         <tr key={idx} style={{ borderBottom: idx < 13 ? '1px solid var(--border)' : 'none' }}>
-                          <td style={{ padding: '8px 12px' }}>{p.no}</td>
                           <td style={{ padding: '8px 12px', fontWeight: '600' }}>{p.nama}</td>
-                          <td style={{ padding: '8px 12px', color: 'var(--text-muted)' }}>{p.kedudukan}</td>
                           <td style={{ padding: '8px 12px', fontWeight: '600', color: 'var(--primary)' }}>{p.wilayah}</td>
                         </tr>
                       ))}

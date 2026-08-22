@@ -115,7 +115,7 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({
             border: '1px solid oklch(0.55 0.16 165 / 0.15)',
             letterSpacing: '0.02em'
           }}>
-            Support by KKN USH-7 2026
+            Support by KKN Universitas Sugeng Hartono(USH) Kel-7 2026
           </span>
         </div>
       </div>

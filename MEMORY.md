@@ -7,7 +7,7 @@ This file captures the active state, environment variables, completed tasks, and
 ## 📍 Last Known State
 
 - **Laravel Backend API (`/backend`)**: Running at `http://localhost:8000`. Added server-side validation to support four voter types (`dpt`, `dpk`, `dps`, `dptb`) in `DptController`. Adjusted `DashboardController` (`getSummary` and `getTpsDetails`) to compute stats for all four categories. Seeded 7,475 voters from Excel as `dp4` by default. Created a sync command `php artisan dpt:sync-csv` to update synthetic NIKs/NKKs to real ones in-place from updated Excel data.
-- **Web Dashboard (`/web`)**: Running at `http://localhost:5173`. Added DPS and DPTb options in `DptModal.tsx` dropdown, filter buttons in `PemilihTab.tsx`, and extended components to display stats for four voter types. Updated Landing Page and Login Page footers with stacked watermark ("Ruang Komunitas Digital Desa \n Support by KKN USH-7 2026") where the KKN watermark is wrapped in a beautiful badge styled with an OKLCH primary-light background and thin border. Modified search error warning box with updated text, and integrated a "Syarat Pemilih" button that opens an rule-based criteria and Pantarlih assignment modal.
+- **Web Dashboard (`/web`)**: Running at `http://localhost:5173`. Added DPS and DPTb options in `DptModal.tsx` dropdown, filter buttons in `PemilihTab.tsx`, and extended components to display stats for four voter types. Updated Landing Page and Login Page footers with stacked watermark ("Ruang Komunitas Digital Desa \n Support by KKN Universitas Sugeng Hartono(USH) Kel-7 2026") where the KKN watermark is wrapped in a beautiful badge styled with an OKLCH primary-light background and thin border. Modified search error warning box with updated text, and integrated a "Syarat Pemilih" button that opens an rule-based criteria and Pantarlih assignment modal.
 - **Mobile Client (`/mobile`)**: Analyzer is 100% clean (`No issues found!`). Extended `home_screen.dart` and `dashboard_tab.dart` to compute, validate, and display stats (Total and Check-in) for DPT, DPK, DPS, and DPTb.
 
 ---
@@ -266,6 +266,10 @@ This file captures the active state, environment variables, completed tasks, and
   - Memperbarui query pada `TpsController.php` method `index` dan `show` untuk menyertakan perhitungan jumlah `total_dpt` dan `total_dpk` menggunakan Eloquent `withCount` demi performa optimal dan perlindungan N+1.
   - Memperbarui tabel monitoring TPS di `TpsTab.tsx` dengan menambahkan kolom `DPT` (pemilih DPT), `DPK` (pemilih DPK), dan `Total Pemilih` (total seluruh pemilih dalam TPS), serta memperbarui jumlah kolom (`colSpan`) di state kosong tabel.
   - Memastikan seluruh kode frontend berhasil dikompilasi dengan sukses (`npm run build` berhasil 100%).
+
+- **22 Agt 2026 — Pembaruan Watermark & Tabel Pantarlih pada Modal Syarat Pemilih**:
+  - Mengubah tulisan watermark di halaman Landing Page (`LandingPage.tsx`) dan Login Page (`LoginScreen.tsx`) dari "Support by KKN USH-7 2026" menjadi "Support by KKN Universitas Sugeng Hartono(USH) Kel-7 2026".
+  - Mengubah tabel petugas Pantarlih pada modal "Silakan Menghubungi Pantarlih:" di Landing Page dengan menghapus kolom "No" dan "Kedudukan" sehingga hanya menampilkan kolom "Nama" dan "Wilayah Kerja (RW)".
 
 ---
 
