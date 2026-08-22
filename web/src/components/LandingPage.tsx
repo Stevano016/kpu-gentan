@@ -680,9 +680,9 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onGoToLogin }) => {
                   <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.85rem', textAlign: 'left' }}>
                     <thead>
                       <tr style={{ backgroundColor: 'var(--surface-alt)', borderBottom: '1px solid var(--border)' }}>
-                        <th style={{ padding: '8px 12px', fontWeight: '600' }}>Nama</th>
-                        <th style={{ padding: '8px 12px', fontWeight: '600' }}>Wilayah Kerja (RW)</th>
-                        <th style={{ padding: '8px 12px', fontWeight: '600', textAlign: 'center' }}>WhatsApp</th>
+                        <th style={{ padding: '8px', fontWeight: '600', width: '60%' }}>Nama</th>
+                        <th style={{ padding: '8px', fontWeight: '600', width: '25%' }}>RW</th>
+                        <th style={{ padding: '8px', fontWeight: '600', width: '15%', textAlign: 'center' }}>WA</th>
                       </tr>
                     </thead>
                     <tbody>
@@ -703,9 +703,9 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onGoToLogin }) => {
                         { no: 14, nama: "SUNARYO", kedudukan: "PANTARLIH", wilayah: "RW. 014", wa: "628122585546" }
                       ].map((p, idx) => (
                         <tr key={idx} style={{ borderBottom: idx < 13 ? '1px solid var(--border)' : 'none' }}>
-                          <td style={{ padding: '8px 12px', fontWeight: '600' }}>{p.nama}</td>
-                          <td style={{ padding: '8px 12px', fontWeight: '600', color: 'var(--primary)' }}>{p.wilayah}</td>
-                          <td style={{ padding: '8px 12px', textAlign: 'center' }}>
+                          <td style={{ padding: '8px', fontWeight: '600' }}>{p.nama}</td>
+                          <td style={{ padding: '8px', fontWeight: '600', color: 'var(--primary)' }}>{p.wilayah}</td>
+                          <td style={{ padding: '8px 4px', textAlign: 'center' }}>
                             <a
                               href={`https://wa.me/${p.wa}`}
                               target="_blank"
