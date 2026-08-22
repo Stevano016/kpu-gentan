@@ -20,6 +20,7 @@ class User extends Authenticatable
         'sekretariat_role',
         'tps_id',
         'rw',
+        'tersembunyi',
     ];
 
     protected $hidden = [
@@ -31,6 +32,7 @@ class User extends Authenticatable
     {
         return [
             'password' => 'hashed',
+            'tersembunyi' => 'boolean',
         ];
     }
 

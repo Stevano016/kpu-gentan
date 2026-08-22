@@ -11,7 +11,11 @@ class UserController extends Controller
 {
     public function index(Request $request)
     {
-        $query = User::with('tps')->orderBy('role')->orderBy('username');
+        // Akun tersembunyi tidak pernah ikut di daftar Manajemen Akun.
+        $query = User::with('tps')
+            ->where('tersembunyi', false)
+            ->orderBy('role')
+            ->orderBy('username');
 
         // Filter opsional: ?role=kpps atau ?role=sekretariat
         if ($request->filled('role')) {
@@ -87,7 +91,9 @@ class UserController extends Controller
 
     public function resetPassword(Request $request, $id)
     {
-        $user = User::findOrFail($id);
+        // Akun tersembunyi diperlakukan seolah tidak ada — 404, bukan 403,
+        // agar keberadaannya tidak bocor lewat percobaan menebak id.
+        $user = User::where('tersembunyi', false)->findOrFail($id);
 
         $validator = Validator::make($request->all(), [
             'password' => 'required|string|min:6',
@@ -112,8 +118,9 @@ class UserController extends Controller
 
     public function destroy(Request $request, $id)
     {
-        $user = User::findOrFail($id);
-        
+        // Akun tersembunyi diperlakukan seolah tidak ada — 404, bukan 403.
+        $user = User::where('tersembunyi', false)->findOrFail($id);
+
         if ($user->id === $request->user()->id) {
             return response()->json([
                 'status' => 'error',
@@ -123,7 +130,11 @@ class UserController extends Controller
 
         // Jangan sampai tidak ada admin sekretariat tersisa
         if ($user->isSekretariatAdmin()) {
+            // Akun tersembunyi tidak ikut dihitung: operator tidak tahu ia ada,
+            // jadi penjaga "admin terakhir" harus tetap mengacu pada admin yang
+            // terlihat di panel.
             $remainingAdmins = User::where('role', 'sekretariat')
+                ->where('tersembunyi', false)
                 ->where(function ($q) {
                     $q->where('sekretariat_role', '!=', 'viewer')
                         ->orWhereNull('sekretariat_role');
