@@ -682,28 +682,67 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onGoToLogin }) => {
                       <tr style={{ backgroundColor: 'var(--surface-alt)', borderBottom: '1px solid var(--border)' }}>
                         <th style={{ padding: '8px 12px', fontWeight: '600' }}>Nama</th>
                         <th style={{ padding: '8px 12px', fontWeight: '600' }}>Wilayah Kerja (RW)</th>
+                        <th style={{ padding: '8px 12px', fontWeight: '600', textAlign: 'center' }}>WhatsApp</th>
                       </tr>
                     </thead>
                     <tbody>
                       {[
-                        { no: 1, nama: "DANANG SUPRIYDI", kedudukan: "PANTARLIH", wilayah: "RW. 001" },
-                        { no: 2, nama: "DWI SETIAWAN", kedudukan: "PANTARLIH", wilayah: "RW. 002" },
-                        { no: 3, nama: "YOGI YUNIANTO", kedudukan: "PANTARLIH", wilayah: "RW. 003" },
-                        { no: 4, nama: "RAHAYU EMBONG W", kedudukan: "PANTARLIH", wilayah: "RW. 004" },
-                        { no: 5, nama: "AGUS SUTAMTOMO", kedudukan: "PANTARLIH", wilayah: "RW. 005" },
-                        { no: 6, nama: "MUHAMMAD KRISNA MUKTI", kedudukan: "PANTARLIH", wilayah: "RW. 006" },
-                        { no: 7, nama: "SUROSO", kedudukan: "PANTARLIH", wilayah: "RW. 007" },
-                        { no: 8, nama: "TRI HARYONO", kedudukan: "PANTARLIH", wilayah: "RW. 008" },
-                        { no: 9, nama: "KALIKTUS TUNA", kedudukan: "PANTARLIH", wilayah: "RW. 009" },
-                        { no: 10, nama: "EKA RAHMAWAN", kedudukan: "PANTARLIH", wilayah: "RW. 010" },
-                        { no: 11, nama: "TRI UTOMO", kedudukan: "PANTARLIH", wilayah: "RW. 011" },
-                        { no: 12, nama: "TEGUH SUPRIANTO", kedudukan: "PANTARLIH", wilayah: "RW. 012" },
-                        { no: 13, nama: "DIANA ASRININGRUM", kedudukan: "PANTARLIH", wilayah: "RW. 013" },
-                        { no: 14, nama: "SUNARYO", kedudukan: "PANTARLIH", wilayah: "RW. 014" }
+                        { no: 1, nama: "DANANG SUPRIYDI", kedudukan: "PANTARLIH", wilayah: "RW. 001", wa: "628112631016" },
+                        { no: 2, nama: "DWI SETIAWAN", kedudukan: "PANTARLIH", wilayah: "RW. 002", wa: "6281382286151" },
+                        { no: 3, nama: "YOGI YUNIANTO", kedudukan: "PANTARLIH", wilayah: "RW. 003", wa: "62895327040201" },
+                        { no: 4, nama: "RAHAYU EMBONG W", kedudukan: "PANTARLIH", wilayah: "RW. 004", wa: "6288808310449" },
+                        { no: 5, nama: "AGUS SUTAMTOMO", kedudukan: "PANTARLIH", wilayah: "RW. 005", wa: "6289509789748" },
+                        { no: 6, nama: "MUHAMMAD KRISNA MUKTI", kedudukan: "PANTARLIH", wilayah: "RW. 006", wa: "6289690010502" },
+                        { no: 7, nama: "SUROSO", kedudukan: "PANTARLIH", wilayah: "RW. 007", wa: "6288802655697" },
+                        { no: 8, nama: "TRI HARYONO", kedudukan: "PANTARLIH", wilayah: "RW. 008", wa: "6285712750705" },
+                        { no: 9, nama: "KALIKTUS TUNA", kedudukan: "PANTARLIH", wilayah: "RW. 009", wa: "6281226282460" },
+                        { no: 10, nama: "EKA RAHMAWAN", kedudukan: "PANTARLIH", wilayah: "RW. 010", wa: "6285647020102" },
+                        { no: 11, nama: "TRI UTOMO", kedudukan: "PANTARLIH", wilayah: "RW. 011", wa: "6283179331297" },
+                        { no: 12, nama: "TEGUH SUPRIANTO", kedudukan: "PANTARLIH", wilayah: "RW. 012", wa: "6283179331297" },
+                        { no: 13, nama: "DIANA ASRININGRUM", kedudukan: "PANTARLIH", wilayah: "RW. 013", wa: "6281227916591" },
+                        { no: 14, nama: "SUNARYO", kedudukan: "PANTARLIH", wilayah: "RW. 014", wa: "628122585546" }
                       ].map((p, idx) => (
                         <tr key={idx} style={{ borderBottom: idx < 13 ? '1px solid var(--border)' : 'none' }}>
                           <td style={{ padding: '8px 12px', fontWeight: '600' }}>{p.nama}</td>
                           <td style={{ padding: '8px 12px', fontWeight: '600', color: 'var(--primary)' }}>{p.wilayah}</td>
+                          <td style={{ padding: '8px 12px', textAlign: 'center' }}>
+                            <a
+                              href={`https://wa.me/${p.wa}`}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              style={{
+                                display: 'inline-flex',
+                                alignItems: 'center',
+                                justifyContent: 'center',
+                                width: '32px',
+                                height: '32px',
+                                borderRadius: '50%',
+                                backgroundColor: 'oklch(0.62 0.16 145)', // WA brand-like success color
+                                color: '#ffffff',
+                                border: 'none',
+                                cursor: 'pointer',
+                                transition: 'transform 0.2s, background-color 0.2s',
+                              }}
+                              title={`Hubungi ${p.nama} via WhatsApp`}
+                              onMouseEnter={(e) => {
+                                e.currentTarget.style.backgroundColor = 'oklch(0.55 0.16 145)';
+                                e.currentTarget.style.transform = 'scale(1.1)';
+                              }}
+                              onMouseLeave={(e) => {
+                                e.currentTarget.style.backgroundColor = 'oklch(0.62 0.16 145)';
+                                e.currentTarget.style.transform = 'scale(1)';
+                              }}
+                            >
+                              <svg
+                                xmlns="http://www.w3.org/2000/svg"
+                                viewBox="0 0 24 24"
+                                fill="currentColor"
+                                style={{ width: '18px', height: '18px' }}
+                              >
+                                <path d="M12.012 2c-5.506 0-9.989 4.478-9.99 9.984a9.96 9.96 0 0 0 1.333 4.982L2 22l5.202-1.362a9.92 9.92 0 0 0 4.808 1.237h.005c5.507 0 9.99-4.478 9.99-9.985 0-2.67-1.039-5.177-2.927-7.065A9.92 9.92 0 0 0 12.012 2Zm5.72 14.12c-.244.686-1.42 1.252-1.95 1.293-.483.037-.992.058-2.883-.72a11.16 11.16 0 0 1-4.823-4.248c-.96-1.285-1.536-2.766-1.536-4.288 0-1.616.843-2.408 1.142-2.721.222-.232.488-.343.729-.343h.525c.169 0 .393.007.568.423.22.525.75 1.83.815 1.963.064.133.107.288.02.464-.087.176-.131.288-.262.44-.131.152-.275.339-.393.457-.133.133-.273.278-.117.546.156.268.694 1.144 1.488 1.85.998.887 1.838 1.162 2.098 1.293.26.13.41.11.562-.066.153-.176.657-.76.833-1.019.176-.26.352-.217.593-.127.242.09 1.53.72 1.792.85.263.13.438.196.503.31.066.113.066.653-.178 1.339Z" />
+                              </svg>
+                            </a>
+                          </td>
                         </tr>
                       ))}
                     </tbody>
