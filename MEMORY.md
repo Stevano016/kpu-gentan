@@ -288,7 +288,8 @@ This file captures the active state, environment variables, completed tasks, and
   - **Data mentah diganti model**: `Voter`, `Paslon`/`PaslonCatalog`, `QuickCountEntry`, `AttendanceStats`, `UserSession`. `Voter` menyimpan payload aslinya supaya penulisan ulang cache tidak menghapus kolom baru dari server. Rekap kehadiran yang dulu 11 variabel terpisah kini satu `AttendanceStats`.
   - **Warna dan gaya dipusatkan** di `AppColors` + `AppTheme` (`0xFF0D9488` dulu tersebar di 8 berkas). Efek samping: latar `Scaffold` dan sudut input kini seragam mengikuti tema.
   - **Rekap dashboard kini hidup**: kartu hasil suara menyimak `Listenable.merge` dari kolom input, jadi angkanya ikut berubah saat petugas mengetik di tab Quick Count — sebelumnya tertinggal sampai layar dibangun ulang.
-  - `test/widget_test.dart` bawaan Flutter (uji counter yang tidak pernah lulus) diganti uji `AttendanceStats`, `PaslonCatalog`, dan `QuickCountEntry`.
+  - Menambahkan file `ush_logo.jpg` ke dalam folder public frontend React (`web/public/ush_logo.jpg`).
+  - Memperbarui watermark di Landing Page (`LandingPage.tsx`) dan Login Page (`LoginScreen.tsx`) dengan menyematkan logo tersebut di sebelah teks *"Support by KKN Universitas Sugeng Hartono(USH) Kel-7 2026"* menggunakan tata letak `inline-flex` untuk keselarasan vertikal yang rapi.
 
 ---
 

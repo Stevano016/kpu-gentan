@@ -591,7 +591,9 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onGoToLogin }) => {
         <div style={{ marginBottom: '6px' }}>Ruang Komunitas Digital Desa</div>
         <div>
           <span style={{
-            display: 'inline-block',
+            display: 'inline-flex',
+            alignItems: 'center',
+            gap: '8px',
             padding: '2px 10px',
             backgroundColor: 'var(--primary-light)',
             color: 'var(--primary)',
@@ -601,7 +603,8 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onGoToLogin }) => {
             border: '1px solid oklch(0.55 0.16 165 / 0.15)',
             letterSpacing: '0.02em'
           }}>
-            Support by KKN Universitas Sugeng Hartono(USH) Kel-7 2026
+            <img src="/ush_logo.jpg" alt="Logo USH" style={{ height: '16px', borderRadius: '2px' }} />
+            <span>Support by KKN Universitas Sugeng Hartono(USH) Kel-7 2026</span>
           </span>
         </div>
       </footer>
