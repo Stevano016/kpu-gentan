@@ -103,10 +103,11 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({
 
       <div className="login-watermark" style={{ lineHeight: '1.4' }}>
         <div style={{ marginBottom: '6px' }}>Ruang Komunitas Digital Desa</div>
-        <div>
+        <div style={{ display: 'flex', justifyContent: 'center', width: '100%', boxSizing: 'border-box' }}>
           <span style={{
             display: 'inline-flex',
             alignItems: 'center',
+            justifyContent: 'center',
             gap: '8px',
             padding: '2px 10px',
             backgroundColor: 'var(--primary-light)',
@@ -115,10 +116,12 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({
             fontSize: '0.725rem',
             fontWeight: '600',
             border: '1px solid oklch(0.55 0.16 165 / 0.15)',
-            letterSpacing: '0.02em'
+            letterSpacing: '0.02em',
+            maxWidth: '100%',
+            boxSizing: 'border-box'
           }}>
-            <img src="/ush_logo.png" alt="Logo USH" style={{ height: '28px', borderRadius: '4px' }} />
-            <span>Support by KKN Universitas Sugeng Hartono(USH) Kel-7 2026</span>
+            <img src="/ush_logo.png" alt="Logo USH" style={{ height: '28px', borderRadius: '4px', flexShrink: 0 }} />
+            <span style={{ textAlign: 'center' }}>Support by KKN Universitas Sugeng Hartono(USH) Kel-7 2026</span>
           </span>
         </div>
       </div>
