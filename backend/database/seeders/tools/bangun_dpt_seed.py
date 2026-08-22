@@ -230,7 +230,23 @@ def main() -> int:
                 rt = nomor_wilayah(r[rt_idx]) if rt_idx != -1 and len(r) > rt_idx else ""
                 rw = nomor_wilayah(r[rw_idx]) if rw_idx != -1 and len(r) > rw_idx else ""
                 excel_nik = teks(r[ktp_idx]) if ktp_idx != -1 and len(r) > ktp_idx else ""
+                excel_nik = excel_nik.replace(" ", "").replace("-", "")
+                if excel_nik and len(excel_nik) != 16:
+                    raise ValueError(
+                        f"Galat Validasi NIK pada berkas '{fname}' (Sheet: '{sheet_name}', Baris Excel: {r_idx}):\n"
+                        f"  Nama: '{name_val}'\n"
+                        f"  NIK : '{excel_nik}' ({len(excel_nik)} digit) tidak valid! NIK harus tepat 16 digit."
+                    )
+
                 excel_nkk = teks(r[kk_idx]) if kk_idx != -1 and len(r) > kk_idx else ""
+                excel_nkk = excel_nkk.replace(" ", "").replace("-", "")
+                if excel_nkk and len(excel_nkk) != 16:
+                    raise ValueError(
+                        f"Galat Validasi NKK pada berkas '{fname}' (Sheet: '{sheet_name}', Baris Excel: {r_idx}):\n"
+                        f"  Nama: '{name_val}'\n"
+                        f"  NKK : '{excel_nkk}' ({len(excel_nkk)} digit) tidak valid! NKK harus tepat 16 digit."
+                    )
+
                 catatan = [c for c in [teks(r[ket_idx]) if ket_idx != -1 and len(r) > ket_idx else ""] if c]
 
                 # Tentukan NIK/NKK dan apakah sintetis
