@@ -87,6 +87,47 @@ const getTpsIdFromRtRw = (rt: string, rw: string, tpsList: any[]): string => {
   return '';
 };
 
+/** Panjang resmi NIK dan NKK. */
+const PANJANG_NOMOR = 16;
+
+/**
+ * Membuang selain angka lalu memotong di 16 digit.
+ *
+ * Pemotongan sengaja dilakukan **setelah** penyaringan, bukan lewat atribut
+ * `maxLength`: browser memotong teks mentah lebih dulu, jadi menempelkan
+ * "3311 0912 0401 0001" hanya menyisakan "3311 0912 0401 0" dan berubah
+ * menjadi 13 digit — tiga digit hilang tanpa terlihat.
+ */
+const rapikanNomor = (teks: string): string =>
+  teks.replace(/\D/g, '').slice(0, PANJANG_NOMOR);
+
+/**
+ * Penghitung digit di bawah kolom nomor.
+ *
+ * Nomor yang kurang panjang harus ketahuan sebelum ditekan Simpan, bukan
+ * setelah server menolaknya.
+ */
+const HitungDigit: React.FC<{ nilai: string }> = ({ nilai }) => {
+  if (!nilai) return null;
+  const kurang = PANJANG_NOMOR - nilai.length;
+  const lengkap = kurang === 0;
+
+  return (
+    <small
+      style={{
+        display: 'block',
+        marginTop: '4px',
+        fontSize: '0.75rem',
+        color: lengkap ? 'var(--text-muted)' : 'var(--danger)',
+        fontWeight: lengkap ? 400 : 600,
+      }}
+    >
+      {nilai.length}/{PANJANG_NOMOR} digit
+      {lengkap ? '' : ` — kurang ${kurang} digit`}
+    </small>
+  );
+};
+
 export const DptModal: React.FC<DptModalProps> = ({
   isOpen,
   onClose,
@@ -208,16 +249,16 @@ export const DptModal: React.FC<DptModalProps> = ({
                   type="text"
                   className="form-control"
                   required
-                  maxLength={16}
-                  minLength={16}
+                  minLength={PANJANG_NOMOR}
                   /* NIK asli terkunci — ia primary key. Nomor sementara buatan
                      sistem justru harus bisa diganti: itulah cara 638 orang
                      tanpa NIK dilengkapi setelah coklit. */
                   disabled={!!editingDpt && !nikSementara}
                   placeholder="NIK 16 Digit"
                   value={dptFormNik}
-                  onChange={e => setDptFormNik(e.target.value.replace(/\D/g, ''))}
+                  onChange={e => setDptFormNik(rapikanNomor(e.target.value))}
                 />
+                <HitungDigit nilai={dptFormNik} />
                 {nikSementara && (
                   <small style={{ display: 'block', marginTop: '4px', fontSize: '0.75rem', color: 'var(--text-muted)' }}>
                     Nomor ini dibuat sistem karena NIK aslinya belum ada. Ganti dengan NIK asli bila sudah diketahui.
@@ -237,12 +278,12 @@ export const DptModal: React.FC<DptModalProps> = ({
                 <input
                   type="text"
                   className="form-control"
-                  maxLength={16}
-                  minLength={16}
+                  minLength={PANJANG_NOMOR}
                   placeholder="NKK 16 Digit"
                   value={dptFormNkk}
-                  onChange={e => setDptFormNkk(e.target.value.replace(/\D/g, ''))}
+                  onChange={e => setDptFormNkk(rapikanNomor(e.target.value))}
                 />
+                <HitungDigit nilai={dptFormNkk} />
               </div>
 
               <div className="form-group" style={{ gridColumn: 'span 2', marginBottom: 0 }}>

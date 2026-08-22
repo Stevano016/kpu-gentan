@@ -46,3 +46,34 @@ export async function jalankanAksi(panggil: () => Promise<Response>): Promise<Ha
     return null;
   }
 }
+
+/**
+ * Pesan galat yang layak ditampilkan dari badan respons aksi tulis.
+ *
+ * Kegagalan validasi dikirim server sebagai `errors` per field **tanpa**
+ * `message`. Layar yang hanya membaca `message` akhirnya menampilkan pesan
+ * umum dan menyembunyikan alasan sebenarnya: NIK kurang tiga digit terbaca
+ * sebagai "Gagal menyimpan data." tanpa petunjuk apa pun, dan penyebabnya
+ * harus ditebak satu per satu.
+ */
+export function pesanGagal(json: any, cadangan: string): string {
+  const rinci = kumpulkanGalat(json?.errors);
+  if (rinci.length) return rinci.join(' ');
+  return json?.message || cadangan;
+}
+
+/**
+ * `errors` punya dua bentuk: daftar datar (impor CSV) dan peta field → pesan
+ * (validasi Laravel). Keduanya diratakan menjadi kalimat siap tampil.
+ */
+function kumpulkanGalat(errors: unknown): string[] {
+  if (Array.isArray(errors)) {
+    return errors.filter((e): e is string => typeof e === 'string');
+  }
+  if (errors && typeof errors === 'object') {
+    return Object.values(errors as Record<string, unknown>)
+      .flatMap(nilai => (Array.isArray(nilai) ? nilai : [nilai]))
+      .filter((e): e is string => typeof e === 'string');
+  }
+  return [];
+}

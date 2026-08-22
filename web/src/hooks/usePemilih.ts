@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useState } from 'react';
 import { ApiService } from '../services/api';
-import { ambilData, bacaJson, jalankanAksi } from '../utils/request';
+import { ambilData, bacaJson, jalankanAksi, pesanGagal } from '../utils/request';
 import { useFormState, type FormState } from './useFormState';
 import { DPT_FORM_KOSONG, type DptForm, type Feedback } from '../types/app';
 
@@ -149,7 +149,7 @@ export function usePemilih({ token, path, feedback }: Argumen): PemilihControlle
       return;
     }
     if (!hasil.ok) {
-      showError(hasil.json.message || 'Gagal menyimpan data.');
+      showError(pesanGagal(hasil.json, 'Gagal menyimpan data.'));
       return;
     }
 
