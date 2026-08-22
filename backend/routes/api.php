@@ -21,11 +21,14 @@ Route::middleware(['auth:sanctum', 'throttle:api'])->group(function () {
     Route::post('/logout', [AuthController::class, 'logout']);
     Route::get('/me', [AuthController::class, 'me']);
 
-    // Secretariat routes (admin + viewer)
-    Route::middleware('role:sekretariat')->group(function () {
-        // --- Baca saja: boleh diakses semua sekretariat termasuk viewer ---
+    // Dashboard routes accessible by Secretariat and Monitor
+    Route::middleware('role:sekretariat,monitor')->group(function () {
         Route::get('/dashboard/summary', [DashboardController::class, 'getSummary']);
         Route::get('/dashboard/tps/{id}', [DashboardController::class, 'getTpsDetails']);
+    });
+
+    // Secretariat routes (admin + viewer)
+    Route::middleware('role:sekretariat')->group(function () {
         Route::get('/tps/{id}', [TpsController::class, 'show']);
         Route::get('/users', [UserController::class, 'index']);
         Route::get('/tahapan/ringkasan', [TahapanController::class, 'ringkasan']);

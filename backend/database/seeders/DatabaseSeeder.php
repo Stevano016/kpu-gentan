@@ -34,6 +34,14 @@ class DatabaseSeeder extends Seeder
             'tps_id' => null,
         ]);
 
+        // 1c. Create Monitor (hanya lihat dashboard dan quick count saja)
+        User::create([
+            'username' => 'monitor',
+            'password' => Hash::make('password123'),
+            'role' => 'monitor',
+            'tps_id' => null,
+        ]);
+
         // 2. Create TPS entries (5 TPS based on image copy 2.png)
         $tpsList = [
             [

@@ -67,6 +67,7 @@ export const KppsModal: React.FC<KppsModalProps> = ({
               <option value="kpps">KPPS (Aplikasi Mobile)</option>
               <option value="sekretariat">Sekretariat (Panel Web)</option>
               <option value="pantarlih">Pantarlih (Pendata Lapangan)</option>
+              <option value="monitor">Pemantau (Hanya Dashboard &amp; QC)</option>
             </select>
             {isPantarlih && (
               <p style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginTop: '6px', lineHeight: '1.5' }}>
@@ -144,6 +145,12 @@ export const KppsModal: React.FC<KppsModalProps> = ({
               </select>
               <p style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginTop: '6px' }}>
                 Pantarlih hanya bisa melihat dan mendata pemilih di RW tugas ini.
+              </p>
+            </div>
+          ) : kppsFormAccountType === 'monitor' ? (
+            <div className="form-group">
+              <p style={{ fontSize: '0.75rem', color: 'var(--text-muted)', lineHeight: '1.5', margin: '10px 0' }}>
+                Akun Pemantau hanya memiliki hak akses untuk melihat halaman <strong>Dashboard Monitor</strong> dan <strong>Quick Count</strong>. Menu data pemilih, keluarga, akun, dan paslon akan sepenuhnya disembunyikan.
               </p>
             </div>
           ) : (

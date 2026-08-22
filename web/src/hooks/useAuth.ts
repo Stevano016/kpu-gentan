@@ -68,8 +68,8 @@ export function useAuth({ navigate, showConfirm }: Argumen): AuthController {
   // Pantarlih hanya mendata pemilih susulan; seluruh menu dan aksi lain
   // disembunyikan supaya panelnya tidak membingungkan.
   const isPantarlih = user?.role === 'pantarlih';
-  // Sekretariat viewer hanya boleh melihat: seluruh aksi tulis disembunyikan.
-  const isAdmin = user ? !isPantarlih && user.sekretariat_role !== 'viewer' : false;
+  // Sekretariat viewer, monitor, kpps, dan pantarlih tidak memiliki hak admin.
+  const isAdmin = user ? user.role === 'sekretariat' && user.sekretariat_role === 'admin' : false;
 
   // Dibaca lewat ref supaya `bersihkanSesi` dan turunannya berhenti berubah
   // identitas setiap kali rutenya berpindah — kalau tidak, efek pemuat profil

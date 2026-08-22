@@ -60,9 +60,12 @@ export const AppRoutes: React.FC<AppRoutesProps> = ({
 
   // Pantarlih hanya punya satu halaman kerja; rute lain dialihkan ke sana
   // ketimbang memuat layar yang endpoint-nya akan menolaknya dengan 403.
+  const isMonitor = user?.role === 'monitor';
   const berandaPeran = isPantarlih ? '/pemilih' : '/dashboard';
   const hanyaSekretariat = (layar: React.ReactElement) =>
     isPantarlih ? <Navigate to="/pemilih" replace /> : layar;
+  const hanyaUntukNonMonitor = (layar: React.ReactElement) =>
+    isMonitor ? <Navigate to="/dashboard" replace /> : layar;
 
   return (
     <Routes>
@@ -86,7 +89,7 @@ export const AppRoutes: React.FC<AppRoutesProps> = ({
         />
       )} />
 
-      <Route path="/tps" element={
+      <Route path="/tps" element={hanyaUntukNonMonitor(
         <TpsTab
           tpsPageData={tps.tpsPageData}
           tpsPageLoading={tps.tpsPageLoading}
@@ -96,17 +99,17 @@ export const AppRoutes: React.FC<AppRoutesProps> = ({
           setPage={bukaHalaman}
           isAdmin={isAdmin}
         />
-      } />
+      )} />
 
-      <Route path="/tps/:id" element={
+      <Route path="/tps/:id" element={hanyaUntukNonMonitor(
         <TpsDetailRoute
           fetchTpsDetail={tps.fetchTpsDetail}
           tpsDetailData={tps.tpsDetailData}
           onBack={() => navigate('/tps')}
         />
-      } />
+      )} />
 
-      <Route path="/pemilih" element={
+      <Route path="/pemilih" element={hanyaUntukNonMonitor(
         <PemilihTab
           dptData={pemilih.dptData}
           dptLoading={pemilih.dptLoading}
@@ -151,9 +154,9 @@ export const AppRoutes: React.FC<AppRoutesProps> = ({
           handleExport={handleExport}
           isAdmin={isAdmin}
         />
-      } />
+      )} />
 
-      <Route path="/keluarga" element={
+      <Route path="/keluarga" element={hanyaUntukNonMonitor(
         <KeluargaTab
           token={token}
           tpsList={tps.tpsList}
@@ -161,13 +164,13 @@ export const AppRoutes: React.FC<AppRoutesProps> = ({
           showSuccess={feedback.showSuccess}
           showError={feedback.showError}
         />
-      } />
+      )} />
 
       {/* Rute lama diarahkan ke menu gabungan agar bookmark tetap berfungsi */}
       <Route path="/dpt" element={<Navigate to="/pemilih" replace />} />
       <Route path="/dpk" element={<Navigate to="/pemilih" replace />} />
 
-      <Route path="/kpps" element={
+      <Route path="/kpps" element={hanyaUntukNonMonitor(
         <KppsTab
           kppsUsers={kpps.kppsUsers}
           kppsLoading={kpps.kppsLoading}
@@ -180,9 +183,9 @@ export const AppRoutes: React.FC<AppRoutesProps> = ({
           isAdmin={isAdmin}
           currentUserId={user?.id}
         />
-      } />
+      )} />
 
-      <Route path="/paslon" element={
+      <Route path="/paslon" element={hanyaUntukNonMonitor(
         <PaslonTab
           paslons={paslon.paslons}
           loading={paslon.loading}
@@ -195,7 +198,7 @@ export const AppRoutes: React.FC<AppRoutesProps> = ({
           handleDeletePaslon={paslon.handleDeletePaslon}
           isAdmin={isAdmin}
         />
-      } />
+      )} />
 
       <Route path="*" element={<Navigate to={berandaPeran} replace />} />
     </Routes>

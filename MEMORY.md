@@ -272,6 +272,10 @@ This file captures the active state, environment variables, completed tasks, and
   - Mengubah tabel petugas Pantarlih pada modal "Silakan Menghubungi Pantarlih:" di Landing Page dengan menghapus kolom "No" dan "Kedudukan" sehingga hanya menampilkan kolom "Nama" dan "Wilayah Kerja (RW)".
   - Mengatur resolusi alamat WebSocket agar dinamis di frontend (`useLiveDashboard.ts`). Jika `VITE_LIVE_SOCKET_URL` tidak didefinisikan (kosong), koneksi WebSocket akan otomatis menggunakan protokol (`ws` / `wss`) dan domain/port aktif (`window.location.host`) dari peramban, sehingga otomatis mendukung tunnel luar LAN maupun akses IP lokal tanpa perlu rebuild ulang.
   - Mengubah tata letak kartu "Total Pemilih Berhak" di dashboard monitor (`DashboardTab.tsx`) agar menampilkan jumlah DPT dan DPK dengan ukuran font besar/tebal (`DPT: X | DPK: X` sebagai card value) dan jumlah keseluruhan `Total Pemilih : X` di bawahnya sebagai card subtext.
+  - Menambahkan hak akses/peran baru yaitu `'monitor'` (Pemantau Dashboard & QC). Akun dengan peran ini hanya diperbolehkan mengakses halaman Dashboard Monitor dan Quick Count. Seluruh menu lainnya (TPS, Pemilih, Keluarga, Akun, Paslon) disembunyikan dari sidebar dan dilindungi dengan route guards (frontend) serta otorisasi API berbasis middleware `'role:sekretariat,monitor'` (backend).
+  - Memperbarui form pendaftaran akun baru (`KppsModal.tsx` & `UserController.php`) agar Admin dapat membuat akun berjenis `'monitor'`.
+  - Menambahkan default user `'monitor'` (password: `'password123'`) pada database seeder.
+  - Memastikan akun dengan hak `'viewer'` (seperti `'pengawas'`) tetap memiliki akses baca-saja (read-only) untuk melihat dashboard, quick count, dan data pemilih secara penuh tanpa bisa melakukan operasi tulis (CRUD).
 
 ---
 

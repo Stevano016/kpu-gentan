@@ -80,7 +80,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
             </button>
           </li>
           )}
-          {!isPantarlih && (
+          {!isPantarlih && user?.role !== 'monitor' && (
           <li className={`menu-item ${path.startsWith('/tps') ? 'active' : ''}`}>
             <button onClick={() => go('/tps')} title="TPS & Monitoring">
               <Icons.Tps />
@@ -88,21 +88,25 @@ export const Sidebar: React.FC<SidebarProps> = ({
             </button>
           </li>
           )}
+          {user?.role !== 'monitor' && (
           <li className={`menu-item ${path === '/pemilih' ? 'active' : ''}`}>
             <button onClick={() => go('/pemilih')} title="Data Pemilih (DPT & DPK)">
               <Icons.Voters />
               <span>Data Pemilih</span>
             </button>
           </li>
+          )}
           {/* Tersedia untuk sekretariat dan pantarlih: keduanya bekerja per
               rumah tangga, bukan per orang. */}
+          {user?.role !== 'monitor' && (
           <li className={`menu-item ${path === '/keluarga' ? 'active' : ''}`}>
             <button onClick={() => go('/keluarga')} title="Data Keluarga (pengelompokan per No. KK)">
               <Icons.Keluarga />
               <span>Data Keluarga</span>
             </button>
           </li>
-          {!isPantarlih && (
+          )}
+          {!isPantarlih && user?.role !== 'monitor' && (
           <li className={`menu-item ${path === '/kpps' ? 'active' : ''}`}>
             <button onClick={() => go('/kpps')} title="Manajemen Akun">
               <Icons.Users />
@@ -110,7 +114,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
             </button>
           </li>
           )}
-          {!isPantarlih && (
+          {!isPantarlih && user?.role !== 'monitor' && (
           <li className={`menu-item ${path === '/paslon' ? 'active' : ''}`}>
             <button onClick={() => go('/paslon')} title="Pasangan Calon (Paslon)">
               <Icons.Users />
@@ -144,7 +148,9 @@ export const Sidebar: React.FC<SidebarProps> = ({
                 ? 'Sekretariat — Lihat Saja'
                 : user?.role === 'sekretariat'
                   ? 'Admin Sekretariat'
-                  : user?.role}
+                  : user?.role === 'monitor'
+                    ? 'Pemantau Dashboard & QC'
+                    : user?.role}
             </span>
           </div>
         </div>

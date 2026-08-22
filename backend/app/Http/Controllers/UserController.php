@@ -35,7 +35,7 @@ class UserController extends Controller
         $validator = Validator::make($request->all(), [
             'username' => 'required|string|max:100|unique:users,username',
             'password' => 'required|string|min:6',
-            'role' => 'required|string|in:kpps,sekretariat,pantarlih',
+            'role' => 'required|string|in:kpps,sekretariat,pantarlih,monitor',
             // TPS & hak akses hanya relevan untuk akun KPPS
             'tps_id' => 'required_if:role,kpps|nullable|exists:tps,id',
             // RW tugas hanya relevan untuk akun Pantarlih
