@@ -123,7 +123,7 @@ export const PemilihTab: React.FC<PemilihTabProps> = ({
       }
       
       const res = await apiResponse.json();
-      if (!res || !res.success || !res.data || res.data.length === 0) {
+      if (!res || res.status !== 'success' || !res.data || res.data.length === 0) {
         alert("Data pemilih tidak ditemukan atau belum terverifikasi.");
         return;
       }
