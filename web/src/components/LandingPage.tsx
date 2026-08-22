@@ -707,7 +707,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onGoToLogin }) => {
                           <td style={{ padding: '8px', fontWeight: '600', color: 'var(--primary)' }}>{p.wilayah}</td>
                           <td style={{ padding: '8px 4px', textAlign: 'center' }}>
                             <a
-                              href={`https://wa.me/${p.wa}`}
+                              href={`https://wa.me/${p.wa}?text=${encodeURIComponent(`Halo Pak/Bu ${p.nama}, saya warga Gentan ingin berkoordinasi mengenai pendaftaran/pemutakhiran data pemilih di ${p.wilayah}.`)}`}
                               target="_blank"
                               rel="noopener noreferrer"
                               style={{
