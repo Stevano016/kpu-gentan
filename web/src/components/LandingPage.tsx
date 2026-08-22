@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { ApiService } from '../services/api';
-import { PDFDocument } from 'pdf-lib';
+import { PDFDocument, TextAlignment, StandardFonts, PDFName } from 'pdf-lib';
 import QRCode from 'qrcode';
 
 interface VoterData {
@@ -55,6 +55,7 @@ const downloadUndangan = async (voter: VoterData) => {
     const pdfDoc = await PDFDocument.load(pdfBytes);
     const form = pdfDoc.getForm();
 
+    // Fill the text fields
     form.getTextField('nomor').setText(voter.no_urut !== null && voter.no_urut !== undefined ? String(voter.no_urut) : '');
     form.getTextField('nama').setText(voter.nama);
     form.getTextField('jenis_kelamin').setText(voter.jenis_kelamin === 'LAKI-LAKI' ? 'Laki-laki' : 'Perempuan');
@@ -94,8 +95,15 @@ const downloadUndangan = async (voter: VoterData) => {
     };
     form.getTextField('tempat1').setText(getTpsLocationName(voter.tps));
     form.getTextField('tempat2').setText("Gentan, Baki, Sukoharjo");
-    form.getTextField('tgl_dikeluarkan').setText("04 Desember 2026");
-    form.getTextField('nama_ketua').setText("MOCH. SUTOPO, S. H., M. H.");
+
+    // Center tgl_dikeluarkan and nama_ketua text fields
+    const fieldTgl = form.getTextField('tgl_dikeluarkan');
+    fieldTgl.setText("04 Desember 2026");
+    fieldTgl.setAlignment(TextAlignment.Center);
+
+    const fieldKetua = form.getTextField('nama_ketua');
+    fieldKetua.setText("MOCH. SUTOPO, S. H., M. H.");
+    fieldKetua.setAlignment(TextAlignment.Center);
 
     const qrDataUrl = await QRCode.toDataURL(voter.id_pemilih || voter.nik || "", {
       margin: 1,
@@ -113,6 +121,23 @@ const downloadUndangan = async (voter: VoterData) => {
       height: 80
     });
 
+    // Make all filled values bold, and clear background highlights
+    const helveticaBold = await pdfDoc.embedFont(StandardFonts.HelveticaBold);
+    
+    // Remove background colors from all field widget dictionaries
+    form.getFields().forEach(field => {
+      field.acroField.getWidgets().forEach(widget => {
+        const mk = widget.dict.get(PDFName.of('MK'));
+        if (mk && typeof (mk as any).delete === 'function') {
+          (mk as any).delete(PDFName.of('BG'));
+        }
+      });
+    });
+
+    // Re-generate appearances using the bold font
+    form.updateFieldAppearances(helveticaBold);
+
+    // Flatten form so they become flat static elements and lose all field outlines
     form.flatten();
 
     const modifiedPdfBytes = await pdfDoc.save();
