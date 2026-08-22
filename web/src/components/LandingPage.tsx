@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { ApiService } from '../services/api';
-import { PDFDocument, TextAlignment, StandardFonts, PDFName } from 'pdf-lib';
+import { PDFDocument, TextAlignment, StandardFonts, PDFName, rgb } from 'pdf-lib';
 import QRCode from 'qrcode';
 
 interface VoterData {
@@ -123,9 +123,40 @@ const downloadUndangan = async (voter: VoterData) => {
 
     // Make all filled values bold, and clear background highlights
     const helveticaBold = await pdfDoc.embedFont(StandardFonts.HelveticaBold);
-    
-    // Remove background colors from all field widget dictionaries
+    const helvetica = await pdfDoc.embedFont(StandardFonts.Helvetica);
+
+    // Draw white rectangle to cover the original "Telah diterima pada tanggal :" label
+    // The label is roughly in the range x: 50 to 215, y: 150 to 175
+    page.drawRectangle({
+      x: 50,
+      y: 150,
+      width: 170,
+      height: 25,
+      color: rgb(1, 1, 1), // White color
+    });
+
+    // Draw the new label shifted to the right (toward the middle)
+    // Shifted from x: ~50 to x: 80
+    page.drawText('Telah diterima pada tanggal :', {
+      x: 80,
+      y: 161,
+      size: 10,
+      font: helvetica,
+    });
+
+    // Reposition/resize the tgl_diterima field widget to line up with the new label
+    const fieldTglDiterima = form.getTextField('tgl_diterima');
+    const widgetTglDiterima = fieldTglDiterima.acroField.getWidgets()[0];
+    widgetTglDiterima.setRectangle({ x: 235, y: 156.8898, width: 320, height: 16 });
+
+    // Remove background colors and force appearance regeneration for all fields (including empty/unfilled ones)
     form.getFields().forEach(field => {
+      // Force appearance regeneration by resetting text to its current value or empty string
+      if (typeof (field as any).setText === 'function') {
+        (field as any).setText((field as any).getText() || '');
+      }
+
+      // Delete background highlights from the widget annotation's MK dictionary
       field.acroField.getWidgets().forEach(widget => {
         const mk = widget.dict.get(PDFName.of('MK'));
         if (mk && typeof (mk as any).delete === 'function') {
