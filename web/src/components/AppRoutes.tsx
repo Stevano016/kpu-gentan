@@ -61,11 +61,15 @@ export const AppRoutes: React.FC<AppRoutesProps> = ({
   // Pantarlih hanya punya satu halaman kerja; rute lain dialihkan ke sana
   // ketimbang memuat layar yang endpoint-nya akan menolaknya dengan 403.
   const isMonitor = user?.role === 'monitor';
+  const isViewer = user?.role === 'sekretariat' && user?.sekretariat_role === 'viewer';
+  const isTerbatas = isMonitor || isViewer;
   const berandaPeran = isPantarlih ? '/pemilih' : '/dashboard';
   const hanyaSekretariat = (layar: React.ReactElement) =>
     isPantarlih ? <Navigate to="/pemilih" replace /> : layar;
   const hanyaUntukNonMonitor = (layar: React.ReactElement) =>
     isMonitor ? <Navigate to="/dashboard" replace /> : layar;
+  const hanyaUntukNonTerbatas = (layar: React.ReactElement) =>
+    isTerbatas ? <Navigate to="/dashboard" replace /> : layar;
 
   return (
     <Routes>
@@ -89,7 +93,7 @@ export const AppRoutes: React.FC<AppRoutesProps> = ({
         />
       )} />
 
-      <Route path="/tps" element={hanyaUntukNonMonitor(
+      <Route path="/tps" element={hanyaUntukNonTerbatas(
         <TpsTab
           tpsPageData={tps.tpsPageData}
           tpsPageLoading={tps.tpsPageLoading}
@@ -101,7 +105,7 @@ export const AppRoutes: React.FC<AppRoutesProps> = ({
         />
       )} />
 
-      <Route path="/tps/:id" element={hanyaUntukNonMonitor(
+      <Route path="/tps/:id" element={hanyaUntukNonTerbatas(
         <TpsDetailRoute
           fetchTpsDetail={tps.fetchTpsDetail}
           tpsDetailData={tps.tpsDetailData}
@@ -156,7 +160,7 @@ export const AppRoutes: React.FC<AppRoutesProps> = ({
         />
       )} />
 
-      <Route path="/keluarga" element={hanyaUntukNonMonitor(
+      <Route path="/keluarga" element={hanyaUntukNonTerbatas(
         <KeluargaTab
           token={token}
           tpsList={tps.tpsList}
@@ -170,7 +174,7 @@ export const AppRoutes: React.FC<AppRoutesProps> = ({
       <Route path="/dpt" element={<Navigate to="/pemilih" replace />} />
       <Route path="/dpk" element={<Navigate to="/pemilih" replace />} />
 
-      <Route path="/kpps" element={hanyaUntukNonMonitor(
+      <Route path="/kpps" element={hanyaUntukNonTerbatas(
         <KppsTab
           kppsUsers={kpps.kppsUsers}
           kppsLoading={kpps.kppsLoading}
@@ -185,7 +189,7 @@ export const AppRoutes: React.FC<AppRoutesProps> = ({
         />
       )} />
 
-      <Route path="/paslon" element={hanyaUntukNonMonitor(
+      <Route path="/paslon" element={hanyaUntukNonTerbatas(
         <PaslonTab
           paslons={paslon.paslons}
           loading={paslon.loading}

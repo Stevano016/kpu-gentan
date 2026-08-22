@@ -80,7 +80,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
             </button>
           </li>
           )}
-          {!isPantarlih && user?.role !== 'monitor' && (
+          {!isPantarlih && user?.role !== 'monitor' && user?.sekretariat_role !== 'viewer' && (
           <li className={`menu-item ${path.startsWith('/tps') ? 'active' : ''}`}>
             <button onClick={() => go('/tps')} title="TPS & Monitoring">
               <Icons.Tps />
@@ -98,7 +98,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
           )}
           {/* Tersedia untuk sekretariat dan pantarlih: keduanya bekerja per
               rumah tangga, bukan per orang. */}
-          {user?.role !== 'monitor' && (
+          {user?.role !== 'monitor' && user?.sekretariat_role !== 'viewer' && (
           <li className={`menu-item ${path === '/keluarga' ? 'active' : ''}`}>
             <button onClick={() => go('/keluarga')} title="Data Keluarga (pengelompokan per No. KK)">
               <Icons.Keluarga />
@@ -106,7 +106,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
             </button>
           </li>
           )}
-          {!isPantarlih && user?.role !== 'monitor' && (
+          {!isPantarlih && user?.role !== 'monitor' && user?.sekretariat_role !== 'viewer' && (
           <li className={`menu-item ${path === '/kpps' ? 'active' : ''}`}>
             <button onClick={() => go('/kpps')} title="Manajemen Akun">
               <Icons.Users />
@@ -114,7 +114,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
             </button>
           </li>
           )}
-          {!isPantarlih && user?.role !== 'monitor' && (
+          {!isPantarlih && user?.role !== 'monitor' && user?.sekretariat_role !== 'viewer' && (
           <li className={`menu-item ${path === '/paslon' ? 'active' : ''}`}>
             <button onClick={() => go('/paslon')} title="Pasangan Calon (Paslon)">
               <Icons.Users />

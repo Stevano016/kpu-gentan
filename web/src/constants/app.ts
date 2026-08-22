@@ -28,7 +28,7 @@ export const LIVE_SOCKET_RETRY_MS = 15000;
 export const LIVE_EVENTS = ['checkin', 'quick-count', 'update', 'paslon_updated'];
 
 /** Peran yang boleh masuk ke panel web sama sekali. */
-export const PERAN_PANEL = ['sekretariat', 'pantarlih'];
+export const PERAN_PANEL = ['sekretariat', 'pantarlih', 'monitor'];
 
 /** Rute yang datanya berasal dari ringkasan dashboard. */
 const RUTE_DASHBOARD = ['/', '/dashboard', '/quick-count'];

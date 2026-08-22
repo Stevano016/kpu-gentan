@@ -37,6 +37,14 @@ const RoleBadge: React.FC<{ user: any }> = ({ user }) => {
     );
   }
 
+  if (user.role === 'monitor') {
+    return (
+      <span className="badge" style={{ backgroundColor: 'oklch(0.95 0.03 140)', color: 'oklch(0.40 0.12 140)' }}>
+        Pemantau Dashboard &amp; QC
+      </span>
+    );
+  }
+
   return user.kpps_role === 'validasi' ? (
     <span className="badge" style={{ backgroundColor: 'oklch(0.92 0.02 240)', color: 'oklch(0.40 0.10 240)' }}>
       KPPS — Hanya Validasi
