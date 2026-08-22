@@ -10,6 +10,7 @@ import 'tabs/dashboard_tab.dart';
 import 'tabs/validasi_tab.dart';
 import 'tabs/quick_count_tab.dart';
 import 'tabs/status_sync_tab.dart';
+import '../utils/paslon_helper.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -137,7 +138,9 @@ class _HomeScreenState extends State<HomeScreen> {
     _webSocket?.close();
     _reconnectTimer?.cancel();
     _nikSearchController.dispose();
-    _kandidatControllers.values.forEach((c) => c.dispose());
+    for (final c in _kandidatControllers.values) {
+      c.dispose();
+    }
     _invalidController.dispose();
     super.dispose();
   }
@@ -237,9 +240,9 @@ class _HomeScreenState extends State<HomeScreen> {
     final qc = await _storage.getLocalQuickCount();
     if (qc != null) {
       setState(() {
-        _kandidatControllers.forEach((key, controller) {
-          controller.text = qc['kandidat_$key']?.toString() ?? '0';
-        });
+        for (final entry in _kandidatControllers.entries) {
+          entry.value.text = qc['kandidat_${entry.key}']?.toString() ?? '0';
+        }
         _invalidController.text = qc['suara_tidak_sah']?.toString() ?? '0';
         _isQcLocked = qc['status'] == 'final';
         _qcStatusText = qc['status'] == 'final' ? 'FINAL (Terkunci)' : 'DRAFT (Belum Submit)';
@@ -351,11 +354,11 @@ class _HomeScreenState extends State<HomeScreen> {
   // Action: Save/Submit Quick Count
   Future<void> _submitQuickCount(String status) async {
     final Map<int, int> votes = {};
-    _kandidatControllers.forEach((key, controller) {
-      final v = int.tryParse(controller.text) ?? 0;
-      votes[key] = v;
-      controller.text = v.toString();
-    });
+    for (final entry in _kandidatControllers.entries) {
+      final v = int.tryParse(entry.value.text) ?? 0;
+      votes[entry.key] = v;
+      entry.value.text = v.toString();
+    }
     final invalid = int.tryParse(_invalidController.text) ?? 0;
     _invalidController.text = invalid.toString();
 
@@ -461,10 +464,12 @@ class _HomeScreenState extends State<HomeScreen> {
     // 3. Sync Quick Count if draft or pending sync
     final localQc = await _storage.getLocalQuickCount();
     if (localQc != null) {
+      final Map<int, int> votes = {};
+      for (var i = 1; i <= maxPaslonSlots; i++) {
+        votes[i] = localQc['kandidat_$i'] ?? 0;
+      }
       final res = await _api.submitQuickCount(
-        localQc['kandidat_1'] ?? 0,
-        localQc['kandidat_2'] ?? 0,
-        localQc['kandidat_3'] ?? 0,
+        votes,
         localQc['suara_tidak_sah'] ?? 0,
         localQc['status'] ?? 'draft',
       );
