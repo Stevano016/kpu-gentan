@@ -603,7 +603,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onGoToLogin }) => {
             border: '1px solid oklch(0.55 0.16 165 / 0.15)',
             letterSpacing: '0.02em'
           }}>
-            <img src="/ush_logo.jpg" alt="Logo USH" style={{ height: '16px', borderRadius: '2px' }} />
+            <img src="/ush_logo.png" alt="Logo USH" style={{ height: '16px', borderRadius: '2px' }} />
             <span>Support by KKN Universitas Sugeng Hartono(USH) Kel-7 2026</span>
           </span>
         </div>
