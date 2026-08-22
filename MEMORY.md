@@ -8,7 +8,7 @@ This file captures the active state, environment variables, completed tasks, and
 
 - **Laravel Backend API (`/backend`)**: Running at `http://localhost:8000`. Added server-side validation to support four voter types (`dpt`, `dpk`, `dps`, `dptb`) in `DptController`. Adjusted `DashboardController` (`getSummary` and `getTpsDetails`) to compute stats for all four categories. Seeded 7,475 voters from Excel as `dp4` by default. Created a sync command `php artisan dpt:sync-csv` to update synthetic NIKs/NKKs to real ones in-place from updated Excel data.
 - **Web Dashboard (`/web`)**: Running at `http://localhost:5173`. Added DPS and DPTb options in `DptModal.tsx` dropdown, filter buttons in `PemilihTab.tsx`, and extended components to display stats for four voter types. Updated Landing Page and Login Page footers with stacked watermark ("Ruang Komunitas Digital Desa \n Support by KKN Universitas Sugeng Hartono(USH) Kel-7 2026") where the KKN watermark is wrapped in a beautiful badge styled with an OKLCH primary-light background and thin border. Modified search error warning box with updated text, and integrated a "Syarat Pemilih" button that opens an rule-based criteria and Pantarlih assignment modal.
-- **Mobile Client (`/mobile`)**: Analyzer is 100% clean (`No issues found!`). Extended `home_screen.dart` and `dashboard_tab.dart` to compute, validate, and display stats (Total and Check-in) for DPT, DPK, DPS, and DPTb.
+- **Mobile Client (`/mobile`)**: Analyzer is 100% clean (`No issues found!`), 16 unit test lulus. Struktur `lib/` sudah modular (`core/`, `data/`, `features/`, `shared/`) dengan `HomeController` sebagai pemegang state layar utama; rekap kehadiran empat tahapan (DPT, DPK, DPS, DPTb) dihitung di `AttendanceStats`.
 
 ---
 
@@ -280,6 +280,15 @@ This file captures the active state, environment variables, completed tasks, and
     - **Backend**: Menambahkan kolom `kandidat_4` hingga `kandidat_10` pada migrasi tabel `quick_counts`, model `QuickCount.php`, controller `SyncController.php` (untuk proses validasi & sum dinamis), dan `DashboardController.php` / `TpsController.php` (untuk respons data agregat).
     - **Frontend Web**: Memperbarui komponen `DashboardTab.tsx`, `QuickCountTab.tsx`, dan `TpsDetailTab.tsx` agar melakukan render kartu statistik perolehan suara secara dinamis berdasarkan data Paslon yang terdaftar di database, serta menyematkan palet warna oklch dengan wrap-around index.
     - **Mobile (Flutter)**: Mengubah `paslon_helper.dart`, `home_screen.dart`, `dashboard_tab.dart`, dan `quick_count_tab.dart` agar mendefinisikan dan menggunakan koleksi controllers secara dinamis (Map dari nomor urut kandidat) alih-alih hardcoded `k1`, `k2`, `k3`.
+
+- **22 Aug 2026 — Refactor aplikasi mobile jadi modular**: `lib/` disusun ulang menjadi `core/` (konstanta, tema, util), `data/` (model, sumber data, repositori, layanan), `features/` (satu folder per layar), dan `shared/widgets/`. Analyzer bersih, 16 unit test baru lulus.
+  - **`home_screen.dart` 803 baris dipecah**: seluruh state dan alur data pindah ke `HomeController` (`ChangeNotifier`); layar kini hanya merangkai tab dan meneruskan aksi. Tab menerima controller alih-alih belasan parameter — `DashboardTab` sebelumnya punya **18 parameter**.
+  - **`api_service.dart` menyalin seluruh isi tiap request hanya untuk mengulang ke alamat cadangan.** Percobaan ulang sekarang ada di satu tempat (`ApiClient._withFallback`), dan tiap endpoint jadi repositori sendiri (`AuthRepository`, `VoterRepository`, `PaslonRepository`, `QuickCountRepository`) yang mengembalikan `Result<T>` alih-alih `Map<String, dynamic>` dengan kunci `'success'`/`'message'`.
+  - **Bug ikut terperbaiki**: jalur cadangan pada login dulu **melewatkan pemeriksaan peran**, sehingga akun sekretariat bisa lolos masuk aplikasi lapangan lewat percobaan kedua. Pemeriksaan kini dilakukan sekali di `AuthRepository`.
+  - **Data mentah diganti model**: `Voter`, `Paslon`/`PaslonCatalog`, `QuickCountEntry`, `AttendanceStats`, `UserSession`. `Voter` menyimpan payload aslinya supaya penulisan ulang cache tidak menghapus kolom baru dari server. Rekap kehadiran yang dulu 11 variabel terpisah kini satu `AttendanceStats`.
+  - **Warna dan gaya dipusatkan** di `AppColors` + `AppTheme` (`0xFF0D9488` dulu tersebar di 8 berkas). Efek samping: latar `Scaffold` dan sudut input kini seragam mengikuti tema.
+  - **Rekap dashboard kini hidup**: kartu hasil suara menyimak `Listenable.merge` dari kolom input, jadi angkanya ikut berubah saat petugas mengetik di tab Quick Count — sebelumnya tertinggal sampai layar dibangun ulang.
+  - `test/widget_test.dart` bawaan Flutter (uji counter yang tidak pernah lulus) diganti uji `AttendanceStats`, `PaslonCatalog`, dan `QuickCountEntry`.
 
 ---
 
