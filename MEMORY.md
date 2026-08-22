@@ -270,6 +270,7 @@ This file captures the active state, environment variables, completed tasks, and
 - **22 Agt 2026 — Pembaruan Watermark & Tabel Pantarlih pada Modal Syarat Pemilih**:
   - Mengubah tulisan watermark di halaman Landing Page (`LandingPage.tsx`) dan Login Page (`LoginScreen.tsx`) dari "Support by KKN USH-7 2026" menjadi "Support by KKN Universitas Sugeng Hartono(USH) Kel-7 2026".
   - Mengubah tabel petugas Pantarlih pada modal "Silakan Menghubungi Pantarlih:" di Landing Page dengan menghapus kolom "No" dan "Kedudukan" sehingga hanya menampilkan kolom "Nama" dan "Wilayah Kerja (RW)".
+  - Membangun ulang (rebuild) frontend dengan mengaktifkan koneksi WebSocket ke URL tunnel publik `wss://kpps.ysmb.my.id/ws`, lalu mengunggahnya kembali ke `servergentan` agar real-time WebSocket dapat diakses baik dari dalam maupun luar jaringan LAN.
 
 ---
 
