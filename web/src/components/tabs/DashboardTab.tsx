@@ -18,12 +18,7 @@ export const DashboardTab: React.FC<DashboardTabProps> = ({
   setSelectedTpsId,
   setPage,
 }) => {
-  const getPaslonLabel = (num: number, defaultLabel: string) => {
-    if (!dashboardData?.paslons) return defaultLabel;
-    const match = dashboardData.paslons.find((p: any) => p.nomor_urut === num);
-    if (!match) return defaultLabel;
-    return `${match.nomor_urut}. ${match.nama_ketua}`;
-  };
+
 
   return (
     <div>
@@ -101,51 +96,39 @@ export const DashboardTab: React.FC<DashboardTabProps> = ({
             <div className="card">
               <h2 style={{ fontSize: '1.1rem', fontWeight: '700', marginBottom: '20px' }}>Agregat Quick Count</h2>
               <div className="quickcount-stats">
-                <div>
-                  <div className="quickcount-row">
-                    <span>{getPaslonLabel(1, 'Kandidat 01')}</span>
-                    <span>{dashboardData.quick_count_aggregates.kandidat_1} suara</span>
-                  </div>
-                  <div className="quickcount-bar-container">
-                    <div 
-                      className="quickcount-bar" 
-                      style={{ 
-                        width: `${dashboardData.quick_count_aggregates.total_suara_masuk > 0 ? (dashboardData.quick_count_aggregates.kandidat_1 / dashboardData.quick_count_aggregates.total_suara_masuk) * 100 : 0}%`,
-                        backgroundColor: 'oklch(0.60 0.15 200)'
-                      }} 
-                    />
-                  </div>
-                </div>
-                <div>
-                  <div className="quickcount-row">
-                    <span>{getPaslonLabel(2, 'Kandidat 02')}</span>
-                    <span>{dashboardData.quick_count_aggregates.kandidat_2} suara</span>
-                  </div>
-                  <div className="quickcount-bar-container">
-                    <div 
-                      className="quickcount-bar" 
-                      style={{ 
-                        width: `${dashboardData.quick_count_aggregates.total_suara_masuk > 0 ? (dashboardData.quick_count_aggregates.kandidat_2 / dashboardData.quick_count_aggregates.total_suara_masuk) * 100 : 0}%`,
-                        backgroundColor: 'oklch(0.60 0.15 30)'
-                      }} 
-                    />
-                  </div>
-                </div>
-                <div>
-                  <div className="quickcount-row">
-                    <span>{getPaslonLabel(3, 'Kandidat 03')}</span>
-                    <span>{dashboardData.quick_count_aggregates.kandidat_3} suara</span>
-                  </div>
-                  <div className="quickcount-bar-container">
-                    <div 
-                      className="quickcount-bar" 
-                      style={{ 
-                        width: `${dashboardData.quick_count_aggregates.total_suara_masuk > 0 ? (dashboardData.quick_count_aggregates.kandidat_3 / dashboardData.quick_count_aggregates.total_suara_masuk) * 100 : 0}%`,
-                        backgroundColor: 'oklch(0.60 0.15 120)'
-                      }} 
-                    />
-                  </div>
-                </div>
+                {dashboardData.paslons?.map((p: any) => {
+                  const suara = dashboardData.quick_count_aggregates[`kandidat_${p.nomor_urut}`] ?? 0;
+                  const totalSuara = dashboardData.quick_count_aggregates.total_suara_masuk;
+                  const persentase = totalSuara > 0 ? (suara / totalSuara) * 100 : 0;
+                  const barColors = [
+                    'oklch(0.60 0.15 200)',
+                    'oklch(0.60 0.15 30)',
+                    'oklch(0.60 0.15 120)',
+                    'oklch(0.60 0.15 280)',
+                    'oklch(0.60 0.15 340)',
+                    'oklch(0.60 0.15 80)',
+                    'oklch(0.60 0.15 160)'
+                  ];
+                  const barColor = barColors[(p.nomor_urut - 1) % barColors.length];
+
+                  return (
+                    <div key={p.id} style={{ marginBottom: '12px' }}>
+                      <div className="quickcount-row">
+                        <span>{p.nomor_urut}. {p.nama_ketua}</span>
+                        <span>{suara} suara</span>
+                      </div>
+                      <div className="quickcount-bar-container">
+                        <div 
+                          className="quickcount-bar" 
+                          style={{ 
+                            width: `${persentase}%`,
+                            backgroundColor: barColor
+                          }} 
+                        />
+                      </div>
+                    </div>
+                  );
+                })}
                 <div style={{ marginTop: '12px', borderTop: '1px solid var(--border)', paddingTop: '16px' }}>
                   <div className="quickcount-row" style={{ backgroundColor: 'transparent', padding: '4px 0' }}>
                     <span>Suara Tidak Sah</span>

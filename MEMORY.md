@@ -276,6 +276,10 @@ This file captures the active state, environment variables, completed tasks, and
   - Memperbarui form pendaftaran akun baru (`KppsModal.tsx` & `UserController.php`) agar Admin dapat membuat akun berjenis `'monitor'`.
   - Menambahkan default user `'monitor'` (password: `'password123'`) pada database seeder.
   - Memastikan akun dengan hak `'viewer'` (seperti `'pengawas'`) tetap memiliki akses baca-saja (read-only) untuk melihat dashboard, quick count, dan data pemilih secara penuh tanpa bisa melakukan operasi tulis (CRUD).
+  - Mengubah sistem Quick Count agar mendukung dinamis s.d. 10 calon pasangan kandidat (Paslon) di backend, frontend web, dan aplikasi mobile (Flutter). 
+    - **Backend**: Menambahkan kolom `kandidat_4` hingga `kandidat_10` pada migrasi tabel `quick_counts`, model `QuickCount.php`, controller `SyncController.php` (untuk proses validasi & sum dinamis), dan `DashboardController.php` / `TpsController.php` (untuk respons data agregat).
+    - **Frontend Web**: Memperbarui komponen `DashboardTab.tsx`, `QuickCountTab.tsx`, dan `TpsDetailTab.tsx` agar melakukan render kartu statistik perolehan suara secara dinamis berdasarkan data Paslon yang terdaftar di database, serta menyematkan palet warna oklch dengan wrap-around index.
+    - **Mobile (Flutter)**: Mengubah `paslon_helper.dart`, `home_screen.dart`, `dashboard_tab.dart`, dan `quick_count_tab.dart` agar mendefinisikan dan menggunakan koleksi controllers secara dinamis (Map dari nomor urut kandidat) alih-alih hardcoded `k1`, `k2`, `k3`.
 
 ---
 

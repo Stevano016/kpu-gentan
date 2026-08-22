@@ -164,14 +164,16 @@ class SyncController extends Controller
             ], 400);
         }
 
-        $validator = Validator::make($request->all(), [
-            'kandidat_1' => 'required|integer|min:0',
-            'kandidat_2' => 'required|integer|min:0',
-            'kandidat_3' => 'required|integer|min:0',
+        $validationRules = [
             'suara_tidak_sah' => 'required|integer|min:0',
             'status' => 'required|string|in:draft,final',
             'device_id' => 'required|string',
-        ]);
+        ];
+        for ($i = 1; $i <= 10; $i++) {
+            $validationRules["kandidat_$i"] = 'nullable|integer|min:0';
+        }
+
+        $validator = Validator::make($request->all(), $validationRules);
 
         if ($validator->fails()) {
             return response()->json([
@@ -190,7 +192,10 @@ class SyncController extends Controller
 
         $totalHadir = \App\Models\Dpt::where('tps_id', $tpsId)->where('status_hadir', true)->count();
 
-        $inputTotalSuara = intval($request->kandidat_1) + intval($request->kandidat_2) + intval($request->kandidat_3) + intval($request->suara_tidak_sah);
+        $inputTotalSuara = intval($request->suara_tidak_sah);
+        for ($i = 1; $i <= 10; $i++) {
+            $inputTotalSuara += intval($request->input("kandidat_$i", 0));
+        }
 
         if ($inputTotalSuara > $totalPemilih) {
             return response()->json([
@@ -218,13 +223,13 @@ class SyncController extends Controller
         DB::beginTransaction();
         try {
             $data = [
-                'kandidat_1' => $request->kandidat_1,
-                'kandidat_2' => $request->kandidat_2,
-                'kandidat_3' => $request->kandidat_3,
                 'suara_tidak_sah' => $request->suara_tidak_sah,
                 'status' => $request->status,
                 'submitted_at' => $request->status === 'final' ? now() : null,
             ];
+            for ($i = 1; $i <= 10; $i++) {
+                $data["kandidat_$i"] = $request->input("kandidat_$i", 0);
+            }
 
             if ($qc) {
                 $qc->update($data);

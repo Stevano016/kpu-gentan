@@ -20,7 +20,17 @@ interface QuickCountTabProps {
  * Warna mengikuti nomor urut, bukan peringkat — supaya kandidat tidak berganti
  * warna ketika urutan perolehan berubah.
  */
-const WARNA_KANDIDAT = ['var(--seri-1)', 'var(--seri-2)', 'var(--seri-3)'];
+const WARNA_KANDIDAT = [
+  'var(--seri-1)',
+  'var(--seri-2)',
+  'var(--seri-3)',
+  'oklch(0.60 0.15 280)',
+  'oklch(0.60 0.15 340)',
+  'oklch(0.60 0.15 80)',
+  'oklch(0.60 0.15 160)',
+  'oklch(0.60 0.15 220)',
+  'oklch(0.60 0.15 10)'
+];
 
 const persen = (bagian: number, total: number) => (total > 0 ? (bagian / total) * 100 : 0);
 const format = (n: number) => n.toLocaleString('id-ID');
@@ -38,18 +48,17 @@ export const QuickCountTab: React.FC<QuickCountTabProps> = ({
 
   // Suara sah saja — pembagi persentase perolehan tiap kandidat. Memasukkan
   // suara tidak sah akan membuat jumlah persentase kandidat tidak mencapai 100%.
-  const suaraSah = agg ? (agg.kandidat_1 ?? 0) + (agg.kandidat_2 ?? 0) + (agg.kandidat_3 ?? 0) : 0;
+  const suaraSah = agg ? paslons.reduce((sum, p) => sum + (agg[`kandidat_${p.nomor_urut}`] ?? 0), 0) : 0;
   const tidakSah = agg?.suara_tidak_sah ?? 0;
   const totalMasuk = agg?.total_suara_masuk ?? suaraSah + tidakSah;
 
   const kandidat = paslons
-    .filter((p) => p.nomor_urut >= 1 && p.nomor_urut <= 3)
     .map((p) => ({
       nomor: p.nomor_urut,
       nama: p.nama_ketua,
       foto: p.foto_url,
       suara: agg?.[`kandidat_${p.nomor_urut}`] ?? 0,
-      warna: WARNA_KANDIDAT[p.nomor_urut - 1] ?? 'var(--seri-1)',
+      warna: WARNA_KANDIDAT[(p.nomor_urut - 1) % WARNA_KANDIDAT.length] ?? 'var(--seri-1)',
     }));
 
   const urutTerbanyak = [...kandidat].sort((a, b) => b.suara - a.suara);
@@ -225,7 +234,7 @@ export const QuickCountTab: React.FC<QuickCountTabProps> = ({
             <div className="qc-tps-list">
               {tpsList.map((t) => {
                 const qc = t.quick_count;
-                const sahTps = qc ? (qc.kandidat_1 ?? 0) + (qc.kandidat_2 ?? 0) + (qc.kandidat_3 ?? 0) : 0;
+                const sahTps = qc ? paslons.reduce((sum, p) => sum + (qc[`kandidat_${p.nomor_urut}`] ?? 0), 0) : 0;
                 return (
                   <div className="qc-tps-row" key={t.id}>
                     <div className="qc-tps-nama">
@@ -280,7 +289,7 @@ export const QuickCountTab: React.FC<QuickCountTabProps> = ({
               <tbody>
                 {tpsList.map((t) => {
                   const qc = t.quick_count;
-                  const sahTps = qc ? (qc.kandidat_1 ?? 0) + (qc.kandidat_2 ?? 0) + (qc.kandidat_3 ?? 0) : 0;
+                  const sahTps = qc ? paslons.reduce((sum, p) => sum + (qc[`kandidat_${p.nomor_urut}`] ?? 0), 0) : 0;
                   return (
                     <tr key={t.id}>
                       <td style={{ fontWeight: 600 }}>{t.nama}</td>

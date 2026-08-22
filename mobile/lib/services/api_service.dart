@@ -255,16 +255,16 @@ class ApiService {
 
   // Submit Quick Count to Server
   Future<Map<String, dynamic>> submitQuickCount(
-    int k1, int k2, int k3, int invalid, String status) async {
+    Map<int, int> kandidatVotes, int invalid, String status) async {
     final clientUrl = await _getApiUrl();
     final payload = {
-      'kandidat_1': k1,
-      'kandidat_2': k2,
-      'kandidat_3': k3,
       'suara_tidak_sah': invalid,
       'status': status,
       'device_id': 'FLUTTER-DEVICE-KPPS-${_storage.getTpsId()}',
     };
+    kandidatVotes.forEach((key, value) {
+      payload['kandidat_$key'] = value;
+    });
 
     // Save locally first
     await _storage.saveLocalQuickCount(payload);

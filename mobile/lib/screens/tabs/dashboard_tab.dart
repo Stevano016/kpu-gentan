@@ -16,9 +16,7 @@ class DashboardTab extends StatelessWidget {
   final double hadirPercentage;
   final bool isQcLocked;
   final String qcStatusText;
-  final TextEditingController k1Controller;
-  final TextEditingController k2Controller;
-  final TextEditingController k3Controller;
+  final Map<int, TextEditingController> kandidatControllers;
   final TextEditingController invalidController;
   final List<dynamic> paslons;
 
@@ -38,9 +36,7 @@ class DashboardTab extends StatelessWidget {
     required this.hadirPercentage,
     required this.isQcLocked,
     required this.qcStatusText,
-    required this.k1Controller,
-    required this.k2Controller,
-    required this.k3Controller,
+    required this.kandidatControllers,
     required this.invalidController,
     required this.paslons,
   });
@@ -224,9 +220,8 @@ class DashboardTab extends StatelessWidget {
           Builder(
             builder: (context) {
               final votes = <int, int>{
-                1: int.tryParse(k1Controller.text) ?? 0,
-                2: int.tryParse(k2Controller.text) ?? 0,
-                3: int.tryParse(k3Controller.text) ?? 0,
+                for (var i = 1; i <= maxPaslonSlots; i++)
+                  i: int.tryParse(kandidatControllers[i]?.text ?? '') ?? 0,
               };
               final qcInvalid = int.tryParse(invalidController.text) ?? 0;
               final qcTotal = votes.values.fold(0, (a, b) => a + b) + qcInvalid;

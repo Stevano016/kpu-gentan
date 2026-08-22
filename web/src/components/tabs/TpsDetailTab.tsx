@@ -9,12 +9,7 @@ export const TpsDetailTab: React.FC<TpsDetailTabProps> = ({
   tpsDetailData,
   setPage,
 }) => {
-  const getPaslonLabel = (num: number, defaultLabel: string) => {
-    if (!tpsDetailData?.paslons) return defaultLabel;
-    const match = tpsDetailData.paslons.find((p: any) => p.nomor_urut === num);
-    if (!match) return defaultLabel;
-    return `${match.nomor_urut}. ${match.nama_ketua}`;
-  };
+
 
   return (
     <div>
@@ -118,18 +113,15 @@ export const TpsDetailTab: React.FC<TpsDetailTabProps> = ({
             <h3 style={{ fontWeight: '700', marginBottom: '16px' }}>Hasil Quick Count TPS</h3>
             {tpsDetailData.quick_count ? (
               <div className="quickcount-stats">
-                <div className="quickcount-row">
-                  <span>{getPaslonLabel(1, 'Kandidat 01')}</span>
-                  <span>{tpsDetailData.quick_count.kandidat_1} suara</span>
-                </div>
-                <div className="quickcount-row">
-                  <span>{getPaslonLabel(2, 'Kandidat 02')}</span>
-                  <span>{tpsDetailData.quick_count.kandidat_2} suara</span>
-                </div>
-                <div className="quickcount-row">
-                  <span>{getPaslonLabel(3, 'Kandidat 03')}</span>
-                  <span>{tpsDetailData.quick_count.kandidat_3} suara</span>
-                </div>
+                {tpsDetailData.paslons?.map((p: any) => {
+                  const suara = tpsDetailData.quick_count[`kandidat_${p.nomor_urut}`] ?? 0;
+                  return (
+                    <div className="quickcount-row" key={p.id}>
+                      <span>{p.nomor_urut}. {p.nama_ketua}</span>
+                      <span>{suara} suara</span>
+                    </div>
+                  );
+                })}
                 <div className="quickcount-row" style={{ borderTop: '1px solid var(--border)', paddingTop: '12px' }}>
                   <span>Suara Tidak Sah</span>
                   <span>{tpsDetailData.quick_count.suara_tidak_sah} suara</span>

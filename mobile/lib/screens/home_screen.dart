@@ -36,9 +36,9 @@ class _HomeScreenState extends State<HomeScreen> {
   bool _validationSuccess = false;
 
   // Tab 2: Quick Count State
-  final _k1Controller = TextEditingController();
-  final _k2Controller = TextEditingController();
-  final _k3Controller = TextEditingController();
+  final Map<int, TextEditingController> _kandidatControllers = {
+    for (var i = 1; i <= 10; i++) i: TextEditingController()
+  };
   final _invalidController = TextEditingController();
   bool _isQcLocked = false;
   String _qcStatusText = 'Belum diisi';
@@ -137,9 +137,7 @@ class _HomeScreenState extends State<HomeScreen> {
     _webSocket?.close();
     _reconnectTimer?.cancel();
     _nikSearchController.dispose();
-    _k1Controller.dispose();
-    _k2Controller.dispose();
-    _k3Controller.dispose();
+    _kandidatControllers.values.forEach((c) => c.dispose());
     _invalidController.dispose();
     super.dispose();
   }
@@ -239,9 +237,9 @@ class _HomeScreenState extends State<HomeScreen> {
     final qc = await _storage.getLocalQuickCount();
     if (qc != null) {
       setState(() {
-        _k1Controller.text = qc['kandidat_1']?.toString() ?? '0';
-        _k2Controller.text = qc['kandidat_2']?.toString() ?? '0';
-        _k3Controller.text = qc['kandidat_3']?.toString() ?? '0';
+        _kandidatControllers.forEach((key, controller) {
+          controller.text = qc['kandidat_$key']?.toString() ?? '0';
+        });
         _invalidController.text = qc['suara_tidak_sah']?.toString() ?? '0';
         _isQcLocked = qc['status'] == 'final';
         _qcStatusText = qc['status'] == 'final' ? 'FINAL (Terkunci)' : 'DRAFT (Belum Submit)';
@@ -352,15 +350,13 @@ class _HomeScreenState extends State<HomeScreen> {
 
   // Action: Save/Submit Quick Count
   Future<void> _submitQuickCount(String status) async {
-    final k1 = int.tryParse(_k1Controller.text) ?? 0;
-    final k2 = int.tryParse(_k2Controller.text) ?? 0;
-    final k3 = int.tryParse(_k3Controller.text) ?? 0;
+    final Map<int, int> votes = {};
+    _kandidatControllers.forEach((key, controller) {
+      final v = int.tryParse(controller.text) ?? 0;
+      votes[key] = v;
+      controller.text = v.toString();
+    });
     final invalid = int.tryParse(_invalidController.text) ?? 0;
-
-    // Sanitize input values in textfields
-    _k1Controller.text = k1.toString();
-    _k2Controller.text = k2.toString();
-    _k3Controller.text = k3.toString();
     _invalidController.text = invalid.toString();
 
     // Dismiss keyboard
@@ -369,7 +365,10 @@ class _HomeScreenState extends State<HomeScreen> {
     // Validation: total votes cannot exceed total registered voters and actual attendance
     final totalPemilih = _totalDptCount + _totalDpkCount + _totalDpsCount + _totalDptbCount;
     final totalKehadiran = _hadirDptCount + _hadirDpkCount + _hadirDpsCount + _hadirDptbCount;
-    final totalSuaraInput = k1 + k2 + k3 + invalid;
+    
+    // Sum only the votes for the visible/configured paslons (from slots) to avoid counting all 10 if not present
+    final visibleSlots = visiblePaslonSlots(_paslons, (n) => votes[n] ?? 0);
+    final totalSuaraInput = visibleSlots.fold(0, (sum, nomor) => sum + (votes[nomor] ?? 0)) + invalid;
 
     if (totalSuaraInput > totalPemilih) {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -396,7 +395,7 @@ class _HomeScreenState extends State<HomeScreen> {
       _syncAction = status;
     });
 
-    final res = await _api.submitQuickCount(k1, k2, k3, invalid, status);
+    final res = await _api.submitQuickCount(votes, invalid, status);
     
     setState(() {
       _syncingInProgress = false;
@@ -608,9 +607,7 @@ class _HomeScreenState extends State<HomeScreen> {
       hadirPercentage: _hadirPercentage,
       isQcLocked: _isQcLocked,
       qcStatusText: _qcStatusText,
-      k1Controller: _k1Controller,
-      k2Controller: _k2Controller,
-      k3Controller: _k3Controller,
+      kandidatControllers: _kandidatControllers,
       invalidController: _invalidController,
       paslons: _paslons,
     );
@@ -640,9 +637,7 @@ class _HomeScreenState extends State<HomeScreen> {
     return QuickCountTab(
       qcStatusText: _qcStatusText,
       isQcLocked: _isQcLocked,
-      k1Controller: _k1Controller,
-      k2Controller: _k2Controller,
-      k3Controller: _k3Controller,
+      kandidatControllers: _kandidatControllers,
       invalidController: _invalidController,
       syncingInProgress: _syncingInProgress,
       syncAction: _syncAction,

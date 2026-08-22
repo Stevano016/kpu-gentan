@@ -72,6 +72,8 @@ class TpsController extends Controller
         $attendanceCount = $tps->dpt()->where('status_hadir', true)->count();
         $totalPemilih = $tps->dpt()->count();
 
+        $paslons = \App\Models\Paslon::orderBy('nomor_urut')->get();
+
         return response()->json([
             'status' => 'success',
             'data' => [
@@ -83,7 +85,8 @@ class TpsController extends Controller
                     'hadir' => $attendanceCount,
                     'tidak_hadir' => $totalPemilih - $attendanceCount,
                     'persentase_kehadiran' => $totalPemilih > 0 ? round(($attendanceCount / $totalPemilih) * 100, 2) : 0
-                ]
+                ],
+                'paslons' => $paslons
             ]
         ]);
     }

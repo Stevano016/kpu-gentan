@@ -26,6 +26,13 @@ return new class extends Migration
             $table->integer('kandidat_1')->default(0);
             $table->integer('kandidat_2')->default(0);
             $table->integer('kandidat_3')->default(0);
+            $table->integer('kandidat_4')->default(0);
+            $table->integer('kandidat_5')->default(0);
+            $table->integer('kandidat_6')->default(0);
+            $table->integer('kandidat_7')->default(0);
+            $table->integer('kandidat_8')->default(0);
+            $table->integer('kandidat_9')->default(0);
+            $table->integer('kandidat_10')->default(0);
             $table->integer('suara_tidak_sah')->default(0);
             $table->string('status', 20)->default('draft'); // draft, final
             $table->timestamp('submitted_at')->nullable();

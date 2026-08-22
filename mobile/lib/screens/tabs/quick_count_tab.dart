@@ -6,9 +6,7 @@ import '../../utils/paslon_helper.dart';
 class QuickCountTab extends StatelessWidget {
   final String qcStatusText;
   final bool isQcLocked;
-  final TextEditingController k1Controller;
-  final TextEditingController k2Controller;
-  final TextEditingController k3Controller;
+  final Map<int, TextEditingController> kandidatControllers;
   final TextEditingController invalidController;
   final bool syncingInProgress;
   final String? syncAction;
@@ -20,9 +18,7 @@ class QuickCountTab extends StatelessWidget {
     super.key,
     required this.qcStatusText,
     required this.isQcLocked,
-    required this.k1Controller,
-    required this.k2Controller,
-    required this.k3Controller,
+    required this.kandidatControllers,
     required this.invalidController,
     required this.syncingInProgress,
     required this.syncAction,
@@ -35,15 +31,10 @@ class QuickCountTab extends StatelessWidget {
   Widget build(BuildContext context) {
     const tealColor = Color(0xFF0D9488);
     final votes = <int, int>{
-      1: int.tryParse(k1Controller.text) ?? 0,
-      2: int.tryParse(k2Controller.text) ?? 0,
-      3: int.tryParse(k3Controller.text) ?? 0,
+      for (var i = 1; i <= maxPaslonSlots; i++)
+        i: int.tryParse(kandidatControllers[i]?.text ?? '') ?? 0,
     };
-    final controllers = <int, TextEditingController>{
-      1: k1Controller,
-      2: k2Controller,
-      3: k3Controller,
-    };
+    final controllers = kandidatControllers;
     final slots = visiblePaslonSlots(paslons, (n) => votes[n] ?? 0);
     return SingleChildScrollView(
       padding: const EdgeInsets.all(20.0),

@@ -45,8 +45,12 @@ class DashboardController extends Controller
         $totalSubmittedQc = QuickCount::where('status', 'final')->count();
 
         // Quick Count votes aggregates
+        $selectCols = 'SUM(suara_tidak_sah) as suara_tidak_sah';
+        for ($i = 1; $i <= 10; $i++) {
+            $selectCols .= ", SUM(kandidat_$i) as kandidat_$i";
+        }
         $qcAggregates = QuickCount::where('status', 'final')
-            ->selectRaw('SUM(kandidat_1) as kandidat_1, SUM(kandidat_2) as kandidat_2, SUM(kandidat_3) as kandidat_3, SUM(suara_tidak_sah) as suara_tidak_sah')
+            ->selectRaw($selectCols)
             ->first();
 
         // List of all TPS with stats (optimized using withCount to prevent N+1 queries)
@@ -101,13 +105,13 @@ class DashboardController extends Controller
                     'hadir_dps' => (int)$tps->hadir_dps,
                     'hadir_dptb' => (int)$tps->hadir_dptb,
                     'quick_count_status' => $tps->quickCount ? $tps->quickCount->status : 'belum_isi',
-                    'quick_count' => $tps->quickCount ? [
-                        'kandidat_1' => $tps->quickCount->kandidat_1,
-                        'kandidat_2' => $tps->quickCount->kandidat_2,
-                        'kandidat_3' => $tps->quickCount->kandidat_3,
-                        'suara_tidak_sah' => $tps->quickCount->suara_tidak_sah,
-                        'submitted_at' => $tps->quickCount->submitted_at,
-                    ] : null
+                    'quick_count' => $tps->quickCount ? array_merge(
+                        collect(range(1, 10))->mapWithKeys(fn($i) => ["kandidat_$i" => $tps->quickCount->{"kandidat_$i"}])->toArray(),
+                        [
+                            'suara_tidak_sah' => $tps->quickCount->suara_tidak_sah,
+                            'submitted_at' => $tps->quickCount->submitted_at,
+                        ]
+                    ) : null
                 ];
             });
 
@@ -137,13 +141,13 @@ class DashboardController extends Controller
                     'tps_sudah_lapor_qc' => $totalSubmittedQc,
                     'tps_belum_lapor_qc' => $totalTps - $totalSubmittedQc,
                 ],
-                'quick_count_aggregates' => [
-                    'kandidat_1' => (int)($qcAggregates->kandidat_1 ?? 0),
-                    'kandidat_2' => (int)($qcAggregates->kandidat_2 ?? 0),
-                    'kandidat_3' => (int)($qcAggregates->kandidat_3 ?? 0),
-                    'suara_tidak_sah' => (int)($qcAggregates->suara_tidak_sah ?? 0),
-                    'total_suara_masuk' => (int)($qcAggregates->kandidat_1 ?? 0) + (int)($qcAggregates->kandidat_2 ?? 0) + (int)($qcAggregates->kandidat_3 ?? 0) + (int)($qcAggregates->suara_tidak_sah ?? 0)
-                ],
+                'quick_count_aggregates' => array_merge(
+                    collect(range(1, 10))->mapWithKeys(fn($i) => ["kandidat_$i" => (int)($qcAggregates->{"kandidat_$i"} ?? 0)])->toArray(),
+                    [
+                        'suara_tidak_sah' => (int)($qcAggregates->suara_tidak_sah ?? 0),
+                        'total_suara_masuk' => collect(range(1, 10))->reduce(fn($carry, $i) => $carry + (int)($qcAggregates->{"kandidat_$i"} ?? 0), 0) + (int)($qcAggregates->suara_tidak_sah ?? 0)
+                    ]
+                ),
                 'tps_list' => $tpsList,
                 'paslons' => $paslons
             ]

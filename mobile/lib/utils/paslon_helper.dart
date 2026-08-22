@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 
-/// Jumlah slot suara yang tersedia di backend (kandidat_1 .. kandidat_3).
-const int maxPaslonSlots = 3;
+/// Jumlah slot suara yang tersedia di backend (kandidat_1 .. kandidat_10).
+const int maxPaslonSlots = 10;
 
 /// Nama cadangan bila daftar paslon belum pernah tersinkron ke perangkat.
 const Map<int, String> _fallbackPaslonNames = {
@@ -14,6 +14,13 @@ const List<Color> _paslonColors = [
   Color(0xFF0D9488),
   Colors.blue,
   Colors.orange,
+  Colors.purple,
+  Colors.red,
+  Colors.green,
+  Colors.pink,
+  Colors.teal,
+  Colors.indigo,
+  Colors.cyan,
 ];
 
 /// Cari data paslon berdasarkan nomor urut pada daftar hasil sinkronisasi.
