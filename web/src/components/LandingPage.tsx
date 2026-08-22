@@ -589,13 +589,10 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onGoToLogin }) => {
         lineHeight: '1.4'
       }}>
         <div style={{ marginBottom: '6px' }}>Ruang Komunitas Digital Desa</div>
-        <div style={{ display: 'flex', justifyContent: 'center', width: '100%', boxSizing: 'border-box' }}>
+        <div style={{ textAlign: 'center', width: '100%', boxSizing: 'border-box' }}>
           <span style={{
-            display: 'inline-flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            gap: '8px',
-            padding: '2px 10px',
+            display: 'inline-block',
+            padding: '4px 10px',
             backgroundColor: 'var(--primary-light)',
             color: 'var(--primary)',
             borderRadius: 'var(--radius-sm)',
@@ -604,10 +601,23 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onGoToLogin }) => {
             border: '1px solid oklch(0.55 0.16 165 / 0.15)',
             letterSpacing: '0.02em',
             maxWidth: '100%',
-            boxSizing: 'border-box'
+            boxSizing: 'border-box',
+            textAlign: 'center'
           }}>
-            <img src="/ush_logo.png" alt="Logo USH" style={{ height: '28px', borderRadius: '4px', flexShrink: 0 }} />
-            <span style={{ textAlign: 'center' }}>Support by KKN Universitas Sugeng Hartono(USH) Kel-7 2026</span>
+            <img 
+              src="/ush_logo.png" 
+              alt="Logo USH" 
+              style={{ 
+                height: '22px', 
+                borderRadius: '3px', 
+                verticalAlign: 'middle', 
+                marginRight: '6px',
+                display: 'inline-block'
+              }} 
+            />
+            <span style={{ verticalAlign: 'middle', display: 'inline' }}>
+              Support by KKN Universitas Sugeng Hartono(USH) Kel-7 2026
+            </span>
           </span>
         </div>
       </footer>
