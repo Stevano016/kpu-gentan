@@ -126,21 +126,21 @@ const downloadUndangan = async (voter: VoterData) => {
     const helvetica = await pdfDoc.embedFont(StandardFonts.Helvetica);
 
     // Draw white rectangle to cover the original "Telah diterima pada tanggal :" label
-    // The label is roughly in the range x: 50 to 215, y: 150 to 175
+    // The label starts around x: 38. We start the rectangle at x: 35 to fully cover "Te"
     page.drawRectangle({
-      x: 50,
+      x: 35,
       y: 150,
-      width: 170,
+      width: 190,
       height: 25,
       color: rgb(1, 1, 1), // White color
     });
 
     // Draw the new label shifted to the right (toward the middle)
-    // Shifted from x: ~50 to x: 80
+    // Shifted from x: ~40 to x: 80, size increased to 11.5 for visual balance
     page.drawText('Telah diterima pada tanggal :', {
       x: 80,
-      y: 161,
-      size: 10,
+      y: 160,
+      size: 11.5,
       font: helvetica,
     });
 
