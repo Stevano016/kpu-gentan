@@ -3,7 +3,7 @@ import { Icons } from '../Icons';
 import { LoadingHint } from '../LoadingHint';
 import { TAHAPAN, URUTAN_TAHAPAN, metaTahapan } from '../../utils/tahapan';
 import { ApiService } from '../../services/api';
-import { PDFDocument, TextAlignment, StandardFonts, PDFName, rgb } from 'pdf-lib';
+import { PDFDocument, TextAlignment, StandardFonts, PDFName } from 'pdf-lib';
 import QRCode from 'qrcode';
 
 interface PemilihTabProps {
@@ -204,26 +204,6 @@ export const PemilihTab: React.FC<PemilihTabProps> = ({
       });
 
       const helveticaBold = await pdfDoc.embedFont(StandardFonts.HelveticaBold);
-      const helvetica = await pdfDoc.embedFont(StandardFonts.Helvetica);
-
-      page.drawRectangle({
-        x: 35,
-        y: 150,
-        width: 190,
-        height: 25,
-        color: rgb(1, 1, 1),
-      });
-
-      page.drawText('Telah diterima pada tanggal :', {
-        x: 80,
-        y: 160,
-        size: 11.5,
-        font: helvetica,
-      });
-
-      const fieldTglDiterima = form.getTextField('tgl_diterima');
-      const widgetTglDiterima = fieldTglDiterima.acroField.getWidgets()[0];
-      widgetTglDiterima.setRectangle({ x: 235, y: 156.8898, width: 320, height: 16 });
 
       form.getFields().forEach(field => {
         if (typeof (field as any).setText === 'function') {
