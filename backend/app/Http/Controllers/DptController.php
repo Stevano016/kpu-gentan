@@ -669,6 +669,7 @@ class DptController extends Controller
                 'tahapan' => $v->tahapan,
                 'id_pemilih' => $v->id_pemilih,
                 'no_urut' => $v->no_urut,
+                'umur' => $v->umur,
                 'tps_total_dpt' => $totalDptTps,
                 'tps_voter_index' => $voterIndex,
             ];

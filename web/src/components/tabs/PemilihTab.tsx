@@ -3,7 +3,7 @@ import { Icons } from '../Icons';
 import { LoadingHint } from '../LoadingHint';
 import { TAHAPAN, URUTAN_TAHAPAN, metaTahapan } from '../../utils/tahapan';
 import { ApiService } from '../../services/api';
-import { PDFDocument, TextAlignment, StandardFonts, PDFName } from 'pdf-lib';
+import { PDFDocument, TextAlignment, StandardFonts, PDFName, rgb } from 'pdf-lib';
 import QRCode from 'qrcode';
 
 interface PemilihTabProps {
@@ -139,9 +139,12 @@ export const PemilihTab: React.FC<PemilihTabProps> = ({
       const pdfDoc = await PDFDocument.load(pdfBytes);
       const form = pdfDoc.getForm();
 
-      form.getTextField('nomor').setText(voter.no_urut !== null && voter.no_urut !== undefined ? String(voter.no_urut) : '');
+      const nomorField = form.getTextField('nomor');
+      nomorField.setFontSize(14);
+      nomorField.setText(voter.no_urut !== null && voter.no_urut !== undefined ? String(voter.no_urut) : '');
+
       form.getTextField('nama').setText(voter.nama);
-      form.getTextField('jenis_kelamin').setText(voter.jenis_kelamin === 'LAKI-LAKI' ? 'Laki-laki' : 'Perempuan');
+      form.getTextField('jenis_kelamin').setText('');
       form.getTextField('dusun').setText(voter.alamat || '');
       form.getTextField('rt').setText(voter.rt || '');
       form.getTextField('rw').setText(voter.rw || '');
@@ -160,7 +163,7 @@ export const PemilihTab: React.FC<PemilihTabProps> = ({
         "12:00 - 13:00 WIB"
       ];
       const waktuStr = timeSlots[session - 1];
-      form.getTextField('waktu').setText(waktuStr);
+      form.getTextField('waktu').setText('');
 
       const getTpsLocationName = (tpsName: string) => {
         if (!tpsName) return "Balai Desa Gentan";
@@ -204,6 +207,68 @@ export const PemilihTab: React.FC<PemilihTabProps> = ({
       });
 
       const helveticaBold = await pdfDoc.embedFont(StandardFonts.HelveticaBold);
+
+      // Draw Jenis Kelamin manually (with red Age " / {umur}" in size 14)
+      const genderText = voter.jenis_kelamin === 'LAKI-LAKI' ? 'Laki-laki' : 'Perempuan';
+      const ageText = voter.umur ? ` / ${voter.umur}` : '';
+      const genderWidth = helveticaBold.widthOfTextAtSize(genderText, 12);
+      
+      page.drawText(genderText, {
+        x: 169,
+        y: 533.8898 + 3,
+        size: 12,
+        font: helveticaBold,
+        color: rgb(0.1, 0.1, 0.1)
+      });
+      
+      if (ageText) {
+        page.drawText(ageText, {
+          x: 169 + genderWidth,
+          y: 533.8898 + 3,
+          size: 14,
+          font: helveticaBold,
+          color: rgb(0.85, 0.15, 0.15)
+        });
+      }
+
+      // Draw Waktu manually in red and size 14
+      page.drawText(waktuStr, {
+        x: 169,
+        y: 437.8898 + 3,
+        size: 14,
+        font: helveticaBold,
+        color: rgb(0.85, 0.15, 0.15)
+      });
+
+      // Draw Red Box "HADIR SESUAI WAKTU YANG DITETAPKAN" (Tighter and shifted slightly to the right)
+      const redColor = rgb(0.85, 0.15, 0.15);
+      
+      // White background for the box to block dotted lines
+      page.drawRectangle({
+        x: 450,
+        y: 405,
+        width: 100,
+        height: 65,
+        color: rgb(1, 1, 1),
+        borderColor: redColor,
+        borderWidth: 2,
+      });
+
+      const line1 = "HADIR SESUAI";
+      const line2 = "WAKTU YANG";
+      const line3 = "DITETAPKAN";
+
+      const w1 = helveticaBold.widthOfTextAtSize(line1, 11);
+      const w2 = helveticaBold.widthOfTextAtSize(line2, 11);
+      const w3 = helveticaBold.widthOfTextAtSize(line3, 11);
+
+      const x1 = 500 - w1 / 2;
+      const x2 = 500 - w2 / 2;
+      const x3 = 500 - w3 / 2;
+
+      page.drawText(line1, { x: x1, y: 447, size: 11, font: helveticaBold, color: redColor });
+      page.drawText(line2, { x: x2, y: 434, size: 11, font: helveticaBold, color: redColor });
+      page.drawText(line3, { x: x3, y: 421, size: 11, font: helveticaBold, color: redColor });
 
       form.getFields().forEach(field => {
         if (typeof (field as any).setText === 'function') {
