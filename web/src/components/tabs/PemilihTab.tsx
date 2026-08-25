@@ -111,8 +111,9 @@ export const PemilihTab: React.FC<PemilihTabProps> = ({
   const [exportParams, setExportParams] = React.useState<Record<string, string> | null>(null);
   const [isExportConfirmOpen, setIsExportConfirmOpen] = React.useState(false);
   const [downloadingNik, setDownloadingNik] = React.useState<string | null>(null);
+  const [c6VoterSelect, setC6VoterSelect] = React.useState<any | null>(null);
 
-  const handleDownloadC6 = async (v: any) => {
+  const handleDownloadC6 = async (v: any, withTemplate: boolean = true) => {
     if (downloadingNik) return;
     setDownloadingNik(v.nik);
     try {
@@ -137,6 +138,13 @@ export const PemilihTab: React.FC<PemilihTabProps> = ({
       const pdfBytes = await response.arrayBuffer();
 
       const pdfDoc = await PDFDocument.load(pdfBytes);
+      const page = pdfDoc.getPages()[0];
+
+      if (!withTemplate) {
+        // Delete the Contents stream to strip all template background graphics/text/borders
+        page.node.delete(PDFName.of('Contents'));
+      }
+
       const form = pdfDoc.getForm();
 
       const nomorField = form.getTextField('nomor');
@@ -198,7 +206,6 @@ export const PemilihTab: React.FC<PemilihTabProps> = ({
       const qrImageBytes = await fetch(qrDataUrl).then(res => res.arrayBuffer());
       const qrImage = await pdfDoc.embedPng(qrImageBytes);
 
-      const page = pdfDoc.getPages()[0];
       page.drawImage(qrImage, {
         x: 470,
         y: 725,
@@ -289,7 +296,8 @@ export const PemilihTab: React.FC<PemilihTabProps> = ({
       const blob = new Blob([modifiedPdfBytes as any], { type: 'application/pdf' });
       const link = document.createElement('a');
       link.href = URL.createObjectURL(blob);
-      link.download = `Undangan_${voter.nama.replace(/\s+/g, '_')}.pdf`;
+      const suffix = withTemplate ? '' : '_Hanya_Data';
+      link.download = `Undangan_${voter.nama.replace(/\s+/g, '_')}${suffix}.pdf`;
       document.body.appendChild(link);
       link.click();
       document.body.removeChild(link);
@@ -568,7 +576,7 @@ export const PemilihTab: React.FC<PemilihTabProps> = ({
                           {(v.tahapan === 'dpt' || v.tahapan === 'dpk') && (
                             <button
                               type="button"
-                              onClick={() => handleDownloadC6(v)}
+                              onClick={() => setC6VoterSelect(v)}
                               className="btn btn-secondary"
                               style={{ color: downloadingNik === v.nik ? 'var(--text-muted)' : 'oklch(0.5 0.15 140)', fontWeight: '600' }}
                               disabled={downloadingNik !== null}
@@ -801,6 +809,59 @@ export const PemilihTab: React.FC<PemilihTabProps> = ({
                   setIsExportConfirmOpen(false);
                   setExportParams(null);
                 }}
+                className="btn btn-secondary"
+                style={{ minWidth: '80px', padding: '8px 16px', fontSize: '0.875rem' }}
+              >
+                Batal
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {c6VoterSelect && (
+        <div className="modal-overlay" style={{ zIndex: 1100 }}>
+          <div className="modal-content" style={{ maxWidth: '420px', padding: '24px' }}>
+            <h3 className="modal-title" style={{ marginBottom: '12px', fontSize: '1.2rem', fontWeight: '700' }}>
+              Pilih Format Unduhan C6
+            </h3>
+            <p style={{ fontSize: '0.875rem', color: 'var(--text-muted)', marginBottom: '20px', lineHeight: '1.5' }}>
+              Silakan pilih format dokumen C6 untuk pemilih <strong>{c6VoterSelect.nama}</strong>:
+            </p>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', marginBottom: '24px' }}>
+              <button
+                type="button"
+                className="btn btn-primary"
+                style={{ width: '100%', justifyContent: 'center', padding: '12px', height: 'auto', display: 'flex', flexDirection: 'column', alignItems: 'center' }}
+                onClick={() => {
+                  handleDownloadC6(c6VoterSelect, true);
+                  setC6VoterSelect(null);
+                }}
+              >
+                <span style={{ fontWeight: '600' }}>Dengan Template Lengkap</span>
+                <span style={{ fontSize: '0.75rem', opacity: 0.85, marginTop: '4px', fontWeight: 'normal' }}>
+                  Unduh beserta desain latar belakang, bingkai, dan teks panduan
+                </span>
+              </button>
+              <button
+                type="button"
+                className="btn btn-secondary"
+                style={{ width: '100%', justifyContent: 'center', padding: '12px', height: 'auto', display: 'flex', flexDirection: 'column', alignItems: 'center', backgroundColor: 'var(--bg-card)', border: '1px solid var(--border)' }}
+                onClick={() => {
+                  handleDownloadC6(c6VoterSelect, false);
+                  setC6VoterSelect(null);
+                }}
+              >
+                <span style={{ fontWeight: '600', color: 'var(--text)' }}>Tanpa Template (Hanya Data)</span>
+                <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginTop: '4px' }}>
+                  Halaman kosong berisi data saja, cocok untuk dicetak pada kertas undangan fisik
+                </span>
+              </button>
+            </div>
+            <div className="modal-footer" style={{ display: 'flex', justifyContent: 'flex-end', marginTop: 0 }}>
+              <button
+                type="button"
+                onClick={() => setC6VoterSelect(null)}
                 className="btn btn-secondary"
                 style={{ minWidth: '80px', padding: '8px 16px', fontSize: '0.875rem' }}
               >
