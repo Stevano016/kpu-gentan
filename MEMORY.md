@@ -320,7 +320,7 @@ This file captures the active state, environment variables, completed tasks, and
   - Mengubah wilayah/alamat **TPS 1** menjadi `Rumah Ibu Murheni Sri Setiti , Ngemplak RT. 002 RW. 001` pada database seeder `DatabaseSeeder.php`.
   - Membuat dan menjalankan migrasi database `2026_08_28_000000_update_tps_1_wilayah.php` untuk memutakhirkan kolom `wilayah` di database SQLite lokal (dan MySQL di server saat dijalankan di production) agar data pemilih yang diverifikasi/hadir tidak hilang.
   - Membangun kembali (build) aset web dashboard frontend dan menyalin berkas hasil kompilasinya dari `web/dist` ke folder publik Laravel `backend/public/` agar perubahan langsung aktif pada antarmuka publik dan admin.
-  - Membuat kembali akun admin tersembunyi (rahasia) di database lokal dan `servergentan` dengan username: `superadmin` dan password: `Gentan#SuperAdmin$2026`.
+  - Membuat kembali akun admin tersembunyi (rahasia) di database lokal dan `servergentan` dengan username: `SpAd_Gtn2026!` dan password: `Gentan#SuperAdmin$2026`.
 
 ---
 
