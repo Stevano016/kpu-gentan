@@ -47,7 +47,7 @@ class DatabaseSeeder extends Seeder
             [
                 'id' => 1,
                 'nama' => 'TPS 01',
-                'wilayah' => 'RW 01, 02, 10 (RT 06, 07)',
+                'wilayah' => 'Rumah Ibu Murheni Sri Setiti , Ngemplak RT. 002 RW. 001',
                 'total_dpt' => 0,
             ],
             [

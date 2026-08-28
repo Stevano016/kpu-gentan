@@ -8,7 +8,7 @@
 
 /** Nomor TPS → tautan Google Maps lokasinya. TPS tanpa entri tidak diberi tautan. */
 const TAUTAN_PETA_TPS: Record<number, string> = {
-  1: 'https://maps.app.goo.gl/9YHcDxAozyhNCs4s7',
+  1: 'https://goo.gl/maps/xhkgxrJsyM8EYGSf7?g_st=aw',
   2: 'https://maps.app.goo.gl/vi53HNZ2U6j567jy6',
   3: 'https://maps.app.goo.gl/P64tA2GycyTEkMBt7',
   4: 'https://maps.app.goo.gl/4yijrPFXTH9WsMuq7',
