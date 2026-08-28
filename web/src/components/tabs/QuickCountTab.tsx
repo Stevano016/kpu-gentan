@@ -67,10 +67,15 @@ export const QuickCountTab: React.FC<QuickCountTabProps> = ({
   const selisih = urutTerbanyak.length > 1 ? suaraTertinggi - urutTerbanyak[1].suara : 0;
 
   const tpsLapor = stats?.tps_sudah_lapor_qc ?? 0;
+  const tpsDraft = stats?.tps_draft_qc ?? 0;
   const tpsTotal = stats?.total_tps ?? 0;
   const pemilihBerhak = stats?.total_pemilih ?? 0;
 
   const sudahAdaData = totalMasuk > 0;
+
+  // Angka gabungan ikut menghitung TPS yang masih menghitung (draft), sehingga
+  // sebagian totalnya bersifat sementara dan bisa berubah sebelum dikunci.
+  const adaSementara = tpsDraft > 0;
 
   return (
     <div className="qc-root">
@@ -78,7 +83,8 @@ export const QuickCountTab: React.FC<QuickCountTabProps> = ({
         <div>
           <h1 className="section-title">Quick Count</h1>
           <p className="section-desc">
-            Perolehan suara sementara dari {tpsLapor} dari {tpsTotal} TPS yang sudah mengirim hasil final.
+            Diperbarui realtime. {tpsLapor} TPS final
+            {tpsDraft > 0 && ` · ${tpsDraft} sedang menghitung`} dari {tpsTotal} TPS.
           </p>
         </div>
         <div className="header-actions">
@@ -93,15 +99,26 @@ export const QuickCountTab: React.FC<QuickCountTabProps> = ({
 
       {!dashboardData ? null : (
         <>
+          {/* Penanda bahwa sebagian angka masih bisa berubah. Ditaruh di atas
+              angka besar supaya tidak ada yang mengira ini hasil resmi final. */}
+          {adaSementara && (
+            <div className="qc-live-note" role="status">
+              <span className="qc-live-dot" aria-hidden="true" />
+              Angka bergerak realtime — termasuk {tpsDraft} TPS yang masih menghitung, jadi bisa berubah sebelum dikunci final.
+            </div>
+          )}
+
           {/* Angka utama: satu hal yang paling ingin diketahui orang. */}
           <div className="qc-hero">
             <div>
-              <div className="qc-hero-label">Total Suara Masuk</div>
+              <div className="qc-hero-label">
+                Total Suara Masuk{adaSementara && <span className="qc-tag-sementara">sementara</span>}
+              </div>
               <div className="qc-hero-value">{format(totalMasuk)}</div>
               <div className="qc-hero-sub">
                 {suaraSah > 0
                   ? `${format(suaraSah)} suara sah · ${format(tidakSah)} tidak sah`
-                  : 'Belum ada TPS yang mengirim hasil final'}
+                  : 'Belum ada TPS yang mengirim data'}
               </div>
             </div>
 
@@ -121,11 +138,14 @@ export const QuickCountTab: React.FC<QuickCountTabProps> = ({
 
           <div className="grid-cols-4">
             <div className="card">
-              <div className="card-title">TPS Sudah Lapor</div>
+              <div className="card-title">TPS Final</div>
               <div className="card-value">{tpsLapor}<span className="qc-of">/{tpsTotal}</span></div>
-              <div className="qc-meter" role="img" aria-label={`${tpsLapor} dari ${tpsTotal} TPS sudah lapor`}>
+              <div className="qc-meter" role="img" aria-label={`${tpsLapor} dari ${tpsTotal} TPS sudah final`}>
                 <div className="qc-meter-fill" style={{ width: `${persen(tpsLapor, tpsTotal)}%` }} />
               </div>
+              {tpsDraft > 0 && (
+                <div className="card-subtext">+{tpsDraft} TPS masih menghitung (sementara)</div>
+              )}
             </div>
             <div className="card">
               <div className="card-title">Suara Sah</div>
@@ -191,7 +211,7 @@ export const QuickCountTab: React.FC<QuickCountTabProps> = ({
             </div>
 
             {!sudahAdaData ? (
-              <p className="qc-kosong">Grafik akan terisi setelah ada TPS yang mengirim hasil final.</p>
+              <p className="qc-kosong">Grafik akan terisi begitu KPPS mulai menghitung di lapangan.</p>
             ) : (
               <div className="qc-bars">
                 {urutTerbanyak.map((k) => (

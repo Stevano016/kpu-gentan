@@ -41,15 +41,20 @@ class DashboardController extends Controller
         $totalHadirDptb = $hadir('dptb');
         $totalHadirAll = $totalHadirDpt + $totalHadirDpk;
         
-        // Quick Count status
+        // Quick Count status. TPS final sudah dikunci; TPS draft sedang aktif
+        // menghitung dan angkanya ikut tampil realtime, tapi masih bisa berubah.
         $totalSubmittedQc = QuickCount::where('status', 'final')->count();
+        $totalDraftQc = QuickCount::where('status', 'draft')->count();
 
-        // Quick Count votes aggregates
+        // Quick Count votes aggregates. Sengaja MENYERTAKAN draft supaya grafik
+        // dashboard bergerak realtime tiap KPPS menekan +/- di lapangan, bukan
+        // menunggu submit final. Angka yang berasal dari draft bersifat
+        // sementara — web menandainya lewat jumlah `tps_draft_qc`.
         $selectCols = 'SUM(suara_tidak_sah) as suara_tidak_sah';
         for ($i = 1; $i <= 10; $i++) {
             $selectCols .= ", SUM(kandidat_$i) as kandidat_$i";
         }
-        $qcAggregates = QuickCount::where('status', 'final')
+        $qcAggregates = QuickCount::whereIn('status', ['draft', 'final'])
             ->selectRaw($selectCols)
             ->first();
 
@@ -139,7 +144,11 @@ class DashboardController extends Controller
                     'total_hadir' => $totalHadirAll,
                     'persentase_kehadiran' => $totalPemilih > 0 ? round(($totalHadirAll / $totalPemilih) * 100, 2) : 0,
                     'tps_sudah_lapor_qc' => $totalSubmittedQc,
-                    'tps_belum_lapor_qc' => $totalTps - $totalSubmittedQc,
+                    'tps_draft_qc' => $totalDraftQc,
+                    // "Belum" kini berarti benar-benar belum ada data sama
+                    // sekali — TPS yang sedang menghitung (draft) tidak lagi
+                    // dianggap belum lapor.
+                    'tps_belum_lapor_qc' => $totalTps - $totalSubmittedQc - $totalDraftQc,
                 ],
                 'quick_count_aggregates' => array_merge(
                     collect(range(1, 10))->mapWithKeys(fn($i) => ["kandidat_$i" => (int)($qcAggregates->{"kandidat_$i"} ?? 0)])->toArray(),

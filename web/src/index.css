@@ -1106,6 +1106,52 @@ tr:hover td {
   --qc-grid: var(--border);
 }
 
+/* Penanda bahwa angka masih bergerak karena ada TPS yang belum final. */
+.qc-live-note {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 14px;
+  margin-bottom: 16px;
+  font-size: 0.85rem;
+  color: var(--warning);
+  background-color: var(--warning-light);
+  border: 1px solid var(--warning);
+  border-radius: var(--radius);
+}
+
+.qc-live-dot {
+  flex-shrink: 0;
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  background-color: var(--warning);
+  animation: qc-live-pulse 1.4s ease-in-out infinite;
+}
+
+@keyframes qc-live-pulse {
+  0%, 100% { opacity: 1; transform: scale(1); }
+  50% { opacity: 0.35; transform: scale(0.7); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .qc-live-dot { animation: none; }
+}
+
+.qc-tag-sementara {
+  display: inline-block;
+  margin-left: 8px;
+  padding: 1px 7px;
+  font-size: 0.62rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  vertical-align: middle;
+  color: var(--warning);
+  background-color: var(--warning-light);
+  border: 1px solid var(--warning);
+  border-radius: 999px;
+}
+
 .qc-hero {
   display: flex;
   flex-wrap: wrap;

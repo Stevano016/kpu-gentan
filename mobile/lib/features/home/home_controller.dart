@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 
 import '../../core/constants.dart';
@@ -26,6 +28,22 @@ class UiFeedback {
 /// Pekerjaan jaringan yang sedang berjalan, dipakai untuk memilih tombol mana
 /// yang menampilkan lingkaran pemuatan.
 enum SyncAction { draft, finalize, sync }
+
+/// Nasib penyimpanan otomatis hasil hitung cepat, untuk indikator kecil di
+/// layar quick count.
+enum QcSaveState {
+  /// Belum ada perubahan sejak terakhir tersinkron.
+  idle,
+
+  /// Perubahan sedang menunggu jeda atau sedang dikirim ke server.
+  saving,
+
+  /// Perubahan terakhir sudah diterima server.
+  saved,
+
+  /// Tersimpan di perangkat, tetapi belum sampai ke server (offline/ditolak).
+  offline,
+}
 
 /// Seluruh state dan aksi layar utama.
 ///
@@ -70,6 +88,15 @@ class HomeController extends ChangeNotifier {
   /// `null` selama hasil hitung cepat belum pernah diisi di perangkat ini.
   QuickCountStatus? _qcStatus;
   SyncAction? _syncAction;
+
+  /// Status penyimpanan otomatis dan penunda pengirimannya.
+  QcSaveState _qcSaveState = QcSaveState.idle;
+  Timer? _qcAutoSaveTimer;
+
+  /// Ditinggikan selama controller diisi dari kode (muat lokal, perapian angka)
+  /// supaya perubahan itu tidak disalahartikan sebagai ketikan petugas dan
+  /// memicu penyimpanan otomatis.
+  bool _suppressQcAutosave = false;
 
   final List<String> _syncLogs = [];
   bool _disposed = false;
@@ -116,6 +143,9 @@ class HomeController extends ChangeNotifier {
       _qcStatus?.code.toUpperCase() ?? 'Belum diisi';
   SyncAction? get syncAction => _syncAction;
 
+  /// Status penyimpanan otomatis untuk indikator kecil di layar quick count.
+  QcSaveState get qcSaveState => _qcSaveState;
+
   /// Angka yang sedang tampil di kolom input, tanpa mengubah isinya.
   QuickCountEntry get liveEntry => QuickCountEntry(
         votes: {
@@ -143,6 +173,10 @@ class HomeController extends ChangeNotifier {
     _paslons = await _paslonRepo.cached();
     _notify();
 
+    // Dipasang setelah data lokal termuat supaya pengisian awal controller tidak
+    // langsung memicu penyimpanan otomatis.
+    quickCountInputs.addListener(_onQcInputChanged);
+
     _addLog(
       'Aplikasi dimulai. Sesi: $tpsName, '
       'Akses: ${_session?.kppsRole ?? UserSession.kppsRoleFull}',
@@ -162,6 +196,8 @@ class HomeController extends ChangeNotifier {
   @override
   void dispose() {
     _disposed = true;
+    _qcAutoSaveTimer?.cancel();
+    quickCountInputs.removeListener(_onQcInputChanged);
     _realtime.dispose();
     searchController.dispose();
     for (final controller in kandidatControllers.values) {
@@ -191,10 +227,12 @@ class HomeController extends ChangeNotifier {
   Future<void> _loadLocalQuickCount() async {
     final entry = await _quickCount.readLocal();
     if (entry == null) return;
+    _suppressQcAutosave = true;
     for (final slot in kandidatControllers.entries) {
       slot.value.text = entry.votesOf(slot.key).toString();
     }
     invalidController.text = entry.invalid.toString();
+    _suppressQcAutosave = false;
     _qcStatus = entry.status;
     _notify();
   }
@@ -323,6 +361,7 @@ class HomeController extends ChangeNotifier {
   /// Membaca angka dari controller sekaligus merapikan tampilannya.
   QuickCountEntry _readQuickCountEntry(QuickCountStatus status) {
     final votes = <int, int>{};
+    _suppressQcAutosave = true;
     for (final slot in kandidatControllers.entries) {
       final value = int.tryParse(slot.value.text) ?? 0;
       votes[slot.key] = value;
@@ -330,8 +369,38 @@ class HomeController extends ChangeNotifier {
     }
     final invalid = int.tryParse(invalidController.text) ?? 0;
     invalidController.text = invalid.toString();
+    _suppressQcAutosave = false;
 
     return QuickCountEntry(votes: votes, invalid: invalid, status: status);
+  }
+
+  /// Menunda pengiriman draft tiap kali angka berubah karena ketikan/tombol.
+  ///
+  /// Perubahan yang berasal dari kode (muat lokal, perapian) diabaikan lewat
+  /// [_suppressQcAutosave], dan hasil yang sudah final tidak lagi ikut disimpan.
+  void _onQcInputChanged() {
+    if (_suppressQcAutosave || isQcLocked) return;
+    _qcSaveState = QcSaveState.saving;
+    _notify();
+    _qcAutoSaveTimer?.cancel();
+    _qcAutoSaveTimer = Timer(AppConstants.qcAutoSaveDebounce, _autoSaveDraft);
+  }
+
+  /// Mengirim angka terkini ke server sebagai draft, tanpa mengganggu petugas
+  /// dengan popup. Kegagalan cukup ditandai lewat indikator kecil.
+  Future<void> _autoSaveDraft() async {
+    if (isQcLocked) return;
+
+    // Saat tidak terkunci, liveEntry selalu berstatus draft.
+    final result = await _quickCount.submit(liveEntry);
+    if (_disposed) return;
+
+    _qcStatus = QuickCountStatus.draft;
+    _qcSaveState =
+        (result.isSuccess && result.data == QuickCountSyncStatus.synced)
+            ? QcSaveState.saved
+            : QcSaveState.offline;
+    _notify();
   }
 
   /// Menyimpan hasil hitung cepat sebagai draft atau final.
@@ -339,6 +408,10 @@ class HomeController extends ChangeNotifier {
   /// Total suara diperiksa lebih dulu terhadap jumlah pemilih dan kehadiran
   /// agar kesalahan ketik tidak terlanjur dikirim ke sekretariat.
   Future<UiFeedback> submitQuickCount(QuickCountStatus status) async {
+    // Batalkan draft yang masih menunggu jeda agar tidak menimpa hasil final
+    // yang sedang dikunci.
+    _qcAutoSaveTimer?.cancel();
+
     final entry = _readQuickCountEntry(status);
     final slots = _paslons.visibleSlots(entry.votesOf);
     final totalInput = entry.totalOn(slots);
@@ -366,6 +439,10 @@ class HomeController extends ChangeNotifier {
 
     _syncAction = null;
     _qcStatus = status;
+    _qcSaveState =
+        (result.isSuccess && result.data == QuickCountSyncStatus.synced)
+            ? QcSaveState.saved
+            : QcSaveState.offline;
     _notify();
 
     if (result.isSuccess) {

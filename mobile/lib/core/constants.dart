@@ -19,6 +19,13 @@ abstract final class AppConstants {
 
   /// Batas atas penghitung suara; menahan salah tekan tombol tahan.
   static const int maxVoteCount = 999999;
+
+  /// Jeda sebelum perubahan +/- otomatis dikirim ke server sebagai draft.
+  ///
+  /// Tombol +/- bisa ditekan-tahan (satu tap tiap 90ms); tanpa jeda ini tiap
+  /// ketukan jadi satu permintaan jaringan. Menunggu sebentar setelah petugas
+  /// berhenti menekan membuat satu rentetan ketukan cukup dikirim sekali.
+  static const Duration qcAutoSaveDebounce = Duration(milliseconds: 600);
 }
 
 /// Batas waktu jaringan.

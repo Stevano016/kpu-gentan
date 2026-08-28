@@ -197,18 +197,25 @@ class SyncController extends Controller
             $inputTotalSuara += intval($request->input("kandidat_$i", 0));
         }
 
-        if ($inputTotalSuara > $totalPemilih) {
-            return response()->json([
-                'status' => 'error',
-                'message' => "Jumlah total suara ({$inputTotalSuara}) tidak boleh melebihi Total Pemilih ({$totalPemilih}) di TPS ini."
-            ], 422);
-        }
+        // Batas atas hanya ditegakkan saat FINAL. Draft dikirim otomatis tiap
+        // KPPS menekan +/- dan tampil realtime; check-in disinkronkan terpisah
+        // sehingga kehadiran bisa sesaat tertinggal dari jumlah surat suara yang
+        // sudah dihitung. Menolak draft di sini akan membekukan angka realtime
+        // di dashboard. Kebenaran akhir tetap dijaga oleh pemeriksaan final.
+        if ($request->status === 'final') {
+            if ($inputTotalSuara > $totalPemilih) {
+                return response()->json([
+                    'status' => 'error',
+                    'message' => "Jumlah total suara ({$inputTotalSuara}) tidak boleh melebihi Total Pemilih ({$totalPemilih}) di TPS ini."
+                ], 422);
+            }
 
-        if ($inputTotalSuara > $totalHadir) {
-            return response()->json([
-                'status' => 'error',
-                'message' => "Jumlah total suara ({$inputTotalSuara}) tidak boleh melebihi Kehadiran / Check-In ({$totalHadir}) di TPS ini."
-            ], 422);
+            if ($inputTotalSuara > $totalHadir) {
+                return response()->json([
+                    'status' => 'error',
+                    'message' => "Jumlah total suara ({$inputTotalSuara}) tidak boleh melebihi Kehadiran / Check-In ({$totalHadir}) di TPS ini."
+                ], 422);
+            }
         }
 
         $qc = QuickCount::find($tpsId);

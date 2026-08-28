@@ -7,17 +7,17 @@ import '../../shared/widgets/status_chip.dart';
 import '../home/home_controller.dart';
 import 'widgets/vote_input_row.dart';
 
-/// Input perolehan suara TPS, tersimpan sebagai draft atau dikunci final.
+/// Input perolehan suara TPS. Tiap perubahan angka tersimpan otomatis sebagai
+/// draft dan langsung tampil realtime di dashboard; tombol Submit Final
+/// mengunci hasilnya.
 class QuickCountTab extends StatelessWidget {
   const QuickCountTab({
     super.key,
     required this.controller,
-    required this.onSubmitDraft,
     required this.onSubmitFinal,
   });
 
   final HomeController controller;
-  final VoidCallback onSubmitDraft;
   final VoidCallback onSubmitFinal;
 
   @override
@@ -83,37 +83,84 @@ class QuickCountTab extends StatelessWidget {
                 );
               },
             ),
-            const SizedBox(height: 24),
-            if (!locked) _buildActions(),
+            const SizedBox(height: 20),
+            if (!locked) ...[
+              _buildAutoSaveHint(),
+              const SizedBox(height: 12),
+              _buildFinalAction(),
+            ] else
+              _buildLockedHint(),
           ],
         ),
       ),
     );
   }
 
-  Widget _buildActions() {
-    final busy = controller.isSyncing;
+  /// Indikator kecil status simpan otomatis, pengganti tombol Simpan Draft.
+  Widget _buildAutoSaveHint() {
+    late final IconData icon;
+    late final Color color;
+    late final String text;
+
+    switch (controller.qcSaveState) {
+      case QcSaveState.saving:
+        icon = Icons.cloud_sync_outlined;
+        color = AppColors.primary;
+        text = 'Menyimpan otomatis...';
+      case QcSaveState.saved:
+        icon = Icons.cloud_done_outlined;
+        color = AppColors.success;
+        text = 'Tersimpan — tampil realtime di dashboard';
+      case QcSaveState.offline:
+        icon = Icons.cloud_off_outlined;
+        color = AppColors.warning;
+        text = 'Tersimpan di perangkat, menunggu jaringan';
+      case QcSaveState.idle:
+        icon = Icons.bolt_outlined;
+        color = Colors.grey;
+        text = 'Setiap perubahan tersimpan & terkirim otomatis';
+    }
 
     return Row(
       children: [
+        Icon(icon, size: 16, color: color),
+        const SizedBox(width: 8),
         Expanded(
-          child: OutlinedButton(
-            onPressed: busy ? null : onSubmitDraft,
-            child: controller.syncAction == SyncAction.draft
-                ? const ButtonSpinner(color: AppColors.primary)
-                : const Text('Simpan Draft'),
+          child: Text(
+            text,
+            style: TextStyle(fontSize: 12, color: color),
           ),
         ),
-        const SizedBox(width: 12),
+      ],
+    );
+  }
+
+  Widget _buildFinalAction() {
+    final busy = controller.isSyncing;
+
+    return SizedBox(
+      width: double.infinity,
+      child: ElevatedButton(
+        onPressed: busy ? null : onSubmitFinal,
+        child: controller.syncAction == SyncAction.finalize
+            ? const ButtonSpinner()
+            : const Text(
+                'Submit Final',
+                style: TextStyle(fontWeight: FontWeight.bold),
+              ),
+      ),
+    );
+  }
+
+  Widget _buildLockedHint() {
+    return Row(
+      children: [
+        const Icon(Icons.lock_outline, size: 16, color: Colors.grey),
+        const SizedBox(width: 8),
         Expanded(
-          child: ElevatedButton(
-            onPressed: busy ? null : onSubmitFinal,
-            child: controller.syncAction == SyncAction.finalize
-                ? const ButtonSpinner()
-                : const Text(
-                    'Submit Final',
-                    style: TextStyle(fontWeight: FontWeight.bold),
-                  ),
+          child: Text(
+            'Hasil sudah dikunci final. Hubungi sekretariat untuk perubahan.',
+            style: TextStyle(fontSize: 12, color: Colors.grey[700]),
           ),
         ),
       ],

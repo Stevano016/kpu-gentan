@@ -80,21 +80,30 @@ export const DashboardTab: React.FC<DashboardTabProps> = ({
               <div className="card-subtext">DPT: {dashboardData.stats.total_hadir_dpt} | DPK: {dashboardData.stats.total_hadir_dpk} ({dashboardData.stats.persentase_kehadiran}%)</div>
             </div>
             <div className="card">
-              <div className="card-title">TPS Sudah Kirim QC</div>
+              <div className="card-title">TPS Final QC</div>
               <div className="card-value">{dashboardData.stats.tps_sudah_lapor_qc}</div>
-              <div className="card-subtext">Dari {dashboardData.stats.total_tps} total TPS</div>
+              <div className="card-subtext">
+                {(dashboardData.stats.tps_draft_qc ?? 0) > 0
+                  ? `+${dashboardData.stats.tps_draft_qc} sedang menghitung`
+                  : `Dari ${dashboardData.stats.total_tps} total TPS`}
+              </div>
             </div>
             <div className="card">
               <div className="card-title">TPS Belum Kirim QC</div>
               <div className="card-value">{dashboardData.stats.tps_belum_lapor_qc}</div>
-              <div className="card-subtext">Menunggu submit final KPPS</div>
+              <div className="card-subtext">Belum ada data sama sekali</div>
             </div>
           </div>
 
           <div className="grid-cols-2">
             {/* Quick Count Aggregates */}
             <div className="card">
-              <h2 style={{ fontSize: '1.1rem', fontWeight: '700', marginBottom: '20px' }}>Agregat Quick Count</h2>
+              <h2 style={{ fontSize: '1.1rem', fontWeight: '700', marginBottom: '20px' }}>
+                Agregat Quick Count
+                {(dashboardData.stats.tps_draft_qc ?? 0) > 0 && (
+                  <span className="qc-tag-sementara">sementara</span>
+                )}
+              </h2>
               <div className="quickcount-stats">
                 {dashboardData.paslons?.map((p: any) => {
                   const suara = dashboardData.quick_count_aggregates[`kandidat_${p.nomor_urut}`] ?? 0;

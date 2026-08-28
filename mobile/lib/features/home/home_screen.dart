@@ -128,7 +128,6 @@ class _HomeScreenState extends State<HomeScreen> {
             label: 'Quick Count',
             view: QuickCountTab(
               controller: _controller,
-              onSubmitDraft: () => _submitQuickCount(QuickCountStatus.draft),
               onSubmitFinal: _submitFinal,
             ),
           ),
