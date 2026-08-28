@@ -71,7 +71,7 @@ class ApiClient {
   /// `--dart-define=WS_URL=ws://<ip-pc-anda>:8080`.
   static const String wsUrl = String.fromEnvironment(
     'WS_URL',
-    defaultValue: 'wss://ws.kpps.ysmb.my.id:10650/ws',
+    defaultValue: 'wss://kpps.ysmb.my.id/ws',
   );
 
   Map<String, String> _headers({required bool authenticated}) {
