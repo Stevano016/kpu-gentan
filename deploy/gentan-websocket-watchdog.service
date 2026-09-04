@@ -1,0 +1,8 @@
+[Unit]
+Description=Pengawas WebSocket Gentan (periksa handshake, mulai ulang bila mati)
+Documentation=file:/storage/kpps/kpu-gentan/deploy/gentan-websocket-watchdog.sh
+After=gentan-websocket.service
+
+[Service]
+Type=oneshot
+ExecStart=/storage/kpps/kpu-gentan/deploy/gentan-websocket-watchdog.sh

@@ -1,5 +1,4 @@
 import React from 'react';
-import { Icons } from '../Icons';
 import { LoadingHint } from '../LoadingHint';
 import { IndikatorLangsung } from '../IndikatorLangsung';
 import type { ModeLangsung } from '../../hooks/useLiveDashboard';
@@ -94,11 +93,12 @@ export const QuickCountTab: React.FC<QuickCountTabProps> = ({
           </p>
         </div>
         <div className="header-actions">
-          <IndikatorLangsung mode={modeLangsung} terakhir={terakhirDiperbarui} />
-          <button onClick={() => fetchDashboard()} disabled={dashboardLoading} className="btn btn-secondary">
-            <Icons.Refresh />
-            <span>Segarkan</span>
-          </button>
+          <IndikatorLangsung
+            mode={modeLangsung}
+            terakhir={terakhirDiperbarui}
+            onSegarkan={() => fetchDashboard()}
+            sedangMemuat={dashboardLoading}
+          />
         </div>
       </div>
 

@@ -1,0 +1,12 @@
+[Unit]
+Description=Jalankan pengawas WebSocket Gentan tiap menit
+
+[Timer]
+# Beri jeda setelah boot supaya server WS-nya lebih dulu siap.
+OnBootSec=90
+OnUnitActiveSec=60
+AccuracySec=5s
+Unit=gentan-websocket-watchdog.service
+
+[Install]
+WantedBy=timers.target

@@ -1208,18 +1208,34 @@ tr:hover td {
    Indikator pembaruan langsung
    ============================================================ */
 
+/* Sebuah <button>, bukan <span>: indikator ini menggantikan tombol Segarkan
+   yang dulu berdiri di sebelahnya, jadi ia harus bisa diketuk dan dijangkau
+   dengan papan tunjuk. Font dan warnanya diwarisi ulang karena tombol bawaan
+   peramban datang dengan gayanya sendiri. */
 .indikator-langsung {
   display: inline-flex;
   align-items: center;
   gap: 6px;
-  padding: 4px 10px;
+  padding: 6px 12px;
   border: 1px solid var(--border);
   border-radius: 999px;
   background-color: var(--surface);
+  font-family: inherit;
   font-size: 0.75rem;
   font-weight: 600;
   color: var(--text-muted);
   white-space: nowrap;
+  cursor: pointer;
+  transition: var(--transition);
+}
+
+.indikator-langsung:hover:not(:disabled) {
+  filter: brightness(0.97);
+}
+
+.indikator-langsung:disabled {
+  cursor: progress;
+  opacity: 0.75;
 }
 
 .indikator-langsung .titik {

@@ -88,7 +88,15 @@ class WebSocketServer extends Command
                                 $pong = $this->encodeFrame($decoded['text'], 10);
                                 @fwrite($socket, $pong);
                             } else if ($decoded['opcode'] === 1) { // Text message
-                                $this->info("Client {$socketId} sent: " . $decoded['text']);
+                                // Panel mengirim denyut teks tiap 25 detik per
+                                // layar supaya proxy tidak memutus sambungan
+                                // yang sunyi. Mencatat semuanya berarti ribuan
+                                // baris "sent: ping" per hari yang mengubur
+                                // kejadian sungguhan di journal — jadi hanya
+                                // ditampilkan saat dijalankan dengan -v.
+                                if ($this->output->isVerbose()) {
+                                    $this->info("Client {$socketId} sent: " . $decoded['text']);
+                                }
                             }
                         }
                     }
@@ -128,16 +136,29 @@ class WebSocketServer extends Command
         return @fwrite($socket, $response) !== false;
     }
 
-    private function handleIpcNotification($data, $clients, $handshakes)
+    /**
+     * Siarkan ke semua klien yang sudah berjabat tangan.
+     *
+     * Klien yang gagal ditulisi langsung dilepas. Sambungan yang mati tanpa
+     * frame penutup — peramban yang hilang bersama jaringannya, laptop yang
+     * ditutup — tidak pernah muncul sebagai socket yang bisa dibaca, jadi
+     * `fread` tidak akan pernah membersihkannya. Server ini menyala berminggu-
+     * minggu; tanpa pelepasan di sini, daftar kliennya hanya bertambah dan
+     * setiap siaran menulis ke socket yang sudah tidak ada.
+     */
+    private function handleIpcNotification($data, &$clients, &$handshakes)
     {
-        // Broadcast the raw JSON data to all handshaken WebSocket clients
         $encodedFrame = $this->encodeFrame($data);
-        
+
         foreach ($clients as $client) {
             $socketId = intval($client);
-            // Skip the listening server socket and un-handshaken sockets
-            if (isset($handshakes[$socketId]) && $handshakes[$socketId]) {
-                @fwrite($client, $encodedFrame);
+            // Lewati socket pendengar dan yang belum berjabat tangan.
+            if (!isset($handshakes[$socketId]) || !$handshakes[$socketId]) {
+                continue;
+            }
+
+            if (@fwrite($client, $encodedFrame) === false) {
+                $this->closeConnection($client, $clients, $handshakes);
             }
         }
     }

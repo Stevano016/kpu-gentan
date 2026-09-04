@@ -1,5 +1,4 @@
 import React from 'react';
-import { Icons } from '../Icons';
 import { roundVal } from '../../utils/helpers';
 import { LoadingHint } from '../LoadingHint';
 import { IndikatorLangsung } from '../IndikatorLangsung';
@@ -33,17 +32,17 @@ export const DashboardTab: React.FC<DashboardTabProps> = ({
           <h1 className="section-title">Dashboard Umum</h1>
           <p className="section-desc">Statistik real-time kehadiran pemilih dan quick count suara.</p>
         </div>
-        <div className="header-actions">
-          {/* Angka di halaman ini bergerak sendiri; indikatornya yang membuat
-              hal itu — dan umur datanya — terlihat tanpa menekan apa pun. */}
-          <IndikatorLangsung mode={modeLangsung} terakhir={terakhirDiperbarui} />
-          {/* Wrapped: passing the handler directly would hand the click event in as
-              `silent`, making the manual refresh silent too. */}
-          <button onClick={() => fetchDashboard()} disabled={dashboardLoading} className="btn btn-secondary">
-            <Icons.Refresh />
-            <span>Segarkan</span>
-          </button>
-        </div>
+        {/* Tidak ada lagi tombol Segarkan: angkanya ditarik sendiri, dan
+            indikator inilah yang menunjukkan bahwa itu benar terjadi. Ia
+            sekaligus bisa diketuk kalau seseorang tidak mau menunggu.
+            Pemanggilannya dibungkus supaya event klik tidak masuk sebagai
+            argumen `silent`, yang akan membuat penyegaran manual ikut senyap. */}
+        <IndikatorLangsung
+          mode={modeLangsung}
+          terakhir={terakhirDiperbarui}
+          onSegarkan={() => fetchDashboard()}
+          sedangMemuat={dashboardLoading}
+        />
       </div>
 
       <LoadingHint show={dashboardLoading} />
