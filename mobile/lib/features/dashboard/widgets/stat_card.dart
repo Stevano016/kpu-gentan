@@ -12,7 +12,7 @@ class StatCard extends StatelessWidget {
     required this.iconBackground,
     required this.title,
     required this.value,
-    required this.breakdown,
+    required this.rincian,
   });
 
   final IconData icon;
@@ -21,8 +21,8 @@ class StatCard extends StatelessWidget {
   final String title;
   final int value;
 
-  /// Rincian per tahapan, mis. `DP4: 0 | DPS: 0 | DPT: 12`.
-  final String breakdown;
+  /// Jumlah per tahapan, hanya yang berangka — mis. `{'DPT': 1436}`.
+  final Map<String, int> rincian;
 
   @override
   Widget build(BuildContext context) {
@@ -40,8 +40,14 @@ class StatCard extends StatelessWidget {
             child: Icon(icon, color: iconColor),
           ),
           const SizedBox(height: 12),
+          // Judul dikunci satu baris. Dua kartu ini berdampingan, dan begitu
+          // salah satu judulnya membungkus, angka besar di bawahnya ikut
+          // terdorong turun sehingga kedua angka tidak lagi sebaris — terlihat
+          // seperti kartu yang melorot.
           Text(
             title,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
             style: const TextStyle(color: AppColors.textFaint, fontSize: 12),
           ),
           const SizedBox(height: 4),
@@ -53,12 +59,61 @@ class StatCard extends StatelessWidget {
               color: AppColors.textStrong,
             ),
           ),
-          Text(
-            breakdown,
+          const SizedBox(height: 2),
+          // Tiap pasangan nama-angka dibungkus sebagai satu satuan.
+          //
+          // Sebelumnya rinciannya satu kalimat panjang, dan di kartu selebar
+          // setengah layar kalimat itu terpotong di mana saja — termasuk tepat
+          // di antara `DPT:` dan angkanya. `Wrap` memindahkan pasangan yang
+          // tidak muat ke baris berikutnya secara utuh.
+          if (rincian.isEmpty)
+            const Text(
+              'belum ada data',
+              style: TextStyle(color: AppColors.textFaint, fontSize: 11),
+            )
+          else
+            Wrap(
+              spacing: 10,
+              runSpacing: 2,
+              children: [
+                for (final entri in rincian.entries)
+                  _Rincian(label: entri.key, nilai: entri.value),
+              ],
+            ),
+        ],
+      ),
+    );
+  }
+}
+
+class _Rincian extends StatelessWidget {
+  const _Rincian({required this.label, required this.nilai});
+
+  final String label;
+  final int nilai;
+
+  @override
+  Widget build(BuildContext context) {
+    return Text.rich(
+      TextSpan(
+        children: [
+          TextSpan(
+            text: '$label ',
             style: const TextStyle(color: AppColors.textFaint, fontSize: 11),
+          ),
+          TextSpan(
+            text: '$nilai',
+            style: const TextStyle(
+              color: AppColors.textBody,
+              fontSize: 11,
+              fontWeight: FontWeight.w700,
+            ),
           ),
         ],
       ),
+      // Satu pasangan tidak boleh dipecah di tengah.
+      softWrap: false,
+      overflow: TextOverflow.visible,
     );
   }
 }

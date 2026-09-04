@@ -56,7 +56,7 @@ void main() {
                 title: 'Total Pemilih',
                 value: 1436,
                 // Rincian terpanjang yang mungkin: tiap tahapan empat digit.
-                breakdown: 'DP4: 4492 | DPS: 1533 | DPT: 1436',
+                rincian: {'DP4': 4492, 'DPS': 1533, 'DPT': 1436},
               ),
             ),
             SizedBox(width: 12),
@@ -67,7 +67,7 @@ void main() {
                 iconBackground: Colors.lightBlueAccent,
                 title: 'Kehadiran (Check-In)',
                 value: 0,
-                breakdown: 'DP4: 0 | DPS: 0 | DPT: 0',
+                rincian: {},
               ),
             ),
           ],
@@ -77,7 +77,7 @@ void main() {
     );
 
     expect(tester.takeException(), isNull);
-    expect(find.text('DP4: 4492 | DPS: 1533 | DPT: 1436'), findsOneWidget);
+    expect(find.text('belum ada data'), findsOneWidget);
   });
 
   testWidgets('kartu partisipasi muat di layar 320px', (tester) async {

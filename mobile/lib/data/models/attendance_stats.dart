@@ -55,8 +55,20 @@ class AttendanceStats {
   int get eligibleHadir =>
       eligibleStages.fold(0, (sum, stage) => sum + hadirOf(stage));
 
-  /// Ringkasan satu baris, mis. `DP4: 0 | DPS: 0 | DPTb: 0 | DPT: 12 | DPK: 1`.
-  String breakdown({required bool hadirSaja}) => VoterStage.values
-      .map((s) => '${s.label}: ${hadirSaja ? hadirOf(s) : totalOf(s)}')
-      .join(' | ');
+  /// Rincian per tahapan, **hanya yang berangka**, mis. `{DPT: 1436}`.
+  ///
+  /// Dulu ini satu kalimat panjang `DP4: 0 | DPS: 0 | DPTb: 0 | DPT: 12 | DPK: 1`
+  /// yang dipasang apa adanya ke kartu sempit di dashboard. Dua akibatnya:
+  /// tahapan yang kosong ikut memenuhi ruang padahal tidak mengabarkan apa
+  /// pun, dan kalimat itu dibungkus peramban di titik mana saja — termasuk
+  /// tepat di antara `DPT:` dan angkanya, sehingga angkanya terpisah dari
+  /// namanya. Sebagai peta, pemanggilnya bisa membungkusnya per pasangan.
+  Map<String, int> rincian({required bool hadirSaja}) {
+    final hasil = <String, int>{};
+    for (final s in VoterStage.values) {
+      final nilai = hadirSaja ? hadirOf(s) : totalOf(s);
+      if (nilai > 0) hasil[s.label] = nilai;
+    }
+    return hasil;
+  }
 }
