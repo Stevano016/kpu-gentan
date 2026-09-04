@@ -1,4 +1,4 @@
-import { GAYA, bingkai, muatExcelJS, unduhWorkbook } from './excelDasar';
+import { GAYA, bingkai, muatExcelJS, nomorSesuaiMode, unduhWorkbook, type ModeNomor } from './excelDasar';
 
 /**
  * Penyusun berkas Excel "Daftar Pemilih" — versi .xlsx sungguhan dari ekspor
@@ -40,11 +40,19 @@ export interface DataEksporPemilih {
   baris: BarisPemilih[];
 }
 
-const KOLOM: { judul: string; ambil: (b: BarisPemilih) => string | number | null; lebar: number; teks?: boolean; tengah?: boolean }[] = [
+interface Kolom {
+  judul: string;
+  ambil: (b: BarisPemilih) => string | number | null;
+  lebar: number;
+  teks?: boolean;
+  tengah?: boolean;
+}
+
+const kolomUntuk = (mode: ModeNomor): Kolom[] => [
   { judul: 'No', ambil: () => null, lebar: 6, tengah: true },
   { judul: 'ID Pemilih', ambil: (b) => b.id_pemilih ?? '', lebar: 17 },
-  { judul: 'NIK', ambil: (b) => b.nik ?? '', lebar: 20, teks: true },
-  { judul: 'No. KK', ambil: (b) => b.nkk ?? '', lebar: 20, teks: true },
+  { judul: 'NIK', ambil: (b) => nomorSesuaiMode(b.nik, mode), lebar: 20, teks: true },
+  { judul: 'No. KK', ambil: (b) => nomorSesuaiMode(b.nkk, mode), lebar: 20, teks: true },
   { judul: 'Nama Lengkap', ambil: (b) => b.nama ?? '', lebar: 30 },
   { judul: 'L/P', ambil: (b) => (b.jenis_kelamin === 'PEREMPUAN' ? 'P' : b.jenis_kelamin === 'LAKI-LAKI' ? 'L' : ''), lebar: 6, tengah: true },
   { judul: 'Umur', ambil: (b) => b.umur ?? '', lebar: 7, tengah: true },
@@ -67,7 +75,7 @@ const KOLOM: { judul: string; ambil: (b: BarisPemilih) => string | number | null
   },
 ];
 
-export async function unduhExcelPemilih(data: DataEksporPemilih, denganNikNkk: boolean = true): Promise<string> {
+export async function unduhExcelPemilih(data: DataEksporPemilih, mode: ModeNomor = 'penuh'): Promise<string> {
   const Excel = await muatExcelJS();
   const wb = new Excel.Workbook();
   wb.creator = 'GENTARA — Sekretariat Kelurahan Gentan';
@@ -85,9 +93,10 @@ export async function unduhExcelPemilih(data: DataEksporPemilih, denganNikNkk: b
     },
   });
 
-  const kolomTersaring = denganNikNkk 
-    ? KOLOM 
-    : KOLOM.filter(k => k.judul !== 'NIK' && k.judul !== 'No. KK');
+  const semuaKolom = kolomUntuk(mode);
+  const kolomTersaring = mode === 'sembunyi'
+    ? semuaKolom.filter((k) => k.judul !== 'NIK' && k.judul !== 'No. KK')
+    : semuaKolom;
 
   kolomTersaring.forEach((kolom, i) => {
     const c = ws.getColumn(i + 1);
@@ -159,18 +168,30 @@ export async function unduhExcelPemilih(data: DataEksporPemilih, denganNikNkk: b
   const barisCatatan = 5 + data.baris.length + 2;
   ws.getCell(barisCatatan, 1).value = 'Keterangan';
   ws.getCell(barisCatatan, 1).font = { name: 'Calibri', size: 10, bold: true };
-  if (denganNikNkk) {
+  if (mode === 'penuh') {
     ws.getCell(barisCatatan + 1, 1).value =
       'Baris berlatar kuning = NIK/NKK masih nomor sementara buatan sistem (awalan 9999/9998), bukan nomor asli.';
     ws.getCell(barisCatatan + 2, 1).value =
       'Kolom NIK dan No. KK bertipe teks agar 16 digitnya utuh; jangan diubah formatnya menjadi Angka.';
+  } else if (mode === 'sensor') {
+    ws.getCell(barisCatatan + 1, 1).value =
+      'NIK dan No. KK disensor: hanya 8 digit terakhir yang ditampilkan, sisanya diganti tanda bintang.';
+    ws.getCell(barisCatatan + 2, 1).value =
+      'Berkas ini tidak bisa dipakai untuk memperbaiki data — untuk itu gunakan ekspor tanpa sensor.';
   } else {
     ws.getCell(barisCatatan + 1, 1).value =
       'Data diekspor tanpa memuat kolom NIK dan Nomor KK atas alasan privasi.';
   }
 
-  return unduhWorkbook(wb, `pemilih-${data.label}-${cap()}.xlsx`);
+  return unduhWorkbook(wb, `pemilih-${data.label}${AKHIRAN[mode]}-${cap()}.xlsx`);
 }
+
+/** Nama berkas ikut menyebut modenya; berkas sensor dan penuh mudah tertukar. */
+const AKHIRAN: Record<ModeNomor, string> = {
+  penuh: '',
+  sensor: '-sensor',
+  sembunyi: '-tanpa-nik',
+};
 
 function cap(): string {
   const kini = new Date();

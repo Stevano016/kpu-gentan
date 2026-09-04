@@ -78,6 +78,13 @@ export const ApiService = {
     return permintaan(url, { headers: getAuthHeaders(token) });
   },
 
+  /** Apakah NIK sudah dipakai pemilih lain? Dipakai formulir tambah pemilih. */
+  async cekNikTerdaftar(token: string, nik: string) {
+    return permintaan(`${API_URL}/dpt/cek-nik?nik=${encodeURIComponent(nik)}`, {
+      headers: getAuthHeaders(token),
+    });
+  },
+
   async getQrCode(token: string, nik: string) {
     return permintaan(`${API_URL}/dpt/${nik}/qrcode`, { headers: getAuthHeaders(token) });
   },
@@ -264,6 +271,15 @@ export const ApiService = {
     const qs = new URLSearchParams(params).toString();
     return permintaan(`${API_URL}/keluarga/ekspor${qs ? `?${qs}` : ''}`, {
       headers: getAuthHeaders(token)
+    });
+  },
+
+  // --- Undangan C6 ---
+
+  /** Seluruh pemilih satu TPS beserta nomor urut dan sesi jamnya, untuk cetak maraton. */
+  async daftarUndangan(token: string, tpsId: string | number) {
+    return permintaan(`${API_URL}/undangan/daftar?tps_id=${encodeURIComponent(String(tpsId))}`, {
+      headers: getAuthHeaders(token),
     });
   },
 

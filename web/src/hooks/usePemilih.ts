@@ -10,6 +10,16 @@ interface Argumen {
   feedback: Feedback;
 }
 
+/** Hasil pemeriksaan NIK saat formulir tambah pemilih diisi. */
+export interface CekNik {
+  memeriksa: boolean;
+  terdaftar: boolean;
+  /** Siap tampil di bawah kolom NIK; null bila tidak ada yang perlu dikatakan. */
+  pesan: string | null;
+}
+
+export const CEK_NIK_KOSONG: CekNik = { memeriksa: false, terdaftar: false, pesan: null };
+
 export interface PemilihController {
   dptData: any;
   dptLoading: boolean;
@@ -36,6 +46,8 @@ export interface PemilihController {
   clearNewVoterSuccess: () => void;
   /** Daftar RW untuk pilihan ekspor. */
   daftarRw: string[];
+  /** NIK yang sedang diisi sudah dipakai orang lain atau belum. */
+  cekNik: CekNik;
   fetchDpts: () => Promise<void>;
   handleSaveDpt: (e: React.FormEvent) => Promise<void>;
   handleDeleteDpt: (nik: string) => Promise<void>;
@@ -83,6 +95,7 @@ export function usePemilih({ token, path, feedback }: Argumen): PemilihControlle
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [newVoterSuccess, setNewVoterSuccess] = useState<any>(null);
   const [daftarRw, setDaftarRw] = useState<string[]>([]);
+  const [cekNik, setCekNik] = useState<CekNik>(CEK_NIK_KOSONG);
 
   const form = useFormState(DPT_FORM_KOSONG);
 
@@ -115,6 +128,70 @@ export function usePemilih({ token, path, feedback }: Argumen): PemilihControlle
   }, [token]);
 
   /**
+   * NIK diperiksa ke server begitu digit ke-16 masuk.
+   *
+   * `store()` di server sudah menolak NIK ganda, tapi penolakannya baru muncul
+   * setelah seluruh formulir diisi dan Simpan ditekan — dan pesannya tidak
+   * menyebut siapa pemegangnya. Padahal justru itu yang menentukan langkah
+   * petugas: salah ketik satu digit, atau orang ini memang sudah terdaftar
+   * (sering di tahapan lain, jadi tidak ketemu di tabel yang sedang disaring).
+   *
+   * Yang diperiksa hanya NIK baru: saat mengedit, NIK asli tidak bisa diubah,
+   * dan nomor sementara buatan sistem tetap diperiksa karena penggantinya
+   * boleh saja bentrok.
+   */
+  const nikDiisi = form.values.nik;
+
+  useEffect(() => {
+    const nikSendiri = editingDpt && !editingDpt.nik_sintetis;
+
+    if (!token || !isModalOpen || nikSendiri || nikDiisi.length !== 16 || nikDiisi === editingDpt?.nik) {
+      setCekNik(CEK_NIK_KOSONG);
+      return;
+    }
+
+    let dibatalkan = false;
+    setCekNik({ memeriksa: true, terdaftar: false, pesan: null });
+
+    // Jeda: 16 digit sering masuk lewat tempel-salin, tapi juga sering lewat
+    // ketikan yang masih berlanjut (digit ke-17 memotong yang pertama).
+    const jeda = setTimeout(() => {
+      void ambilData<any>(() => ApiService.cekNikTerdaftar(token, nikDiisi)).then((data) => {
+        if (dibatalkan) return;
+
+        if (!data) {
+          // Server tidak menjawab. Diamkan — `store()` masih menjadi penjaga
+          // terakhir, dan menakut-nakuti petugas dengan galat jaringan di
+          // bawah kolom NIK tidak menolong siapa pun.
+          setCekNik(CEK_NIK_KOSONG);
+          return;
+        }
+
+        if (!data.terdaftar) {
+          setCekNik({ memeriksa: false, terdaftar: false, pesan: null });
+          return;
+        }
+
+        const wilayah = [data.rt ? `RT ${data.rt}` : '', data.rw ? `RW ${data.rw}` : '']
+          .filter(Boolean)
+          .join(' / ');
+        const rincian = [data.tps, wilayah].filter(Boolean).join(' · ');
+
+        setCekNik({
+          memeriksa: false,
+          terdaftar: true,
+          pesan: `NIK ini sudah terdaftar atas nama ${data.nama}`
+            + (data.tahapan ? ` (${String(data.tahapan).toUpperCase()})` : '')
+            + (rincian ? ` — ${rincian}` : '')
+            + '.',
+        });
+      });
+    }, 400);
+
+    return () => { dibatalkan = true; clearTimeout(jeda); };
+  }, [token, isModalOpen, nikDiisi, editingDpt]);
+
+  /**
    * Pemilih baru langsung disusulkan kartu QR-nya. Bila QR gagal dimuat,
    * penambahannya tetap berhasil — jadi yang tampil hanya pemberitahuan biasa.
    */
@@ -141,6 +218,13 @@ export function usePemilih({ token, path, feedback }: Argumen): PemilihControlle
     const isEditing = editingDpt !== null;
     const { nik, nama } = form.values;
 
+    // Server tetap menolaknya, tapi menahannya di sini membuat pesannya
+    // menyebut nama pemegang NIK-nya, bukan sekadar "NIK sudah digunakan".
+    if (cekNik.terdaftar && cekNik.pesan) {
+      showError(cekNik.pesan, 'NIK Sudah Terdaftar');
+      return;
+    }
+
     const hasil = await jalankanAksi(
       () => ApiService.saveDpt(token, susunPayload(form.values, editingDpt), editingDpt?.nik),
     );
@@ -163,7 +247,7 @@ export function usePemilih({ token, path, feedback }: Argumen): PemilihControlle
     } else {
       await tampilkanKartuQr(nik, nama, hasil.json.data?.id_pemilih || '');
     }
-  }, [token, editingDpt, form, fetchDpts, showSuccess, showError, tampilkanKartuQr]);
+  }, [token, editingDpt, form, cekNik, fetchDpts, showSuccess, showError, tampilkanKartuQr]);
 
   const handleDeleteDpt = useCallback(async (nik: string) => {
     showConfirm(
@@ -212,6 +296,7 @@ export function usePemilih({ token, path, feedback }: Argumen): PemilihControlle
     newVoterSuccess,
     clearNewVoterSuccess,
     daftarRw,
+    cekNik,
     fetchDpts,
     handleSaveDpt,
     handleDeleteDpt,

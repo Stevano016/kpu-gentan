@@ -4,6 +4,8 @@ import { LoadingHint } from '../LoadingHint';
 import { ApiService } from '../../services/api';
 import { metaTahapan } from '../../utils/tahapan';
 import { unduhExcelKeluarga, type Keluarga } from '../../utils/excelKeluarga';
+import type { ModeNomor } from '../../utils/excelDasar';
+import { PILIHAN_SENSOR } from '../../constants/app';
 
 interface KeluargaTabProps {
   token: string | null;
@@ -38,6 +40,7 @@ export const KeluargaTab: React.FC<KeluargaTabProps> = ({
   const [ringkasan, setRingkasan] = React.useState<Ringkasan | null>(null);
   const [memuat, setMemuat] = React.useState(false);
   const [mengekspor, setMengekspor] = React.useState(false);
+  const [pilihSensor, setPilihSensor] = React.useState(false);
 
   const [tpsFilter, setTpsFilter] = React.useState('');
   const [rwFilter, setRwFilter] = React.useState('');
@@ -103,7 +106,7 @@ export const KeluargaTab: React.FC<KeluargaTabProps> = ({
     return () => { dibatalkan = true; };
   }, [token, parameter, halaman, cari]);
 
-  const ekspor = async () => {
+  const ekspor = async (mode: ModeNomor) => {
     if (!token || mengekspor) return;
     setMengekspor(true);
     try {
@@ -120,7 +123,7 @@ export const KeluargaTab: React.FC<KeluargaTabProps> = ({
         return;
       }
 
-      const berkas = await unduhExcelKeluarga(json.data);
+      const berkas = await unduhExcelKeluarga(json.data, mode);
       showSuccess(
         'Ekspor Selesai',
         `Berkas ${berkas} sudah diunduh — ${json.data.jumlah_keluarga} keluarga, ${json.data.jumlah_pemilih} pemilih, terbagi per lembar RT/RW.`,
@@ -153,7 +156,7 @@ export const KeluargaTab: React.FC<KeluargaTabProps> = ({
         <div className="header-actions">
           <button
             type="button"
-            onClick={ekspor}
+            onClick={() => setPilihSensor(true)}
             className="btn btn-primary"
             disabled={mengekspor}
             title={`Unduh Excel untuk ${lingkupTerpilih}${rwFilter ? `, RW ${rwFilter}` : ''}${rtFilter ? ` RT ${rtFilter}` : ''}`}
@@ -374,6 +377,60 @@ export const KeluargaTab: React.FC<KeluargaTabProps> = ({
             </div>
           </div>
         </>
+      )}
+      {pilihSensor && (
+        <div className="modal-overlay" style={{ zIndex: 1100 }}>
+          <div className="modal-content" style={{ maxWidth: '460px', padding: '24px' }}>
+            <h3 className="modal-title" style={{ marginBottom: '12px', fontSize: '1.2rem', fontWeight: '700' }}>
+              Pilih Opsi Ekspor Excel
+            </h3>
+            <p style={{ fontSize: '0.875rem', color: 'var(--text-muted)', marginBottom: '20px', lineHeight: '1.5' }}>
+              Setiap baris memuat NIK dan No. KK-nya sendiri. Pilih seberapa terbuka nomor itu ditulis:
+            </p>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', marginBottom: '24px' }}>
+              {PILIHAN_SENSOR.map((pilihan, i) => (
+                <button
+                  key={pilihan.mode}
+                  type="button"
+                  className={i === 0 ? 'btn btn-primary' : 'btn btn-secondary'}
+                  style={{
+                    width: '100%',
+                    justifyContent: 'center',
+                    padding: '12px',
+                    height: 'auto',
+                    display: 'flex',
+                    flexDirection: 'column',
+                    alignItems: 'center',
+                    ...(i === 0 ? {} : { backgroundColor: 'var(--bg-card)', border: '1px solid var(--border)' }),
+                  }}
+                  onClick={() => { setPilihSensor(false); void ekspor(pilihan.mode); }}
+                >
+                  <span style={{ fontWeight: 600 }}>{pilihan.judul}</span>
+                  <span
+                    style={{
+                      fontSize: '0.75rem',
+                      marginTop: '4px',
+                      fontWeight: 'normal',
+                      ...(i === 0 ? { opacity: 0.85 } : { color: 'var(--text-muted)' }),
+                    }}
+                  >
+                    {pilihan.keterangan}
+                  </span>
+                </button>
+              ))}
+            </div>
+            <div className="modal-footer" style={{ display: 'flex', justifyContent: 'flex-end', marginTop: 0 }}>
+              <button
+                type="button"
+                onClick={() => setPilihSensor(false)}
+                className="btn btn-secondary"
+                style={{ minWidth: '80px', padding: '8px 16px', fontSize: '0.875rem' }}
+              >
+                Batal
+              </button>
+            </div>
+          </div>
+        </div>
       )}
     </div>
   );

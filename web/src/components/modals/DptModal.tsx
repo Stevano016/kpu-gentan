@@ -35,6 +35,9 @@ interface DptModalProps {
   dptFormKeterangan: string;
   setDptFormKeterangan: (val: string) => void;
   tpsList: any[];
+  /** Pemeriksaan NIK ganda; lihat `usePemilih`. */
+  cekNikMemeriksa?: boolean;
+  cekNikPesan?: string | null;
   editingQrCode: string | null;
   downloadQrCode: (base64: string, name: string) => void;
   onSubmit: (e: React.FormEvent) => void;
@@ -161,6 +164,8 @@ export const DptModal: React.FC<DptModalProps> = ({
   dptFormKeterangan,
   setDptFormKeterangan,
   tpsList,
+  cekNikMemeriksa = false,
+  cekNikPesan = null,
   editingQrCode,
   downloadQrCode,
   onSubmit,
@@ -259,6 +264,29 @@ export const DptModal: React.FC<DptModalProps> = ({
                   onChange={e => setDptFormNik(rapikanNomor(e.target.value))}
                 />
                 <HitungDigit nilai={dptFormNik} />
+                {/* NIK ganda dikatakan di bawah kolomnya, bukan lewat modal
+                    setelah Simpan: di sinilah petugas masih bisa membandingkan
+                    nomor yang baru ia ketik dengan kartu di tangannya. */}
+                {cekNikMemeriksa && (
+                  <small style={{ display: 'block', marginTop: '4px', fontSize: '0.75rem', color: 'var(--text-muted)' }}>
+                    Memeriksa NIK...
+                  </small>
+                )}
+                {!cekNikMemeriksa && cekNikPesan && (
+                  <small
+                    role="alert"
+                    style={{
+                      display: 'block',
+                      marginTop: '4px',
+                      fontSize: '0.75rem',
+                      color: 'var(--danger)',
+                      fontWeight: 600,
+                      lineHeight: 1.4,
+                    }}
+                  >
+                    {cekNikPesan}
+                  </small>
+                )}
                 {nikSementara && (
                   <small style={{ display: 'block', marginTop: '4px', fontSize: '0.75rem', color: 'var(--text-muted)' }}>
                     Nomor ini dibuat sistem karena NIK aslinya belum ada. Ganti dengan NIK asli bila sudah diketahui.
@@ -485,7 +513,7 @@ export const DptModal: React.FC<DptModalProps> = ({
           </div>
           <div className="modal-footer" style={{ marginTop: '24px', borderTop: '1px solid var(--border)', paddingTop: '16px' }}>
             <button type="button" onClick={onClose} className="btn btn-secondary">Batal</button>
-            <button type="submit" className="btn btn-primary">Simpan</button>
+            <button type="submit" className="btn btn-primary" disabled={!!cekNikPesan}>Simpan</button>
           </div>
         </form>
       </div>

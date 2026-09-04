@@ -1,5 +1,5 @@
 import type ExcelJS from 'exceljs';
-import { GAYA, bingkai, muatExcelJS, unduhWorkbook } from './excelDasar';
+import { GAYA, bingkai, muatExcelJS, nomorSesuaiMode, unduhWorkbook, type ModeNomor } from './excelDasar';
 
 /**
  * Penyusun berkas Excel "Daftar Pemilih per Kartu Keluarga".
@@ -68,14 +68,31 @@ const KOLOM = [
   { judul: 'Catatan', kunci: 'catatan', lebar: 34 },
 ];
 
-const JUMLAH_KOLOM = KOLOM.length;
+type Kolom = (typeof KOLOM)[number];
+
+/**
+ * Mode `sembunyi` membuang kolom nomor identitas seluruhnya. Blok keluarga
+ * tetap terbaca karena nomor urutnya digabung ke bawah dan tiap keluarga
+ * ditutup garis tebal — hanya nomor KK-nya yang tidak ikut.
+ */
+const kolomUntuk = (mode: ModeNomor): Kolom[] =>
+  mode === 'sembunyi'
+    ? KOLOM.filter((k) => k.kunci !== 'nik' && k.kunci !== 'nkk')
+    : KOLOM;
 
 /** Nama sheet Excel: maksimal 31 karakter dan tidak boleh memuat : \ / ? * [ ] */
 function namaSheet(rw: string, rt: string): string {
   return `RW ${rw || '-'} RT ${rt || '-'}`.replace(/[:\\/?*[\]]/g, '-').slice(0, 31);
 }
 
-function judulBerkas(data: DataEkspor): string {
+/** Nama berkas ikut menyebut modenya; berkas sensor dan penuh mudah tertukar. */
+const AKHIRAN: Record<ModeNomor, string> = {
+  penuh: '',
+  sensor: '-sensor',
+  sembunyi: '-tanpa-nik',
+};
+
+function judulBerkas(data: DataEkspor, mode: ModeNomor): string {
   const tps = data.tps?.nama ? data.tps.nama.replace(/\s+/g, '-').toLowerCase() : 'semua-tps';
   const kini = new Date();
   const tanggal = [
@@ -83,7 +100,7 @@ function judulBerkas(data: DataEkspor): string {
     String(kini.getMonth() + 1).padStart(2, '0'),
     String(kini.getDate()).padStart(2, '0'),
   ].join('');
-  return `kartu-keluarga-${tps}-${tanggal}.xlsx`;
+  return `kartu-keluarga-${tps}${AKHIRAN[mode]}-${tanggal}.xlsx`;
 }
 
 /** Keluarga dipecah per RT/RW; tiap kelompok jadi satu sheet. */
@@ -103,10 +120,11 @@ function kelompokkanPerRtRw(keluarga: Keluarga[]): Map<string, Keluarga[]> {
 function tulisKepala(
   ws: ExcelJS.Worksheet,
   baris: string[],
+  jumlahKolom: number,
 ): void {
   baris.forEach((teks, i) => {
     const nomor = i + 1;
-    ws.mergeCells(nomor, 1, nomor, JUMLAH_KOLOM);
+    ws.mergeCells(nomor, 1, nomor, jumlahKolom);
     const sel = ws.getCell(nomor, 1);
     sel.value = teks;
     sel.alignment = { horizontal: 'center', vertical: 'middle' };
@@ -117,10 +135,10 @@ function tulisKepala(
   });
 }
 
-function tulisBarisJudulKolom(ws: ExcelJS.Worksheet, nomorBaris: number): void {
+function tulisBarisJudulKolom(ws: ExcelJS.Worksheet, nomorBaris: number, kolomDipakai: Kolom[]): void {
   const baris = ws.getRow(nomorBaris);
 
-  KOLOM.forEach((kolom, i) => {
+  kolomDipakai.forEach((kolom, i) => {
     const sel = baris.getCell(i + 1);
     sel.value = kolom.judul;
     sel.font = { name: 'Calibri', size: 10, bold: true, color: { argb: 'FFFFFFFF' } };
@@ -132,8 +150,8 @@ function tulisBarisJudulKolom(ws: ExcelJS.Worksheet, nomorBaris: number): void {
   baris.height = 28;
 }
 
-function siapkanKolom(ws: ExcelJS.Worksheet): void {
-  KOLOM.forEach((kolom, i) => {
+function siapkanKolom(ws: ExcelJS.Worksheet, kolomDipakai: Kolom[]): void {
+  kolomDipakai.forEach((kolom, i) => {
     const c = ws.getColumn(i + 1);
     c.width = kolom.lebar;
     // Kolom nomor identitas dipaksa bertipe teks; inilah yang mencegah
@@ -155,7 +173,10 @@ function tulisSheetKeluarga(
   nama: string,
   subjudul: string[],
   daftar: Keluarga[],
+  mode: ModeNomor,
 ): void {
+  const kolomDipakai = kolomUntuk(mode);
+  const jumlahKolom = kolomDipakai.length;
   const ws = wb.addWorksheet(nama, {
     views: [{ state: 'frozen', ySplit: subjudul.length + 1 }],
     pageSetup: {
@@ -168,14 +189,14 @@ function tulisSheetKeluarga(
     },
   });
 
-  siapkanKolom(ws);
-  tulisKepala(ws, subjudul);
+  siapkanKolom(ws, kolomDipakai);
+  tulisKepala(ws, subjudul, jumlahKolom);
 
   const barisJudul = subjudul.length + 1;
-  tulisBarisJudulKolom(ws, barisJudul);
+  tulisBarisJudulKolom(ws, barisJudul, kolomDipakai);
   ws.autoFilter = {
     from: { row: barisJudul, column: 1 },
-    to: { row: barisJudul, column: JUMLAH_KOLOM },
+    to: { row: barisJudul, column: jumlahKolom },
   };
   // Judul kolom ikut tercetak di tiap halaman kertas.
   ws.pageSetup.printTitlesRow = `${barisJudul}:${barisJudul}`;
@@ -196,8 +217,13 @@ function tulisSheetKeluarga(
       const baris = ws.getRow(nomorBaris);
       const nilai: Record<string, string | number | null> = {
         no: indeksAnggota === 0 ? indeksKeluarga + 1 : '',
-        nkk: indeksAnggota === 0 ? keluarga.nkk : '',
-        nik: anggota.nik ?? '',
+        // NKK ditulis penuh di setiap baris, bukan sekali di baris pertama
+        // keluarga. Sel gabungan tampak rapi di layar, tapi begitu berkasnya
+        // disaring, diurutkan, atau baris tunggalnya disalin ke berkas lain,
+        // anggota kedua ke bawah kehilangan nomor KK-nya — dan di lembar
+        // kerja itulah orang mencocokkan satu nama dengan satu keluarga.
+        nkk: nomorSesuaiMode(keluarga.nkk, mode),
+        nik: nomorSesuaiMode(anggota.nik, mode),
         nama: anggota.nama ?? '',
         jk: anggota.jenis_kelamin === 'PEREMPUAN' ? 'P' : anggota.jenis_kelamin === 'LAKI-LAKI' ? 'L' : '',
         umur: anggota.umur ?? '',
@@ -211,7 +237,7 @@ function tulisSheetKeluarga(
         catatan: catatanAnggota(anggota),
       };
 
-      KOLOM.forEach((kolom, i) => {
+      kolomDipakai.forEach((kolom, i) => {
         const sel = baris.getCell(i + 1);
         sel.value = nilai[kolom.kunci] === '' ? null : nilai[kolom.kunci];
         sel.border = bingkai();
@@ -246,17 +272,15 @@ function tulisSheetKeluarga(
       nomorBaris += 1;
     });
 
-    // Satu nomor urut dan satu No. KK per keluarga — digabung ke bawah supaya
-    // terbaca sebagai satu blok, bukan deretan nomor yang berulang.
+    // Hanya nomor urut yang digabung ke bawah; kolom No. KK tidak lagi ikut
+    // digabung sebab tiap baris kini memuat nomornya sendiri.
     if (keluarga.anggota.length > 1) {
       ws.mergeCells(awal, 1, nomorBaris - 1, 1);
-      ws.mergeCells(awal, 2, nomorBaris - 1, 2);
       ws.getCell(awal, 1).alignment = { horizontal: 'center', vertical: 'middle' };
-      ws.getCell(awal, 2).alignment = { horizontal: 'center', vertical: 'middle' };
     }
 
     // Garis tebal menutup tiap keluarga.
-    for (let kolom = 1; kolom <= JUMLAH_KOLOM; kolom += 1) {
+    for (let kolom = 1; kolom <= jumlahKolom; kolom += 1) {
       const sel = ws.getCell(nomorBaris - 1, kolom);
       sel.border = { ...sel.border, bottom: { style: 'medium', color: { argb: GAYA.hijauTua } } };
     }
@@ -282,6 +306,7 @@ function tulisSheetRingkasan(
   data: DataEkspor,
   kelompok: Map<string, Keluarga[]>,
   dicetak: string,
+  mode: ModeNomor,
 ): void {
   const ws = wb.addWorksheet('Ringkasan', {
     views: [{ state: 'frozen', ySplit: 6 }],
@@ -371,12 +396,17 @@ function tulisSheetRingkasan(
   ws.getRow(nomor + 2).getCell(1).font = { name: 'Calibri', size: 10, bold: true };
   ws.getRow(nomor + 3).getCell(1).value =
     'Baris berlatar kuning = NKK/NIK masih nomor sementara buatan sistem (awalan 9999/9998), belum nomor asli.';
-  ws.getRow(nomor + 4).getCell(1).value =
-    'Nomor KK dan NIK ditulis sebagai teks agar 16 digitnya utuh; jangan diubah formatnya menjadi Angka.';
+  ws.getRow(nomor + 4).getCell(1).value = mode === 'penuh'
+    ? 'Nomor KK dan NIK ditulis sebagai teks agar 16 digitnya utuh; jangan diubah formatnya menjadi Angka.'
+    : mode === 'sensor'
+      ? 'NIK dan No. KK disensor: hanya 8 digit terakhir yang ditampilkan, sisanya diganti tanda bintang.'
+      : 'Berkas ini diekspor tanpa memuat kolom NIK dan Nomor KK atas alasan privasi.';
+  ws.getRow(nomor + 5).getCell(1).value =
+    'Setiap baris memuat NIK dan No. KK-nya sendiri, jadi satu baris tetap lengkap saat disaring atau disalin.';
 }
 
 /** Susun workbook dan langsung unduh di peramban. */
-export async function unduhExcelKeluarga(data: DataEkspor): Promise<string> {
+export async function unduhExcelKeluarga(data: DataEkspor, mode: ModeNomor = 'penuh'): Promise<string> {
   const Excel = await muatExcelJS();
   const wb = new Excel.Workbook();
   wb.creator = 'GENTARA — Sekretariat Kelurahan Gentan';
@@ -389,7 +419,7 @@ export async function unduhExcelKeluarga(data: DataEkspor): Promise<string> {
 
   const kelompok = kelompokkanPerRtRw(data.keluarga);
 
-  tulisSheetRingkasan(wb, data, kelompok, dicetak);
+  tulisSheetRingkasan(wb, data, kelompok, dicetak, mode);
 
   for (const [kunci, daftar] of kelompok) {
     const [rw, rt] = kunci.split('|');
@@ -397,8 +427,8 @@ export async function unduhExcelKeluarga(data: DataEkspor): Promise<string> {
       'DAFTAR PEMILIH PER KARTU KELUARGA',
       `${data.tps?.nama ?? 'Seluruh TPS'} · RW ${rw} / RT ${rt} · Kelurahan Gentan, Baki, Sukoharjo`,
       `Dicetak ${dicetak} — ${daftar.length} keluarga, ${daftar.reduce((n, k) => n + k.anggota.length, 0)} pemilih`,
-    ], daftar);
+    ], daftar, mode);
   }
 
-  return unduhWorkbook(wb, judulBerkas(data));
+  return unduhWorkbook(wb, judulBerkas(data, mode));
 }

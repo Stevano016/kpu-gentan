@@ -1,3 +1,5 @@
+import type { ModeNomor } from '../utils/excelDasar';
+
 /**
  * Tetapan tingkat aplikasi.
  *
@@ -34,3 +36,33 @@ export const PERAN_PANEL = ['sekretariat', 'pantarlih', 'monitor'];
 const RUTE_DASHBOARD = ['/', '/dashboard', '/quick-count'];
 
 export const adalahRuteDashboard = (path: string) => RUTE_DASHBOARD.includes(path);
+
+/**
+ * Tiga tingkat keterbukaan nomor identitas pada berkas ekspor Excel.
+ *
+ * Sebelumnya hanya ada dua ujungnya: nomor utuh, atau kolomnya dibuang sama
+ * sekali. Yang kedua aman dibagikan tapi berkasnya tidak bisa lagi dicocokkan
+ * dengan data sumber, jadi orang memilih yang pertama — dan berkas berisi
+ * ribuan NIK utuh beredar di grup pesan. Pilihan tengah inilah yang
+ * sebenarnya dibutuhkan sehari-hari.
+ *
+ * Daftarnya di sini, bukan di salah satu layar, karena ekspor Daftar Pemilih
+ * dan ekspor per Kartu Keluarga harus menawarkan pilihan yang sama persis.
+ */
+export const PILIHAN_SENSOR: { mode: ModeNomor; judul: string; keterangan: string }[] = [
+  {
+    mode: 'sensor',
+    judul: 'Disensor — 8 digit terakhir',
+    keterangan: 'NIK dan No. KK ditulis ********04010001. Cukup untuk mencocokkan baris, aman dibagikan.',
+  },
+  {
+    mode: 'penuh',
+    judul: 'Tanpa sensor — nomor utuh',
+    keterangan: 'NIK dan No. KK 16 digit apa adanya. Untuk kerja coklit dan perbaikan data di sekretariat.',
+  },
+  {
+    mode: 'sembunyi',
+    judul: 'Disembunyikan — tanpa kolom NIK & No. KK',
+    keterangan: 'Kedua kolom tidak ikut sama sekali. Untuk rekap yang tidak perlu menyebut nomor identitas.',
+  },
+];

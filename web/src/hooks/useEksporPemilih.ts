@@ -2,6 +2,7 @@ import { useCallback } from 'react';
 import { ApiService } from '../services/api';
 import { bacaJson } from '../utils/request';
 import { unduhExcelPemilih } from '../utils/excelPemilih';
+import type { ModeNomor } from '../utils/excelDasar';
 import type { Feedback } from '../types/app';
 
 interface Argumen {
@@ -17,10 +18,17 @@ interface Argumen {
  * terakhirnya benar-benar hilang. Server mengirim datanya sebagai JSON dan
  * berkasnya disusun di sini, tempat tipe tiap kolom bisa ditetapkan.
  */
+/** Bunyi pemberitahuan sesuai mode; petugas perlu tahu berkas mana yang ia pegang. */
+const KETERANGAN_MODE: Record<ModeNomor, string> = {
+  penuh: 'NIK dan No. KK utuh, tersimpan sebagai teks',
+  sensor: 'NIK dan No. KK disensor — hanya 8 digit terakhir',
+  sembunyi: 'tanpa kolom NIK dan No. KK',
+};
+
 export function useEksporPemilih({ token, feedback }: Argumen) {
   const { showSuccess, showError } = feedback;
 
-  return useCallback(async (params: Record<string, string>, denganNikNkk: boolean = true) => {
+  return useCallback(async (params: Record<string, string>, mode: ModeNomor = 'penuh') => {
     if (!token) return;
     try {
       const res = await ApiService.exportPemilih(token, { ...params, format: 'json' });
@@ -36,10 +44,10 @@ export function useEksporPemilih({ token, feedback }: Argumen) {
         return;
       }
 
-      const namaBerkas = await unduhExcelPemilih(json.data, denganNikNkk);
+      const namaBerkas = await unduhExcelPemilih(json.data, mode);
       showSuccess(
         'Ekspor Selesai',
-        `Berkas ${namaBerkas} sudah diunduh — ${json.data.jumlah.toLocaleString('id-ID')} pemilih, NIK dan No. KK ${denganNikNkk ? 'tersimpan sebagai teks' : 'dihilangkan'}.`,
+        `Berkas ${namaBerkas} sudah diunduh — ${json.data.jumlah.toLocaleString('id-ID')} pemilih, ${KETERANGAN_MODE[mode]}.`,
       );
     } catch {
       showError('Gagal menyusun berkas Excel.', 'Gagal Mengekspor');

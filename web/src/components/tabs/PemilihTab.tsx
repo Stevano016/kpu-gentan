@@ -2,9 +2,11 @@ import React from 'react';
 import { Icons } from '../Icons';
 import { LoadingHint } from '../LoadingHint';
 import { TAHAPAN, URUTAN_TAHAPAN, metaTahapan } from '../../utils/tahapan';
+import { PILIHAN_SENSOR } from '../../constants/app';
 import { ApiService } from '../../services/api';
-import { PDFDocument, TextAlignment, StandardFonts, PDFName, rgb } from 'pdf-lib';
-import QRCode from 'qrcode';
+import { unduhUndanganSatuan } from '../../utils/undanganC6';
+import { UKURAN_SEGMEN, type MaratonController } from '../../hooks/useUndanganMaraton';
+import type { ModeNomor } from '../../utils/excelDasar';
 
 interface PemilihTabProps {
   dptData: any;
@@ -42,13 +44,14 @@ interface PemilihTabProps {
   handleVerifikasiDp4: () => void;
   handleTetapkanDpt: () => void;
   handleTandaiTms: (voter: any) => void;
-  handleBatalkanTms: (nik: string) => void;
+  handleBatalkanTms: (voter: any) => void;
   handleTandaiDpk: (nik: string, nama: string) => void;
   handleBatalkanDpk: (nik: string) => void;
   isAdmin: boolean;
   isPantarlih?: boolean;
   daftarRw: string[];
-  handleExport: (params: Record<string, string>, denganNikNkk?: boolean) => Promise<void>;
+  handleExport: (params: Record<string, string>, mode?: ModeNomor) => Promise<void>;
+  maraton: MaratonController;
 }
 
 const JENIS_OPTIONS = [
@@ -105,6 +108,7 @@ export const PemilihTab: React.FC<PemilihTabProps> = ({
   isPantarlih = false,
   daftarRw,
   handleExport,
+  maraton,
 }) => {
   const [menuEksporTerbuka, setMenuEksporTerbuka] = React.useState(false);
   const [expandedNik, setExpandedNik] = React.useState<string | null>(null);
@@ -112,202 +116,43 @@ export const PemilihTab: React.FC<PemilihTabProps> = ({
   const [isExportConfirmOpen, setIsExportConfirmOpen] = React.useState(false);
   const [downloadingNik, setDownloadingNik] = React.useState<string | null>(null);
   const [c6VoterSelect, setC6VoterSelect] = React.useState<any | null>(null);
+  const [menuMaratonTerbuka, setMenuMaratonTerbuka] = React.useState(false);
 
-  const handleDownloadC6 = async (v: any, withTemplate: boolean = true) => {
+  /**
+   * Undangan satu orang.
+   *
+   * Datanya diambil dari `/pemilih/cek` — bukan dari baris tabel — karena di
+   * sanalah nomor urut kedatangan dan jumlah pemilih TPS dihitung, dan dua
+   * angka itulah yang menentukan sesi jam pada undangan. Yang tidak bisa
+   * diambil dari sana hanya NKK: rute itu menyamarkannya, sementara undangan
+   * mencetak 8 digit terakhirnya di bawah kode batang. Nomor aslinya
+   * ditambalkan dari baris tabel, yang memang sudah terautentikasi.
+   */
+  const handleDownloadC6 = async (v: any, denganTemplate: boolean = true) => {
     if (downloadingNik) return;
     setDownloadingNik(v.nik);
     try {
-      const apiResponse = await ApiService.cekPemilih(v.nik);
-      if (!apiResponse.ok) {
-        alert("Gagal menghubungi server untuk memverifikasi data pemilih.");
+      const tanggapan = await ApiService.cekPemilih(v.nik);
+      if (!tanggapan.ok) {
+        alert('Gagal menghubungi server untuk memverifikasi data pemilih.');
         return;
       }
-      
-      const res = await apiResponse.json();
+
+      const res = await tanggapan.json();
       if (!res || res.status !== 'success' || !res.data || res.data.length === 0) {
-        alert("Data pemilih tidak ditemukan atau belum terverifikasi.");
+        alert('Data pemilih tidak ditemukan atau belum terverifikasi.');
         return;
       }
-      
-      const voter = res.data[0];
-      
-      const response = await fetch('/undangan.pdf');
-      if (!response.ok) {
-        throw new Error("Gagal mengunduh template undangan.");
-      }
-      const pdfBytes = await response.arrayBuffer();
 
-      const pdfDoc = await PDFDocument.load(pdfBytes);
-      const page = pdfDoc.getPages()[0];
-
-      if (!withTemplate) {
-        // Delete the Contents stream to strip all template background graphics/text/borders
-        page.node.delete(PDFName.of('Contents'));
-      }
-
-      const form = pdfDoc.getForm();
-
-      const nomorField = form.getTextField('nomor');
-      nomorField.setFontSize(14);
-      nomorField.setText(voter.no_urut !== null && voter.no_urut !== undefined ? String(voter.no_urut) : '');
-
-      form.getTextField('nama').setText(voter.nama);
-      form.getTextField('jenis_kelamin').setText('');
-      form.getTextField('dusun').setText(voter.alamat || '');
-      form.getTextField('rt').setText(voter.rt || '');
-      form.getTextField('rw').setText(voter.rw || '');
-      form.getTextField('hari_tanggal').setText("Kamis, 10 Desember 2026");
-
-      const tpsTotal = voter.tps_total_dpt || 1;
-      const voterIdx = voter.tps_voter_index || 0;
-      const segmentSize = Math.ceil(tpsTotal / 6);
-      const session = Math.min(6, Math.max(1, Math.floor(voterIdx / segmentSize) + 1));
-      const timeSlots = [
-        "07:00 - 08:00 WIB",
-        "08:00 - 09:00 WIB",
-        "09:00 - 10:00 WIB",
-        "10:00 - 11:00 WIB",
-        "11:00 - 12:00 WIB",
-        "12:00 - 13:00 WIB"
-      ];
-      const waktuStr = timeSlots[session - 1];
-      form.getTextField('waktu').setText('');
-
-      const getTpsLocationName = (tpsName: string) => {
-        if (!tpsName) return "Balai Desa Gentan";
-        const match = tpsName.match(/\d+/);
-        if (!match) return "Balai Desa Gentan";
-        const num = parseInt(match[0], 10);
-        switch (num) {
-          case 1: return "Ngemplak RT. 3/1";
-          case 2: return "JOGLO SATRIO PINAYUNGAN RT. 1/3";
-          case 3: return "PAUD SRIKANDI KEDEN RT. 1/7";
-          case 4: return "NGENDEN RT. 1/8";
-          case 5: return "GEDUNG BULU TANGKIS KANTOR DESA";
-          default: return "Balai Desa Gentan";
-        }
-      };
-      form.getTextField('tempat1').setText(getTpsLocationName(voter.tps));
-      form.getTextField('tempat2').setText("Gentan, Baki, Sukoharjo");
-
-      const fieldTgl = form.getTextField('tgl_dikeluarkan');
-      fieldTgl.setText("04 Desember 2026");
-      fieldTgl.setAlignment(TextAlignment.Center);
-
-      const fieldKetua = form.getTextField('nama_ketua');
-      fieldKetua.setText("MOCH. SUTOPO, S. H., M. H.");
-      fieldKetua.setAlignment(TextAlignment.Center);
-
-      const qrDataUrl = await QRCode.toDataURL(voter.id_pemilih || voter.nik || "", {
-        margin: 1,
-        width: 150
-      });
-      
-      const qrImageBytes = await fetch(qrDataUrl).then(res => res.arrayBuffer());
-      const qrImage = await pdfDoc.embedPng(qrImageBytes);
-
-      page.drawImage(qrImage, {
-        x: 470,
-        y: 725,
-        width: 80,
-        height: 80
-      });
-
-      const helveticaBold = await pdfDoc.embedFont(StandardFonts.HelveticaBold);
-
-      // Draw Jenis Kelamin manually (with red Age " / {umur}" in size 14)
-      const genderText = voter.jenis_kelamin === 'LAKI-LAKI' ? 'Laki-laki' : 'Perempuan';
-      const ageText = voter.umur ? ` / ${voter.umur}` : '';
-      const genderWidth = helveticaBold.widthOfTextAtSize(genderText, 12);
-      
-      page.drawText(genderText, {
-        x: 169,
-        y: 533.8898 + 3,
-        size: 12,
-        font: helveticaBold,
-        color: rgb(0.1, 0.1, 0.1)
-      });
-      
-      if (ageText) {
-        page.drawText(ageText, {
-          x: 169 + genderWidth,
-          y: 533.8898 + 3,
-          size: 14,
-          font: helveticaBold,
-          color: rgb(0.85, 0.15, 0.15)
-        });
-      }
-
-      // Draw Waktu manually in red and size 14
-      page.drawText(waktuStr, {
-        x: 169,
-        y: 437.8898 + 3,
-        size: 14,
-        font: helveticaBold,
-        color: rgb(0.85, 0.15, 0.15)
-      });
-
-      // Draw Red Box "HADIR SESUAI WAKTU YANG DITETAPKAN" (Tighter and shifted slightly to the right)
-      const redColor = rgb(0.85, 0.15, 0.15);
-      
-      // White background for the box to block dotted lines
-      page.drawRectangle({
-        x: 450,
-        y: 405,
-        width: 100,
-        height: 65,
-        color: rgb(1, 1, 1),
-        borderColor: redColor,
-        borderWidth: 2,
-      });
-
-      const line1 = "HADIR SESUAI";
-      const line2 = "WAKTU YANG";
-      const line3 = "DITETAPKAN";
-
-      const w1 = helveticaBold.widthOfTextAtSize(line1, 11);
-      const w2 = helveticaBold.widthOfTextAtSize(line2, 11);
-      const w3 = helveticaBold.widthOfTextAtSize(line3, 11);
-
-      const x1 = 500 - w1 / 2;
-      const x2 = 500 - w2 / 2;
-      const x3 = 500 - w3 / 2;
-
-      page.drawText(line1, { x: x1, y: 447, size: 11, font: helveticaBold, color: redColor });
-      page.drawText(line2, { x: x2, y: 434, size: 11, font: helveticaBold, color: redColor });
-      page.drawText(line3, { x: x3, y: 421, size: 11, font: helveticaBold, color: redColor });
-
-      form.getFields().forEach(field => {
-        if (typeof (field as any).setText === 'function') {
-          (field as any).setText((field as any).getText() || '');
-        }
-        field.acroField.getWidgets().forEach(widget => {
-          const mk = widget.dict.get(PDFName.of('MK'));
-          if (mk && typeof (mk as any).delete === 'function') {
-            (mk as any).delete(PDFName.of('BG'));
-          }
-        });
-      });
-
-      form.updateFieldAppearances(helveticaBold);
-      form.flatten();
-
-      const modifiedPdfBytes = await pdfDoc.save();
-      const blob = new Blob([modifiedPdfBytes as any], { type: 'application/pdf' });
-      const link = document.createElement('a');
-      link.href = URL.createObjectURL(blob);
-      const suffix = withTemplate ? '' : '_Hanya_Data';
-      link.download = `Undangan_${voter.nama.replace(/\s+/g, '_')}${suffix}.pdf`;
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
+      await unduhUndanganSatuan({ ...res.data[0], nkk: v.nkk ?? null }, denganTemplate);
     } catch (error) {
-      console.error("Gagal mengunduh C6:", error);
-      alert("Terjadi kesalahan saat membuat undangan C6.");
+      console.error('Gagal mengunduh C6:', error);
+      alert('Terjadi kesalahan saat membuat undangan C6.');
     } finally {
       setDownloadingNik(null);
     }
   };
+
   const activeJenisLabel = dptJenisFilter ? metaTahapan(dptJenisFilter).singkat : 'Semua Kategori';
 
   return (
@@ -347,7 +192,7 @@ export const PemilihTab: React.FC<PemilihTabProps> = ({
                 <span>Unduh Excel TPS Saya</span>
               </button>
             ) : (
-              <div style={{ position: 'relative' }}>
+              <div className="export-dropdown">
                 <button
                   type="button"
                   onClick={() => setMenuEksporTerbuka((v) => !v)}
@@ -388,6 +233,38 @@ export const PemilihTab: React.FC<PemilihTabProps> = ({
                         onClick={() => { setMenuEksporTerbuka(false); setExportParams({ lingkup: 'rw', rw }); setIsExportConfirmOpen(true); }}
                       >
                         RW {rw}
+                      </button>
+                    ))}
+                  </div>
+                )}
+              </div>
+            )}
+
+            {/* Undangan maraton: satu TPS dicetak bersegmen, bukan satu-satu
+                dari tombol C6 di tiap baris. */}
+            {!isPantarlih && (
+              <div className="export-dropdown">
+                <button
+                  type="button"
+                  onClick={() => setMenuMaratonTerbuka((v) => !v)}
+                  className="btn btn-secondary"
+                  title="Cetak undangan C6 satu TPS per segmen 20/50/75 orang"
+                >
+                  <Icons.Download />
+                  <span>Undangan Maraton</span>
+                </button>
+                {menuMaratonTerbuka && (
+                  <div className="export-menu">
+                    <div className="export-menu-label">Pilih TPS</div>
+                    {tpsList.length === 0 && <div className="export-menu-kosong">Belum ada data TPS</div>}
+                    {tpsList.map((t) => (
+                      <button
+                        key={`maraton-${t.id}`}
+                        type="button"
+                        className="export-menu-item"
+                        onClick={() => { setMenuMaratonTerbuka(false); maraton.buka(String(t.id), t.nama); }}
+                      >
+                        {t.nama}
                       </button>
                     ))}
                   </div>
@@ -593,13 +470,20 @@ export const PemilihTab: React.FC<PemilihTabProps> = ({
                           >
                             {expandedNik === v.nik ? 'Tutup' : 'Detail'}
                           </button>
-                          {isAdmin && v.tahapan === 'dp4' && (
+                          {/* TMS juga bisa ditandai dari DPS: pemilih yang
+                              meninggal, ganda, atau pindah kadang baru
+                              ketahuan setelah verifikasi lewat, dan tanpa
+                              tombol ini petugas harus memundurkan orangnya ke
+                              DP4 lebih dulu. */}
+                          {isAdmin && (v.tahapan === 'dp4' || v.tahapan === 'dps') && (
                             <button
                               type="button"
                               onClick={() => handleTandaiTms(v)}
                               className="btn btn-secondary"
                               style={{ color: 'var(--danger)' }}
-                              title="Tandai tidak memenuhi syarat"
+                              title={v.tahapan === 'dps'
+                                ? 'Tandai tidak memenuhi syarat — data akan keluar dari DPS'
+                                : 'Tandai tidak memenuhi syarat'}
                             >
                               TMS
                             </button>
@@ -607,9 +491,12 @@ export const PemilihTab: React.FC<PemilihTabProps> = ({
                           {isAdmin && v.tahapan === 'tms' && (
                             <button
                               type="button"
-                              onClick={() => handleBatalkanTms(v.nik)}
+                              onClick={() => handleBatalkanTms(v)}
                               className="btn btn-secondary"
-                              title={v.tms_alasan ? `Alasan: ${v.tms_alasan}` : 'Kembalikan ke DP4'}
+                              title={[
+                                v.tms_alasan ? `Alasan: ${v.tms_alasan}` : '',
+                                `Kembali ke ${v.tahapan_sebelum_tms === 'dps' ? 'DPS' : 'DP4'}`,
+                              ].filter(Boolean).join(' · ')}
                             >
                               Batal TMS
                             </button>
@@ -777,30 +664,40 @@ export const PemilihTab: React.FC<PemilihTabProps> = ({
               Silakan pilih format berkas Excel yang ingin Anda unduh:
             </p>
             <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', marginBottom: '24px' }}>
-              <button
-                type="button"
-                className="btn btn-primary"
-                style={{ width: '100%', justifyContent: 'center', padding: '10px' }}
-                onClick={() => {
-                  if (exportParams) handleExport(exportParams, true);
-                  setIsExportConfirmOpen(false);
-                  setExportParams(null);
-                }}
-              >
-                <span>Unduh DENGAN NIK & NKK</span>
-              </button>
-              <button
-                type="button"
-                className="btn btn-secondary"
-                style={{ width: '100%', justifyContent: 'center', padding: '10px', backgroundColor: 'var(--bg-card)', border: '1px solid var(--border-color)' }}
-                onClick={() => {
-                  if (exportParams) handleExport(exportParams, false);
-                  setIsExportConfirmOpen(false);
-                  setExportParams(null);
-                }}
-              >
-                <span>Unduh TANPA NIK & NKK</span>
-              </button>
+              {PILIHAN_SENSOR.map((pilihan, i) => (
+                <button
+                  key={pilihan.mode}
+                  type="button"
+                  className={i === 0 ? 'btn btn-primary' : 'btn btn-secondary'}
+                  style={{
+                    width: '100%',
+                    justifyContent: 'center',
+                    padding: '12px',
+                    height: 'auto',
+                    display: 'flex',
+                    flexDirection: 'column',
+                    alignItems: 'center',
+                    ...(i === 0 ? {} : { backgroundColor: 'var(--bg-card)', border: '1px solid var(--border)' }),
+                  }}
+                  onClick={() => {
+                    if (exportParams) handleExport(exportParams, pilihan.mode);
+                    setIsExportConfirmOpen(false);
+                    setExportParams(null);
+                  }}
+                >
+                  <span style={{ fontWeight: 600 }}>{pilihan.judul}</span>
+                  <span
+                    style={{
+                      fontSize: '0.75rem',
+                      marginTop: '4px',
+                      fontWeight: 'normal',
+                      ...(i === 0 ? { opacity: 0.85 } : { color: 'var(--text-muted)' }),
+                    }}
+                  >
+                    {pilihan.keterangan}
+                  </span>
+                </button>
+              ))}
             </div>
             <div className="modal-footer" style={{ display: 'flex', justifyContent: 'flex-end', marginTop: 0 }}>
               <button
@@ -813,6 +710,169 @@ export const PemilihTab: React.FC<PemilihTabProps> = ({
                 style={{ minWidth: '80px', padding: '8px 16px', fontSize: '0.875rem' }}
               >
                 Batal
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {maraton.terbuka && maraton.tps && (
+        <div className="modal-overlay" style={{ zIndex: 1100 }}>
+          <div className="modal-content" style={{ maxWidth: '560px', padding: '24px' }}>
+            <h3 className="modal-title" style={{ marginBottom: '6px', fontSize: '1.2rem', fontWeight: '700' }}>
+              Undangan Maraton — {maraton.tps.nama}
+            </h3>
+            <p style={{ fontSize: '0.875rem', color: 'var(--text-muted)', marginBottom: '18px', lineHeight: '1.5' }}>
+              {maraton.memuat
+                ? 'Memuat daftar pemilih...'
+                : `${maraton.daftar.length.toLocaleString('id-ID')} undangan (DPT dan DPK) dari ${maraton.jumlahAktif.toLocaleString('id-ID')} pemilih aktif. Segmen diunduh berurutan; satu segmen menjadi satu berkas PDF.`}
+            </p>
+
+            {!maraton.memuat && maraton.daftar.length > 0 && (
+              <>
+                <div style={{ marginBottom: '16px' }}>
+                  <label className="form-label" style={{ fontSize: '0.75rem', fontWeight: 600, color: 'var(--text-muted)' }}>
+                    Besar segmen
+                  </label>
+                  <div style={{ display: 'flex', gap: '8px', marginTop: '6px', flexWrap: 'wrap' }}>
+                    {UKURAN_SEGMEN.map((n) => (
+                      <button
+                        key={n}
+                        type="button"
+                        disabled={maraton.sedangUnduh !== null}
+                        onClick={() => maraton.setUkuran(n)}
+                        className={`jenis-filter-btn${maraton.ukuran === n ? ' active' : ''}`}
+                      >
+                        {n} orang
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                <div style={{ marginBottom: '16px' }}>
+                  <label className="form-label" style={{ fontSize: '0.75rem', fontWeight: 600, color: 'var(--text-muted)' }}>
+                    Format lembar
+                  </label>
+                  <div style={{ display: 'flex', gap: '8px', marginTop: '6px', flexWrap: 'wrap' }}>
+                    <button
+                      type="button"
+                      disabled={maraton.sedangUnduh !== null}
+                      onClick={() => maraton.setDenganTemplate(true)}
+                      className={`jenis-filter-btn${maraton.denganTemplate ? ' active' : ''}`}
+                      title="Beserta desain latar belakang, bingkai, dan teks panduan"
+                    >
+                      Dengan template
+                    </button>
+                    <button
+                      type="button"
+                      disabled={maraton.sedangUnduh !== null}
+                      onClick={() => maraton.setDenganTemplate(false)}
+                      className={`jenis-filter-btn${!maraton.denganTemplate ? ' active' : ''}`}
+                      title="Halaman kosong berisi data saja, untuk dicetak di atas kertas undangan"
+                    >
+                      Hanya data
+                    </button>
+                  </div>
+                </div>
+
+                {/* Markah: hijau bercentang = sudah diunduh. Inilah yang
+                    menjawab "tadi sudah sampai mana" setelah petugas berganti
+                    atau peramban ditutup. */}
+                <div style={{ marginBottom: '18px' }}>
+                  <label className="form-label" style={{ fontSize: '0.75rem', fontWeight: 600, color: 'var(--text-muted)' }}>
+                    Segmen — {maraton.segmen.filter((sg) => sg.selesai).length} dari {maraton.segmen.length} sudah diunduh
+                  </label>
+                  <div
+                    style={{
+                      display: 'grid',
+                      gridTemplateColumns: 'repeat(auto-fill, minmax(104px, 1fr))',
+                      gap: '6px',
+                      marginTop: '8px',
+                      maxHeight: '220px',
+                      overflowY: 'auto',
+                      padding: '2px',
+                    }}
+                  >
+                    {maraton.segmen.map((sg) => {
+                      const sedang = maraton.sedangUnduh === sg.indeks;
+                      return (
+                        <button
+                          key={sg.indeks}
+                          type="button"
+                          disabled={maraton.sedangUnduh !== null}
+                          onClick={() => { void maraton.unduhSegmen(sg.indeks); }}
+                          title={`Segmen ${sg.indeks + 1}: nomor ${sg.awal}–${sg.akhir} (${sg.jumlah} undangan)${sg.selesai ? ' — sudah diunduh' : ''}`}
+                          style={{
+                            padding: '8px 6px',
+                            fontSize: '0.75rem',
+                            fontWeight: 600,
+                            cursor: maraton.sedangUnduh !== null ? 'default' : 'pointer',
+                            borderRadius: 'var(--radius-sm)',
+                            border: `1px solid ${sg.selesai ? 'var(--primary)' : 'var(--border)'}`,
+                            backgroundColor: sedang
+                              ? '#FFF3CD'
+                              : sg.selesai
+                                ? 'oklch(0.95 0.03 165)'
+                                : 'var(--surface)',
+                            color: sg.selesai ? 'var(--primary)' : 'var(--text)',
+                            textAlign: 'center',
+                            lineHeight: 1.35,
+                          }}
+                        >
+                          <div>{sg.selesai ? '✓ ' : ''}Segmen {sg.indeks + 1}</div>
+                          <div style={{ fontWeight: 400, fontSize: '0.7rem', color: 'var(--text-muted)' }}>
+                            {sg.awal}–{sg.akhir}
+                          </div>
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+
+                {maraton.kemajuan && (
+                  <p style={{ fontSize: '0.8rem', color: 'var(--text-muted)', marginBottom: '14px' }}>
+                    Menyusun lembar {maraton.kemajuan.selesai} dari {maraton.kemajuan.total}... jangan tutup jendela ini.
+                  </p>
+                )}
+
+                <button
+                  type="button"
+                  className="btn btn-primary"
+                  style={{ width: '100%', justifyContent: 'center', padding: '12px', marginBottom: '10px' }}
+                  disabled={maraton.sedangUnduh !== null || !maraton.segmenBerikutnya}
+                  onClick={() => {
+                    if (maraton.segmenBerikutnya) void maraton.unduhSegmen(maraton.segmenBerikutnya.indeks);
+                  }}
+                >
+                  <span>
+                    {maraton.sedangUnduh !== null
+                      ? 'Sedang menyusun berkas...'
+                      : maraton.segmenBerikutnya
+                        ? `Unduh Segmen ${maraton.segmenBerikutnya.indeks + 1} (nomor ${maraton.segmenBerikutnya.awal}–${maraton.segmenBerikutnya.akhir})`
+                        : 'Semua segmen sudah diunduh'}
+                  </span>
+                </button>
+              </>
+            )}
+
+            <div className="modal-footer" style={{ display: 'flex', justifyContent: 'space-between', marginTop: 0, gap: '8px' }}>
+              <button
+                type="button"
+                onClick={maraton.lupakanTanda}
+                className="btn btn-secondary"
+                disabled={maraton.sedangUnduh !== null || !maraton.segmen.some((sg) => sg.selesai)}
+                style={{ padding: '8px 16px', fontSize: '0.875rem' }}
+              >
+                Hapus markah
+              </button>
+              <button
+                type="button"
+                onClick={maraton.tutup}
+                className="btn btn-secondary"
+                disabled={maraton.sedangUnduh !== null}
+                style={{ minWidth: '80px', padding: '8px 16px', fontSize: '0.875rem' }}
+              >
+                Tutup
               </button>
             </div>
           </div>

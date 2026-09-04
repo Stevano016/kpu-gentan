@@ -16,6 +16,8 @@ import type { PemilihController } from '../hooks/usePemilih';
 import type { QrController } from '../hooks/useQrCode';
 import type { TahapanController } from '../hooks/useTahapanPemilih';
 import type { TpsController } from '../hooks/useTps';
+import type { MaratonController } from '../hooks/useUndanganMaraton';
+import type { ModeNomor } from '../utils/excelDasar';
 import type { Feedback } from '../types/app';
 
 interface AppRoutesProps {
@@ -29,7 +31,8 @@ interface AppRoutesProps {
   paslon: PaslonController;
   qr: QrController;
   importCsv: ImportCsvController;
-  handleExport: (params: Record<string, string>, denganNikNkk?: boolean) => Promise<void>;
+  handleExport: (params: Record<string, string>, mode?: ModeNomor) => Promise<void>;
+  maraton: MaratonController;
   navigate: (to: string) => void;
 }
 
@@ -51,6 +54,7 @@ export const AppRoutes: React.FC<AppRoutesProps> = ({
   qr,
   importCsv,
   handleExport,
+  maraton,
   navigate,
 }) => {
   const { token, user, isPantarlih, isAdmin } = auth;
@@ -156,6 +160,7 @@ export const AppRoutes: React.FC<AppRoutesProps> = ({
           isPantarlih={isPantarlih}
           daftarRw={pemilih.daftarRw}
           handleExport={handleExport}
+          maraton={maraton}
           isAdmin={isAdmin}
         />
       )} />

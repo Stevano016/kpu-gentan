@@ -1004,10 +1004,144 @@ tr:hover td {
     justify-content: center;
   }
 
+  /**
+   * Tombol aksi: dua per baris, bukan satu tumpukan setinggi layar.
+   *
+   * Sebelumnya `flex-direction: column` membuat enam tombol di halaman Data
+   * Pemilih menjadi enam baris selebar layar. Karena kepala halaman ini
+   * `position: sticky`, tumpukan itu ikut menempel di atas dan menyisakan
+   * sangat sedikit ruang untuk tabelnya — tombolnya sendiri jadi penghalang.
+   *
+   * Dua kolom didapat dari `flex-basis` di bawah, dan `flex-grow` membuat
+   * tombol terakhir yang sendirian di barisnya melebar penuh, jadi tidak ada
+   * sel kosong yang menganga.
+   */
   .header-actions {
-    flex-direction: column;
+    flex-direction: row;
+    flex-wrap: wrap;
     width: 100%;
     gap: 8px;
+  }
+
+  /**
+   * Dasar `40%`, bukan `calc(50% - 4px)`.
+   *
+   * Dasar tepat separuh dikurangi jarak antar-tombol pas mengisi barisnya
+   * sampai piksel terakhir — dan pembulatan sub-piksel browser membuatnya
+   * meluap, jadi tiap tombol malah pindah ke barisnya sendiri. Dasar 40%
+   * menyisakan kelonggaran: dua tombol muat, tiga tidak, lalu `flex-grow`
+   * memuaikan keduanya mengisi baris.
+   *
+   * Ditulis dua kali — untuk pembungkus dropdown lewat `> *`, dan untuk
+   * tombolnya sendiri lewat `.btn` — karena aturan `.btn` di layar lebar
+   * memasang `flex: 0 0 auto` dengan kekhususan yang lebih tinggi daripada
+   * `> *`, jadi tanpa pasangan yang sama khusus, tombol tidak akan memuai.
+   */
+  .header-actions > * {
+    flex: 1 1 40%;
+    /* Tanpa ini isi tombol menahan penyusutan dan dua kolomnya jadi melimpah. */
+    min-width: 0;
+  }
+
+  /* Ukuran semua tombol kepala halaman, termasuk yang di dalam pembungkus
+     dropdown. 44px: sasaran sentuh yang masih nyaman ditekan dengan jempol. */
+  .header-actions .btn {
+    height: 44px;
+    padding: 0 10px;
+    font-size: 0.75rem;
+    gap: 6px;
+  }
+
+  /* Hanya anak langsung: di situ tombolnya *adalah* item flex-nya, sehingga
+     `width: 100%` dari `.section-header .btn` menimpa dasar dua-kolomnya dan
+     menyusunnya satu per baris lagi. */
+  .header-actions > .btn {
+    flex: 1 1 40%;
+    width: auto;
+  }
+
+  /* Aksi utama halaman dapat barisnya sendiri di paling atas: itu yang dicari
+     orang lebih dulu, dan sebelumnya ia justru terkubur di dasar tumpukan.
+     Ditaruh setelah aturan `> .btn` supaya dasar 100%-nya tidak tertimpa. */
+  .header-actions > .btn-primary {
+    flex-basis: 100%;
+    order: -1;
+  }
+
+  /* Sebaliknya, tombol di dalam pembungkus dropdown tetap mengisi
+     pembungkusnya — kalau tidak, ia menyusut selebar tulisannya sendiri dan
+     berdiri kesepian di tengah baris yang lebar. */
+  .export-dropdown > .btn {
+    width: 100%;
+  }
+
+  /**
+   * Menu dropdown melebar seukuran kepala halaman, bukan seukuran tombolnya.
+   *
+   * Dengan acuan tombol yang kini hanya setengah lebar layar, `right: 0` plus
+   * `min-width: 220px` menggambar menu yang tepi kirinya keluar layar — daftar
+   * TPS-nya terpotong dan tidak bisa digulung ke sana. Melepas `position` pada
+   * pembungkusnya membuat acuannya berpindah ke `.section-header`, satu-satunya
+   * leluhur yang sudah `position: sticky`.
+   */
+  .export-dropdown {
+    position: static;
+  }
+
+  .export-menu {
+    left: 0;
+    right: 0;
+    min-width: 0;
+    max-height: 55vh;
+  }
+
+  .export-menu-item {
+    padding: 12px;
+    font-size: 0.9375rem;
+  }
+
+  /**
+   * Aksi per baris tabel tetap satu baris, tidak membungkus.
+   *
+   * Tujuh tombol yang membungkus di dalam sel selebar 160px menumpuk jadi tiga
+   * baris, dan tinggi tiap baris tabel ikut berbeda-beda tergantung berapa aksi
+   * yang tersedia — batas antar pemilih jadi kabur. Tabelnya memang sudah
+   * digulung ke samping di ponsel, jadi lebih baik aksinya ikut ke samping
+   * daripada memanjang ke bawah.
+   */
+  .row-actions {
+    flex-wrap: nowrap;
+    min-width: max-content;
+  }
+
+  .row-actions .btn {
+    min-height: 32px;
+    padding: 6px 10px;
+  }
+
+  /* Keterangan halaman dan tombolnya berdesakan dalam satu baris di layar
+     sempit; dipisah jadi dua baris dengan tombol selebar setengah. */
+  .pagination {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 10px;
+  }
+
+  .pagination > div {
+    display: flex;
+  }
+
+  .pagination > div .btn {
+    flex: 1;
+    justify-content: center;
+    min-height: 40px;
+  }
+
+  /* Tombol modal cukup besar untuk ditekan, dan berbagi lebar sama rata. */
+  .modal-footer .btn {
+    flex: 1;
+    justify-content: center;
+    min-height: 44px;
   }
 
   .detail-grid {
@@ -1033,13 +1167,55 @@ tr:hover td {
   .grid-cols-2 {
     grid-template-columns: 1fr;
   }
+
+  /**
+   * Modal menyusut mengikuti layar, tidak memaksa lebarnya sendiri.
+   *
+   * `.modal-content` dasarnya `width: 500px`, dan beberapa modal memasang
+   * `max-width` sendiri lewat atribut style — yang menimpa `max-width: 90%`
+   * dari berkas ini, karena gaya sebaris selalu menang. Di layar 320px sisanya
+   * `min-width: auto` (selebar isi terpanjang) yang menahan penyusutan, jadi
+   * modalnya meluber belasan piksel ke samping. `width: 100%` + `min-width: 0`
+   * menghentikan keduanya tanpa perlu menyentuh gaya sebaris itu.
+   */
+  .modal-overlay {
+    padding: 12px;
+  }
+
   .modal-content {
-    padding: 20px;
+    width: 100%;
+    min-width: 0;
+    padding: 18px;
+  }
+
+  /**
+   * Di bawah 480px label sepanjang "Undangan Maraton" tidak lagi muat dalam
+   * setengah lebar layar. Dua baris label lebih baik daripada teks terpotong;
+   * `align-items: stretch` pada barisnya membuat tinggi tombol bersebelahan
+   * tetap sama, yang dulu menjadi alasan label ini dipaksa satu baris.
+   */
+  .header-actions .btn {
+    white-space: normal;
+    height: auto;
+    min-height: 44px;
+    padding: 8px 10px;
+    line-height: 1.2;
   }
 }
 
 
 /* Menu pilihan lingkup ekspor */
+
+/**
+ * Pembungkus tombol dropdown.
+ *
+ * Di layar lebar ia jadi acuan posisi menunya. Di ponsel acuannya sengaja
+ * dilepas — lihat catatannya di blok @media di bawah.
+ */
+.export-dropdown {
+  position: relative;
+}
+
 .export-menu {
   position: absolute;
   top: calc(100% + 6px);

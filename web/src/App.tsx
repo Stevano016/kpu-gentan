@@ -21,6 +21,7 @@ import { usePemilih } from './hooks/usePemilih';
 import { useQrCode } from './hooks/useQrCode';
 import { useTahapanPemilih } from './hooks/useTahapanPemilih';
 import { useTps } from './hooks/useTps';
+import { useUndanganMaraton } from './hooks/useUndanganMaraton';
 
 export default function App() {
   return (
@@ -62,6 +63,7 @@ function AppContent() {
 
   const importCsv = useImportCsv({ token, onSelesai: fetchDpts });
   const handleExport = useEksporPemilih({ token, feedback });
+  const maraton = useUndanganMaraton({ token, feedback });
 
   // Perubahan tahapan menggeser angka di dashboard sekaligus isi tabelnya.
   const segarkanSetelahTahapan = useCallback(() => {
@@ -121,6 +123,7 @@ function AppContent() {
           qr={qr}
           importCsv={importCsv}
           handleExport={handleExport}
+          maraton={maraton}
           navigate={navigate}
         />
       </main>

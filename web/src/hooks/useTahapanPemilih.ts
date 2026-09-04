@@ -17,7 +17,7 @@ export interface TahapanController {
   handleVerifikasiDp4: () => void;
   handleTetapkanDpt: () => void;
   handleTandaiTms: (voter: any) => void;
-  handleBatalkanTms: (nik: string) => void;
+  handleBatalkanTms: (voter: any) => void;
   handleTandaiDpk: (nik: string, nama: string) => void;
   handleBatalkanDpk: (nik: string) => void;
 }
@@ -95,11 +95,20 @@ export function useTahapanPemilih({ token, tpsFilter, feedback, onSelesai }: Arg
     );
   }, [mintaAlasan, jalankan, token]);
 
-  const handleBatalkanTms = useCallback((nik: string) => {
+  /**
+   * TMS bisa ditandai dari DP4 maupun DPS, jadi pembatalannya tidak punya satu
+   * tujuan. Kalimatnya menyebut tujuan sebenarnya supaya petugas tahu apakah
+   * orang ini masih perlu diverifikasi lagi atau tidak.
+   */
+  const handleBatalkanTms = useCallback((voter: any) => {
+    const dariDps = voter.tahapan_sebelum_tms === 'dps';
+
     showConfirm(
       'Batalkan penandaan TMS?',
-      'Data akan dikembalikan ke DP4 dan ikut diverifikasi lagi.',
-      () => jalankan(() => ApiService.batalkanTms(token!, nik), 'Gagal Membatalkan'),
+      dariDps
+        ? 'Data akan dikembalikan ke DPS beserta keterangan terverifikasinya, siap ikut penetapan DPT.'
+        : 'Data akan dikembalikan ke DP4 dan ikut diverifikasi lagi.',
+      () => jalankan(() => ApiService.batalkanTms(token!, voter.nik), 'Gagal Membatalkan'),
       'Kembalikan',
     );
   }, [showConfirm, jalankan, token]);
