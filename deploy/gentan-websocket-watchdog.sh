@@ -17,17 +17,16 @@
 # beban CPU, GC PHP — bukan alasan memutus semua layar yang sedang menonton.
 #
 # Pemasangan (sekali saja, sebagai root):
-#   chmod +x /storage/kpps/kpu-gentan/deploy/gentan-websocket-watchdog.sh
 #   cp /storage/kpps/kpu-gentan/deploy/gentan-websocket-watchdog.{service,timer} \
 #      /etc/systemd/system/
 #   systemctl daemon-reload
 #   systemctl enable --now gentan-websocket-watchdog.timer
 #
 # Melihat kerjanya:
-#   journalctl -t gentan-websocket-watchdog --since today
+#   journalctl -t gentan-websocket-watchdog --since today   # hanya kegagalan
 #   systemctl list-timers gentan-websocket-watchdog.timer
 
-# Sengaja tanpa `-e`: curl yang gagal adalah bagian normal dari alur di sini.
+# Sengaja tanpa `-e`: pemeriksaan yang gagal adalah bagian normal dari alur ini.
 set -uo pipefail
 
 UNIT=gentan-websocket.service
@@ -39,15 +38,27 @@ TAG=gentan-websocket-watchdog
 
 catat() { logger -t "$TAG" -- "$*"; }
 
-# Handshake sungguhan: Sec-WebSocket-Key acak, harapkan "101 Switching Protocols".
-# `--max-time` wajib — setelah 101 sambungannya memang tidak ditutup server.
-kunci=$(head -c 16 /dev/urandom | base64)
-baris=$(curl -sS -i --http1.1 --max-time 5 \
-  -H 'Connection: Upgrade' \
-  -H 'Upgrade: websocket' \
-  -H 'Sec-WebSocket-Version: 13' \
-  -H "Sec-WebSocket-Key: $kunci" \
-  "http://$HOST:$PORT/" 2>/dev/null | head -n 1 | tr -d '\r')
+# Handshake sungguhan lalu tutup segera.
+#
+# Ditulis dengan PHP, bukan curl: curl menahan sambungan yang sudah di-upgrade
+# sampai `--max-time` habis, jadi tiap pemeriksaan meninggalkan satu klien
+# menggantung di server selama beberapa detik — tiap menit, selamanya. Klien
+# di bawah ini membaca satu baris status lalu menutup dengan rapi.
+baris=$(/usr/bin/php -r '
+$soket = @stream_socket_client("tcp://" . $argv[1] . ":" . $argv[2], $e, $m, 3);
+if (!$soket) { echo "tidak-bisa-menyambung"; exit; }
+$kunci = base64_encode(random_bytes(16));
+$permintaan = "GET / HTTP/1.1\r\n"
+    . "Host: " . $argv[1] . "\r\n"
+    . "Connection: Upgrade\r\n"
+    . "Upgrade: websocket\r\n"
+    . "Sec-WebSocket-Version: 13\r\n"
+    . "Sec-WebSocket-Key: " . $kunci . "\r\n\r\n";
+fwrite($soket, $permintaan);
+stream_set_timeout($soket, 3);
+echo trim((string) fgets($soket, 256));
+fclose($soket);
+' "$HOST" "$PORT" 2>/dev/null)
 
 if [[ "$baris" == *101* ]]; then
   # Sehat. Hapus jejak kegagalan sebelumnya supaya ambangnya hanya berlaku
