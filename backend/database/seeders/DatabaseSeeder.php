@@ -4,7 +4,6 @@ namespace Database\Seeders;
 
 use App\Models\User;
 use App\Models\Tps;
-use App\Models\Dpt;
 use App\Models\Paslon;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Facades\Hash;
@@ -100,71 +99,10 @@ class DatabaseSeeder extends Seeder
             ]);
         }
 
-        // 4. Create voters (DPT) from CSV
-        $csvFile = database_path('seeders/dpt_seed.csv');
-        if (file_exists($csvFile)) {
-            $handle = fopen($csvFile, 'r');
-            $header = fgetcsv($handle);
-            $colMap = array_flip($header);
-            
-            $chunk = [];
-            $voterIndex = 1;
-            while (($row = fgetcsv($handle)) !== false) {
-                $nik = $row[$colMap['nik']];
-                $idPemilih = 'USH-GTN-026' . sprintf('%04d', $voterIndex);
-                
-                $chunk[] = [
-                    'nik' => $nik,
-                    'nkk' => $row[$colMap['nkk']] ?: null,
-                    'nama' => $row[$colMap['nama']],
-                    'tps_id' => intval($row[$colMap['tps_id']]),
-                    'status_hadir' => false,
-                    'waktu_checkin' => null,
-                    'qr_payload' => $idPemilih,
-                    // Berkas Excel adalah DP4; verifikasi dijalankan terpisah.
-                    'asal' => 'dp4',
-                    'tahapan' => 'dp4',
-                    'id_pemilih' => $idPemilih,
-                    'no_urut' => isset($colMap['no_urut']) && $row[$colMap['no_urut']] !== '' ? intval($row[$colMap['no_urut']]) : null,
-                    'umur' => $row[$colMap['umur']] !== '' ? intval($row[$colMap['umur']]) : null,
-                    'status_kawin' => $row[$colMap['status_kawin']],
-                    'jenis_kelamin' => $row[$colMap['jenis_kelamin']],
-                    'alamat' => $row[$colMap['alamat']],
-                    'rt' => $row[$colMap['rt']],
-                    'rw' => $row[$colMap['rw']],
-                    'pekerjaan' => $row[$colMap['pekerjaan']],
-                    'disabilitas' => $row[$colMap['disabilitas']],
-                    // Kolom keterangan pada CSV berisi catatan asal-usul impor,
-                    // bukan kategori hasil pemeriksaan. Sejak keterangan menjadi
-                    // enum, isinya dipindah ke catatan_impor dan hasil
-                    // pemeriksaan baru diisi saat verifikasi.
-                    'keterangan' => null,
-                    'catatan_impor' => $row[$colMap['catatan_impor']] ?: null,
-                    // Penanda nomor sementara: lihat migrasi
-                    // `tandai_nik_nkk_sintetis_pada_dpt`.
-                    'nik_sintetis' => $row[$colMap['nik_sintetis']] === '1',
-                    'nkk_sintetis' => $row[$colMap['nkk_sintetis']] === '1',
-                    'created_at' => now(),
-                    'updated_at' => now(),
-                ];
-                
-                $voterIndex++;
-                if (count($chunk) >= 500) {
-                    Dpt::insert($chunk);
-                    $chunk = [];
-                }
-            }
-            if (count($chunk) > 0) {
-                Dpt::insert($chunk);
-            }
-            fclose($handle);
-        }
-
-        // 4b. Update total_dpt in Tps table based on seeded count
-        for ($i = 1; $i <= 5; $i++) {
-            $count = Dpt::where('tps_id', $i)->count();
-            Tps::where('id', $i)->update(['total_dpt' => $count]);
-        }
+        // 4. Daftar pemilih beserta penyegaran total_dpt tiap TPS.
+        //    Isinya di DptSeeder supaya bisa dijalankan sendiri di server yang
+        //    sudah berisi akun: `php artisan db:seed --class=DptSeeder`.
+        $this->call(DptSeeder::class);
 
         // 5. Seed default candidate pairs (Paslons)
         Paslon::create([
