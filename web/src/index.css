@@ -1204,6 +1204,88 @@ tr:hover td {
 }
 
 
+/* ============================================================
+   Indikator pembaruan langsung
+   ============================================================ */
+
+.indikator-langsung {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 10px;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  background-color: var(--surface);
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: var(--text-muted);
+  white-space: nowrap;
+}
+
+.indikator-langsung .titik {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background-color: var(--text-muted);
+  flex: 0 0 auto;
+}
+
+.indikator-langsung .pemisah {
+  opacity: 0.5;
+}
+
+.indikator-langsung .umur {
+  font-weight: 400;
+}
+
+/* Hijau berdenyut hanya untuk sambungan yang benar-benar terbuka. Denyutnya
+   yang membuat "hidup" terbaca tanpa membaca tulisannya. */
+.indikator-langsung.mode-langsung {
+  border-color: oklch(0.85 0.06 165);
+  background-color: oklch(0.97 0.02 165);
+  color: var(--primary);
+}
+
+.indikator-langsung.mode-langsung .titik {
+  background-color: var(--primary);
+  animation: denyut-langsung 2s ease-in-out infinite;
+}
+
+.indikator-langsung.mode-berkala {
+  border-color: oklch(0.88 0.07 85);
+  background-color: oklch(0.98 0.03 85);
+  color: oklch(0.48 0.11 70);
+}
+
+.indikator-langsung.mode-berkala .titik {
+  background-color: oklch(0.68 0.14 70);
+}
+
+@keyframes denyut-langsung {
+  0%, 100% { opacity: 1; transform: scale(1); }
+  50% { opacity: 0.35; transform: scale(0.8); }
+}
+
+/* Denyut yang terus bergerak di sudut mata mengganggu sebagian orang; teks
+   dan warnanya sudah membawa seluruh keterangan. */
+@media (prefers-reduced-motion: reduce) {
+  .indikator-langsung.mode-langsung .titik {
+    animation: none;
+  }
+}
+
+/* Di ponsel indikator mengambil barisnya sendiri di dalam `.header-actions`.
+   Kalau ia ikut aturan dua-kolom di sana, tulisan sepanjang "Langsung ·
+   diperbarui 12 detik lalu" tidak muat dan terpotong. */
+@media (max-width: 768px) {
+  .indikator-langsung {
+    flex-basis: 100%;
+    justify-content: center;
+    white-space: normal;
+    text-align: center;
+  }
+}
+
 /* Menu pilihan lingkup ekspor */
 
 /**

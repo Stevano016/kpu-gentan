@@ -1,4 +1,4 @@
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import {
   LIVE_EVENTS,
   LIVE_POLL_INTERVAL_MS,
@@ -14,6 +14,21 @@ interface Argumen {
   /** Penyegaran senyap; dipanggil tiap kali ada kabar perubahan. */
   refresh: () => void;
 }
+
+/**
+ * Bagaimana angka di layar sampai ke sana.
+ *
+ * - `menyambung` — socket sedang dibuka; keadaan sepersekian detik pertama.
+ * - `langsung`   — socket tersambung; perubahan didorong server begitu terjadi.
+ * - `berkala`    — socket tidak bisa dipakai; angkanya ditarik tiap beberapa
+ *                  detik, jadi bisa tertinggal sebentar tapi tidak pernah diam.
+ * - `mati`       — halaman ini memang tidak menyalakan pembaruan otomatis.
+ *
+ * `menyambung` ada supaya indikatornya tidak sempat berbohong: menampilkan
+ * "langsung" sebelum socket-nya benar-benar terbuka membuat halaman tampak
+ * hidup padahal belum, dan itu justru keadaan yang perlu terlihat.
+ */
+export type ModeLangsung = 'menyambung' | 'langsung' | 'berkala' | 'mati';
 
 /** Alamat socket: lokal selalu ke port terusan di mesin yang sama. */
 const alamatSocket = () => {
@@ -41,9 +56,14 @@ const alamatSocket = () => {
  * Only the dashboard updates on its own. Reloading a list while someone is
  * working through it loses their place, so the other screens stay put.
  */
-export function useLiveDashboard({ token, path, isPantarlih, refresh }: Argumen) {
+export function useLiveDashboard({ token, path, isPantarlih, refresh }: Argumen): ModeLangsung {
+  const [mode, setMode] = useState<ModeLangsung>('mati');
+
   useEffect(() => {
-    if (!token || isPantarlih || !adalahRuteDashboard(path)) return;
+    if (!token || isPantarlih || !adalahRuteDashboard(path)) {
+      setMode('mati');
+      return;
+    }
 
     const socketUrl = alamatSocket();
 
@@ -56,6 +76,7 @@ export function useLiveDashboard({ token, path, isPantarlih, refresh }: Argumen)
     const segarkanBilaTerlihat = () => { if (!document.hidden) refresh(); };
 
     const startPolling = () => {
+      if (!disposed) setMode('berkala');
       if (pollId !== undefined) return;
       pollId = window.setInterval(segarkanBilaTerlihat, LIVE_POLL_INTERVAL_MS);
     };
@@ -73,11 +94,13 @@ export function useLiveDashboard({ token, path, isPantarlih, refresh }: Argumen)
         startPolling();
         return;
       }
+      if (!disposed) setMode('menyambung');
       socket = new WebSocket(socketUrl);
 
       socket.onopen = () => {
         // Push is live, so the fallback is no longer needed.
         stopPolling();
+        if (!disposed) setMode('langsung');
       };
 
       socket.onmessage = (event) => {
@@ -110,4 +133,6 @@ export function useLiveDashboard({ token, path, isPantarlih, refresh }: Argumen)
       if (socket) socket.close();
     };
   }, [token, path, isPantarlih, refresh]);
+
+  return mode;
 }

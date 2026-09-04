@@ -56,6 +56,13 @@ class TpsController extends Controller
             'total_dpt' => 0
         ]);
 
+        // Dashboard menghitung "dari N total TPS" dan "TPS belum kirim QC"
+        // dari jumlah TPS, jadi penambahan satu TPS menggeser dua kartu di
+        // sana. Tanpa siaran ini, layar monitor lain tetap menampilkan angka
+        // lama sampai seseorang menekan Segarkan — satu-satunya perubahan
+        // data yang dulu tidak ikut disiarkan.
+        \App\Utils\Broadcaster::trigger('update', ['tps_id' => 'all']);
+
         return response()->json([
             'status' => 'success',
             'message' => 'TPS berhasil dibuat.',

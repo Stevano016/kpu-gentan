@@ -9,6 +9,7 @@ import { PaslonTab } from './tabs/PaslonTab';
 import { TpsDetailRoute } from './routes/TpsDetailRoute';
 import type { AuthController } from '../hooks/useAuth';
 import type { DashboardController } from '../hooks/useDashboard';
+import type { ModeLangsung } from '../hooks/useLiveDashboard';
 import type { ImportCsvController } from '../hooks/useImportCsv';
 import type { KppsController } from '../hooks/useKpps';
 import type { PaslonController } from '../hooks/usePaslon';
@@ -24,6 +25,8 @@ interface AppRoutesProps {
   auth: AuthController;
   feedback: Feedback;
   dashboard: DashboardController;
+  /** Cara angka dashboard sampai ke layar: langsung, berkala, atau mati. */
+  modeLangsung: ModeLangsung;
   tps: TpsController;
   pemilih: PemilihController;
   tahapan: TahapanController;
@@ -46,6 +49,7 @@ export const AppRoutes: React.FC<AppRoutesProps> = ({
   auth,
   feedback,
   dashboard,
+  modeLangsung,
   tps,
   pemilih,
   tahapan,
@@ -84,6 +88,8 @@ export const AppRoutes: React.FC<AppRoutesProps> = ({
           dashboardData={dashboard.dashboardData}
           dashboardLoading={dashboard.dashboardLoading}
           fetchDashboard={dashboard.fetchDashboard}
+          modeLangsung={modeLangsung}
+          terakhirDiperbarui={dashboard.terakhirDiperbarui}
           setSelectedTpsId={bukaTps}
           setPage={bukaHalaman}
         />
@@ -94,6 +100,8 @@ export const AppRoutes: React.FC<AppRoutesProps> = ({
           dashboardData={dashboard.dashboardData}
           dashboardLoading={dashboard.dashboardLoading}
           fetchDashboard={dashboard.fetchDashboard}
+          modeLangsung={modeLangsung}
+          terakhirDiperbarui={dashboard.terakhirDiperbarui}
         />
       )} />
 

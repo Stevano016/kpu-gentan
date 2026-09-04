@@ -2,11 +2,15 @@ import React from 'react';
 import { Icons } from '../Icons';
 import { roundVal } from '../../utils/helpers';
 import { LoadingHint } from '../LoadingHint';
+import { IndikatorLangsung } from '../IndikatorLangsung';
+import type { ModeLangsung } from '../../hooks/useLiveDashboard';
 
 interface DashboardTabProps {
   dashboardData: any;
   dashboardLoading: boolean;
   fetchDashboard: (silent?: boolean) => Promise<void>;
+  modeLangsung: ModeLangsung;
+  terakhirDiperbarui: number | null;
   setSelectedTpsId: (id: number | null) => void;
   setPage: (page: string) => void;
 }
@@ -15,6 +19,8 @@ export const DashboardTab: React.FC<DashboardTabProps> = ({
   dashboardData,
   dashboardLoading,
   fetchDashboard,
+  modeLangsung,
+  terakhirDiperbarui,
   setSelectedTpsId,
   setPage,
 }) => {
@@ -27,12 +33,17 @@ export const DashboardTab: React.FC<DashboardTabProps> = ({
           <h1 className="section-title">Dashboard Umum</h1>
           <p className="section-desc">Statistik real-time kehadiran pemilih dan quick count suara.</p>
         </div>
-        {/* Wrapped: passing the handler directly would hand the click event in as
-            `silent`, making the manual refresh silent too. */}
-        <button onClick={() => fetchDashboard()} disabled={dashboardLoading} className="btn btn-secondary">
-          <Icons.Refresh />
-          <span>Segarkan</span>
-        </button>
+        <div className="header-actions">
+          {/* Angka di halaman ini bergerak sendiri; indikatornya yang membuat
+              hal itu — dan umur datanya — terlihat tanpa menekan apa pun. */}
+          <IndikatorLangsung mode={modeLangsung} terakhir={terakhirDiperbarui} />
+          {/* Wrapped: passing the handler directly would hand the click event in as
+              `silent`, making the manual refresh silent too. */}
+          <button onClick={() => fetchDashboard()} disabled={dashboardLoading} className="btn btn-secondary">
+            <Icons.Refresh />
+            <span>Segarkan</span>
+          </button>
+        </div>
       </div>
 
       <LoadingHint show={dashboardLoading} />

@@ -52,7 +52,7 @@ function AppContent() {
   const dashboard = useDashboard({ token, path, isPantarlih });
   const { fetchDashboard } = dashboard;
   const refreshDashboard = useCallback(() => { void fetchDashboard(true); }, [fetchDashboard]);
-  useLiveDashboard({ token, path, isPantarlih, refresh: refreshDashboard });
+  const modeLangsung = useLiveDashboard({ token, path, isPantarlih, refresh: refreshDashboard });
 
   const tps = useTps({ token, path, isPantarlih, feedback });
   const qr = useQrCode({ token, showError: feedback.showError });
@@ -115,6 +115,7 @@ function AppContent() {
           auth={auth}
           feedback={feedback}
           dashboard={dashboard}
+          modeLangsung={modeLangsung}
           tps={tps}
           pemilih={pemilih}
           tahapan={tahapan}

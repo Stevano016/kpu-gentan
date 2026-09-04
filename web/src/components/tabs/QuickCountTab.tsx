@@ -1,11 +1,15 @@
 import React from 'react';
 import { Icons } from '../Icons';
 import { LoadingHint } from '../LoadingHint';
+import { IndikatorLangsung } from '../IndikatorLangsung';
+import type { ModeLangsung } from '../../hooks/useLiveDashboard';
 
 interface QuickCountTabProps {
   dashboardData: any;
   dashboardLoading: boolean;
   fetchDashboard: (silent?: boolean) => Promise<void>;
+  modeLangsung: ModeLangsung;
+  terakhirDiperbarui: number | null;
 }
 
 /**
@@ -40,6 +44,8 @@ export const QuickCountTab: React.FC<QuickCountTabProps> = ({
   dashboardData,
   dashboardLoading,
   fetchDashboard,
+  modeLangsung,
+  terakhirDiperbarui,
 }) => {
   const stats = dashboardData?.stats;
   const agg = dashboardData?.quick_count_aggregates;
@@ -88,6 +94,7 @@ export const QuickCountTab: React.FC<QuickCountTabProps> = ({
           </p>
         </div>
         <div className="header-actions">
+          <IndikatorLangsung mode={modeLangsung} terakhir={terakhirDiperbarui} />
           <button onClick={() => fetchDashboard()} disabled={dashboardLoading} className="btn btn-secondary">
             <Icons.Refresh />
             <span>Segarkan</span>
