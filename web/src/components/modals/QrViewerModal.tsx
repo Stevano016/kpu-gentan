@@ -40,23 +40,9 @@ export const QrViewerModal: React.FC<QrViewerModalProps> = ({
           <button 
             type="button" 
             onClick={() => downloadQrCode(selectedVoterQr!, selectedVoterName)} 
-            className="btn btn-secondary"
-          >
-            Unduh Gambar QR
-          </button>
-          <button 
-            type="button" 
-            onClick={() => {
-              const win = window.open();
-              if (win) {
-                win.document.write(`<div style="text-align:center;font-family:sans-serif;padding:40px;"><h2>GENTARA - KARTU PEMILIH</h2><h3>${selectedVoterName}</h3><img src="${selectedVoterQr}" style="width:300px;height:300px;margin-top:20px;"/><p style="margin-top:20px;font-size:14px;color:#666;">Harap bawa kode QR ini saat datang ke TPS untuk check-in.</p></div>`);
-                win.print();
-                win.close();
-              }
-            }} 
             className="btn btn-primary"
           >
-            Cetak Kartu QR
+            Unduh Gambar QR
           </button>
         </div>
       </div>

@@ -38,30 +38,16 @@ export const VoterSuccessModal: React.FC<VoterSuccessModalProps> = ({
             />
           </div>
           <p style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginTop: '16px' }}>
-            Harap cetak atau unduh QR Code ini untuk diserahkan kepada pemilih sebagai kartu check-in TPS.
+            Harap unduh QR Code ini untuk diserahkan kepada pemilih sebagai kartu check-in TPS.
           </p>
         </div>
         <div className="modal-footer" style={{ justifyContent: 'center', gap: '8px' }}>
           <button 
             type="button" 
             onClick={() => downloadQrCode(newVoterSuccess.qrcode, newVoterSuccess.nama)} 
-            className="btn btn-secondary"
-          >
-            Unduh Gambar QR
-          </button>
-          <button 
-            type="button" 
-            onClick={() => {
-              const win = window.open();
-              if (win) {
-                win.document.write(`<div style="text-align:center;font-family:sans-serif;padding:40px;"><h2>GENTARA - KARTU PEMILIH</h2><h3>${newVoterSuccess.nama}</h3><p style="font-family:monospace;font-size:16px;font-weight:bold;margin:4px 0;">ID: ${newVoterSuccess.id_pemilih}</p><p style="font-family:monospace;font-size:14px;color:#555;margin:4px 0;">NIK: ${newVoterSuccess.nik}</p><img src="${newVoterSuccess.qrcode}" style="width:300px;height:300px;margin-top:20px;"/><p style="margin-top:20px;font-size:14px;color:#666;">Harap bawa kode QR ini saat datang ke TPS untuk check-in.</p></div>`);
-                win.print();
-                win.close();
-              }
-            }} 
             className="btn btn-primary"
           >
-            Cetak Kartu QR
+            Unduh Gambar QR
           </button>
         </div>
         <div style={{ marginTop: '12px', borderTop: '1px solid var(--border)', paddingTop: '12px' }}>
