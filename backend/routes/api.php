@@ -11,6 +11,7 @@ use App\Http\Controllers\PaslonController;
 use App\Http\Controllers\TahapanController;
 use App\Http\Controllers\ExportController;
 use App\Http\Controllers\KeluargaController;
+use App\Http\Controllers\UndanganController;
 
 // Public routes
 Route::post('/login', [AuthController::class, 'login'])->middleware('throttle:login');
@@ -32,6 +33,9 @@ Route::middleware(['auth:sanctum', 'throttle:api'])->group(function () {
         Route::get('/tps/{id}', [TpsController::class, 'show']);
         Route::get('/users', [UserController::class, 'index']);
         Route::get('/tahapan/ringkasan', [TahapanController::class, 'ringkasan']);
+
+        // Daftar siap-cetak undangan C6 satu TPS, untuk pencetakan maraton.
+        Route::get('/undangan/daftar', [UndanganController::class, 'daftar']);
 
         // --- Tulis: khusus sekretariat admin ---
         Route::middleware('sekretariat.admin')->group(function () {
@@ -69,6 +73,8 @@ Route::middleware(['auth:sanctum', 'throttle:api'])->group(function () {
     // Dipakai bersama sekretariat dan pantarlih — didaftarkan sekali saja.
     Route::middleware('role:sekretariat,pantarlih')->group(function () {
         Route::get('/dpt', [DptController::class, 'index']);
+        // Didaftarkan sebelum rute ber-{nik}: 'cek-nik' bukan sebuah NIK.
+        Route::get('/dpt/cek-nik', [DptController::class, 'cekNik']);
         Route::get('/dpt/{nik}/qrcode', [DptController::class, 'getQrCode']);
         Route::post('/dpt', [DptController::class, 'store'])->middleware('input.pemilih');
 

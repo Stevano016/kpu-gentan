@@ -66,6 +66,56 @@ class DptController extends Controller
         ]);
     }
 
+    /**
+     * Apakah satu NIK sudah dipakai? Dipanggil formulir tambah pemilih saat
+     * digit ke-16 diketik.
+     *
+     * `store()` sudah menolak NIK ganda lewat aturan `unique`, tapi penolakan
+     * itu baru terlihat setelah seluruh formulir diisi dan Simpan ditekan —
+     * dan pesannya tidak menyebut siapa pemegang NIK-nya, padahal itu yang
+     * dibutuhkan petugas untuk memutuskan (salah ketik, atau orangnya memang
+     * sudah terdaftar di tahapan lain).
+     *
+     * Pencarian sengaja tidak dibatasi RW meski pemanggilnya pantarlih: NIK
+     * ganda di RW sebelah tetap ganda, dan menyembunyikannya justru membuat
+     * petugas mengisi formulir yang pasti ditolak server.
+     */
+    public function cekNik(Request $request)
+    {
+        $validator = Validator::make($request->all(), [
+            'nik' => 'required|string|size:16',
+        ]);
+
+        if ($validator->fails()) {
+            return response()->json([
+                'status' => 'error',
+                'message' => 'NIK harus 16 digit.',
+            ], 422);
+        }
+
+        $pemilih = Dpt::with('tps:id,nama')->where('nik', $request->nik)->first();
+
+        if (!$pemilih) {
+            return response()->json([
+                'status' => 'success',
+                'data' => ['terdaftar' => false],
+            ]);
+        }
+
+        return response()->json([
+            'status' => 'success',
+            'data' => [
+                'terdaftar' => true,
+                'nama' => $pemilih->nama,
+                'tahapan' => $pemilih->tahapan,
+                'tps' => $pemilih->tps->nama ?? null,
+                'rt' => $pemilih->rt,
+                'rw' => $pemilih->rw,
+                'nik_sintetis' => (bool) $pemilih->nik_sintetis,
+            ],
+        ]);
+    }
+
     public function store(Request $request)
     {
         $validator = Validator::make($request->all(), [

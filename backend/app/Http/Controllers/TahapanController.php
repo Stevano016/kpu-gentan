@@ -63,7 +63,12 @@ class TahapanController extends Controller
         ]);
     }
 
-    /** Tandai satu data DP4 sebagai Tidak Memenuhi Syarat. */
+    /**
+     * Tandai satu data sebagai Tidak Memenuhi Syarat.
+     *
+     * Berlaku dari DP4 maupun DPS. Tahapan asalnya dicatat supaya pembatalan
+     * mengembalikannya ke tempat ia diambil, bukan selalu ke DP4.
+     */
     public function tandaiTms(Request $request, $nik)
     {
         // Alasan gugur memakai daftar yang sama dengan kolom keterangan, supaya
@@ -99,6 +104,7 @@ class TahapanController extends Controller
         $dpt->update([
             'tahapan' => 'tms',
             'tms_alasan' => $request->alasan,
+            'tahapan_sebelum_tms' => $dpt->tahapan,
             'keterangan' => $request->alasan,
             'diverifikasi_pada' => now(),
         ]);
@@ -112,24 +118,40 @@ class TahapanController extends Controller
         ]);
     }
 
-    /** Batalkan penandaan TMS; data kembali menunggu verifikasi. */
+    /**
+     * Batalkan penandaan TMS; data kembali ke tahapan asalnya.
+     *
+     * Yang ditandai dari DPS kembali ke DPS beserta keterangan
+     * terverifikasinya — memundurkannya ke DP4 akan menghapus verifikasi yang
+     * tidak pernah salah, dan bila TPS-nya sudah ditetapkan jadi DPT, orang itu
+     * tertinggal di DP4 tanpa ada yang menyadarinya. Data lama yang belum punya
+     * catatan asal tetap kembali ke DP4 seperti perilaku sebelumnya.
+     */
     public function batalkanTms($nik)
     {
         $dpt = Dpt::where('nik', $nik)->firstOrFail();
-        $this->pastikanBisaPindah($dpt->tahapan, 'dp4');
+
+        $tujuan = in_array($dpt->tahapan_sebelum_tms, ['dp4', 'dps'], true)
+            ? $dpt->tahapan_sebelum_tms
+            : 'dp4';
+
+        $this->pastikanBisaPindah($dpt->tahapan, $tujuan);
 
         $dpt->update([
-            'tahapan' => 'dp4',
+            'tahapan' => $tujuan,
             'tms_alasan' => null,
-            'keterangan' => null,
-            'diverifikasi_pada' => null,
+            'tahapan_sebelum_tms' => null,
+            // Kembali ke DPS berarti verifikasinya berlaku lagi; kembali ke DP4
+            // berarti ia menunggu diverifikasi, jadi keterangannya dikosongkan.
+            'keterangan' => $tujuan === 'dps' ? '1 : Terverifikasi/Valid' : null,
+            'diverifikasi_pada' => $tujuan === 'dps' ? $dpt->diverifikasi_pada : null,
         ]);
 
         Broadcaster::trigger('update', ['tps_id' => $dpt->tps_id]);
 
         return response()->json([
             'status' => 'success',
-            'message' => 'Penandaan TMS dibatalkan, data kembali ke DP4.',
+            'message' => 'Penandaan TMS dibatalkan, data kembali ke ' . strtoupper($tujuan) . '.',
             'data' => $dpt->fresh(),
         ]);
     }

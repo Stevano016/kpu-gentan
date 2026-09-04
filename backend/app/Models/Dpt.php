@@ -28,6 +28,7 @@ class Dpt extends Model
         'asal',
         'tahapan',
         'tms_alasan',
+        'tahapan_sebelum_tms',
         'dpk_alasan',
         'diverifikasi_pada',
         'id_pemilih',
@@ -102,14 +103,21 @@ class Dpt extends Model
     /** Stages a voter is still counted as an active part of the roll. */
     public const TAHAPAN_AKTIF = ['dp4', 'dps', 'dptb', 'dpt', 'dpk'];
 
-    /** Stages that may be reached from each stage. */
+    /**
+     * Stages that may be reached from each stage.
+     *
+     * DPS boleh ke TMS, bukan hanya DP4: data yang tidak memenuhi syarat sering
+     * baru ketahuan setelah verifikasi — pemilih meninggal, ganda, atau pindah
+     * — dan menutup jalan itu memaksa petugas memundurkan orangnya ke DP4 dulu.
+     * Karena itu TMS punya dua jalan pulang, sesuai `tahapan_sebelum_tms`.
+     */
     public const TRANSISI = [
         'dp4' => ['dps', 'tms'],
-        'dps' => ['dpt'],
+        'dps' => ['dpt', 'tms'],
         'dptb' => ['dpt'],
         'dpt' => ['dpk'],
         'dpk' => ['dpt'],
-        'tms' => ['dp4'],
+        'tms' => ['dp4', 'dps'],
     ];
 
     public function getJenisPemilihAttribute(): ?string
