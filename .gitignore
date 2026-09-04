@@ -19,3 +19,6 @@ Thumbs.db
 /mobile/android/key.properties
 *.jks
 *.keystore
+# Hasil render perkakas lihat-sendiri (test/lihat_dashboard_test.dart).
+# Dibuat ulang saat dibutuhkan, tidak perlu ikut versi.
+mobile/test/lihat/

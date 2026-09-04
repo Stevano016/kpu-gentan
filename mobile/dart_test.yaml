@@ -1,0 +1,10 @@
+# Uji bertanda `lihat` merender layar ke PNG untuk dilihat manusia, bukan untuk
+# dibandingkan otomatis. Perbandingan golden gampang gagal karena beda versi
+# font atau platform, jadi ia dilewati pada `flutter test` biasa.
+#
+# Jalankan manual:
+#   flutter test --tags lihat --run-skipped --update-goldens
+# lalu buka berkasnya di test/lihat/.
+tags:
+  lihat:
+    skip: "perkakas lihat-sendiri; jalankan dengan --tags lihat --run-skipped --update-goldens"
