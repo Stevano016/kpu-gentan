@@ -71,7 +71,14 @@ class WebSocketServer extends Command
                                 continue;
                             }
                             $handshakes[$socketId] = true;
-                            $this->info("New WebSocket client connected (ID: {$socketId})");
+                            // Pengawas systemd berjabat tangan tiap menit hanya
+                            // untuk memastikan server masih menjawab, lalu
+                            // langsung menutup. Mencatatnya berarti ~1.400
+                            // baris "client connected" per hari yang mengubur
+                            // sambungan petugas yang sesungguhnya.
+                            if (!preg_match('/^x-pengawas:/mi', $data)) {
+                                $this->info("New WebSocket client connected (ID: {$socketId})");
+                            }
                         } else {
                             // Local IPC Notification (e.g. JSON from Controller)
                             $this->handleIpcNotification($data, $clients, $handshakes);

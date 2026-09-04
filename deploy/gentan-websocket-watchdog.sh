@@ -53,7 +53,8 @@ $permintaan = "GET / HTTP/1.1\r\n"
     . "Connection: Upgrade\r\n"
     . "Upgrade: websocket\r\n"
     . "Sec-WebSocket-Version: 13\r\n"
-    . "Sec-WebSocket-Key: " . $kunci . "\r\n\r\n";
+    . "Sec-WebSocket-Key: " . $kunci . "\r\n"
+    . "X-Pengawas: gentan\r\n\r\n";
 fwrite($soket, $permintaan);
 stream_set_timeout($soket, 3);
 echo trim((string) fgets($soket, 256));
