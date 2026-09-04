@@ -1,9 +1,12 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import {
   LIVE_EVENTS,
+  LIVE_KEEPALIVE_MS,
   LIVE_POLL_INTERVAL_MS,
+  LIVE_SAFETY_MAX_AGE_MS,
   LIVE_SOCKET_RETRY_MS,
   LIVE_SOCKET_URL,
+  LIVE_TICK_MS,
   adalahRuteDashboard,
 } from '../constants/app';
 
@@ -46,21 +49,49 @@ const alamatSocket = () => {
 };
 
 /**
- * Live updates for the dashboard.
+ * Pembaruan mandiri untuk dashboard dan quick count.
  *
- * The socket server is reached directly on a forwarded port, because the proxy
- * chain in front of the origin drops the Connection/Upgrade headers a handshake
- * needs. If the socket cannot be established we fall back to polling, so the
- * numbers never silently stop moving during counting.
+ * Socket dihubungi langsung di port terusan karena rantai proxy di depan
+ * origin membuang header Connection/Upgrade yang dibutuhkan handshake. Kalau
+ * socket tidak bisa dibangun, angkanya ditarik berkala — supaya ia tidak pernah
+ * berhenti bergerak di tengah penghitungan.
  *
- * Only the dashboard updates on its own. Reloading a list while someone is
- * working through it loses their place, so the other screens stay put.
+ * **Layar quick count dibiarkan menyala berjam-jam**, dan itu mengubah cara
+ * hook ini harus dibangun. Selain socket, ada tiga hal yang menjaganya:
+ *
+ *   1. **Jaring pengaman.** Data yang lebih tua dari `LIVE_SAFETY_MAX_AGE_MS`
+ *      ditarik ulang walaupun socket mengaku tersambung. Socket yang diputus
+ *      diam-diam oleh proxy tidak selalu mengirim frame penutup, jadi
+ *      `onclose` bisa tidak pernah terpanggil — dan tanpa jaring ini layarnya
+ *      membeku tanpa satu pun tanda.
+ *   2. **Denyut.** Pesan teks pendek tiap `LIVE_KEEPALIVE_MS` supaya proxy
+ *      tidak menganggap sambungannya menganggur, sekaligus memaksa sambungan
+ *      setengah mati gagal dan tersambung ulang.
+ *   3. **Tarik ulang saat tersambung.** Setiap kali socket terbuka, angkanya
+ *      langsung ditarik — perubahan yang terjadi selama terputus tidak akan
+ *      disiarkan ulang oleh siapa pun.
+ *
+ * Socket tidak dibangun ulang saat pindah antar halaman dashboard: penonton
+ * yang berpindah dari Dashboard ke Quick Count tidak perlu kehilangan
+ * sambungan yang sudah hidup.
+ *
+ * Hanya dashboard yang menyegarkan diri. Memuat ulang daftar saat seseorang
+ * sedang menyisirnya membuat dia kehilangan posisi bacanya, jadi layar lain
+ * dibiarkan tenang.
  */
 export function useLiveDashboard({ token, path, isPantarlih, refresh }: Argumen): ModeLangsung {
   const [mode, setMode] = useState<ModeLangsung>('mati');
 
+  // Disimpan di ref supaya perubahan identitas `refresh` tidak membangun ulang
+  // socket. Sambungan yang menyala berjam-jam tidak boleh tergantung pada
+  // kapan komponen di atasnya menggambar ulang.
+  const refreshRef = useRef(refresh);
+  refreshRef.current = refresh;
+
+  const aktif = !!token && !isPantarlih && adalahRuteDashboard(path);
+
   useEffect(() => {
-    if (!token || isPantarlih || !adalahRuteDashboard(path)) {
+    if (!aktif) {
       setMode('mati');
       return;
     }
@@ -68,45 +99,64 @@ export function useLiveDashboard({ token, path, isPantarlih, refresh }: Argumen)
     const socketUrl = alamatSocket();
 
     let socket: WebSocket | null = null;
-    let pollId: number | undefined;
+    let tickId: number | undefined;
+    let denyutId: number | undefined;
     let retryId: number | undefined;
     let disposed = false;
+    /** Kapan penyegaran terakhir diminta; dasar perhitungan umur data. */
+    let terakhirDiminta = 0;
 
-    // Skip while the tab is in the background — nobody is reading it.
-    const segarkanBilaTerlihat = () => { if (!document.hidden) refresh(); };
-
-    const startPolling = () => {
-      if (!disposed) setMode('berkala');
-      if (pollId !== undefined) return;
-      pollId = window.setInterval(segarkanBilaTerlihat, LIVE_POLL_INTERVAL_MS);
+    const segarkan = () => {
+      if (document.hidden) return;
+      terakhirDiminta = Date.now();
+      refreshRef.current();
     };
 
-    const stopPolling = () => {
-      if (pollId === undefined) return;
-      window.clearInterval(pollId);
-      pollId = undefined;
+    /** Umur data yang masih ditoleransi, tergantung apakah socket hidup. */
+    const batasUmur = () =>
+      socket && socket.readyState === WebSocket.OPEN
+        ? LIVE_SAFETY_MAX_AGE_MS
+        : LIVE_POLL_INTERVAL_MS;
+
+    const periksa = () => {
+      if (disposed || document.hidden) return;
+      if (Date.now() - terakhirDiminta >= batasUmur()) segarkan();
+    };
+
+    const denyut = () => {
+      if (!socket || socket.readyState !== WebSocket.OPEN) return;
+      try {
+        socket.send('ping');
+      } catch {
+        // Socket yang sudah tidak bisa ditulisi akan menutup sendiri lewat
+        // onclose; tidak ada yang perlu dilakukan di sini.
+      }
     };
 
     const connect = () => {
       if (disposed) return;
-      // No socket configured for this deployment — polling is the whole story.
+
+      // Tidak ada socket untuk pemasangan ini — penarikan berkala jadi
+      // satu-satunya jalan, dan pengawas di bawah yang menjalankannya.
       if (!socketUrl) {
-        startPolling();
+        setMode('berkala');
         return;
       }
-      if (!disposed) setMode('menyambung');
+
+      setMode('menyambung');
       socket = new WebSocket(socketUrl);
 
       socket.onopen = () => {
-        // Push is live, so the fallback is no longer needed.
-        stopPolling();
-        if (!disposed) setMode('langsung');
+        if (disposed) return;
+        setMode('langsung');
+        // Susul perubahan yang terjadi selama sambungannya terputus.
+        segarkan();
       };
 
       socket.onmessage = (event) => {
         try {
           const payload = JSON.parse(event.data);
-          if (LIVE_EVENTS.includes(payload.event)) segarkanBilaTerlihat();
+          if (LIVE_EVENTS.includes(payload.event)) segarkan();
         } catch {
           // A malformed frame is not worth interrupting the operator over.
         }
@@ -115,24 +165,34 @@ export function useLiveDashboard({ token, path, isPantarlih, refresh }: Argumen)
       socket.onclose = () => {
         socket = null;
         if (disposed) return;
-        startPolling();
+        setMode('berkala');
         retryId = window.setTimeout(connect, LIVE_SOCKET_RETRY_MS);
       };
     };
 
+    // Pengawas dan denyut berjalan terus, apa pun keadaan socket-nya.
+    tickId = window.setInterval(periksa, LIVE_TICK_MS);
+    denyutId = window.setInterval(denyut, LIVE_KEEPALIVE_MS);
     connect();
 
-    // Catch up immediately when the operator comes back to the tab.
-    document.addEventListener('visibilitychange', segarkanBilaTerlihat);
+    // Langsung susul begitu petugas kembali ke tab ini.
+    document.addEventListener('visibilitychange', segarkan);
 
     return () => {
       disposed = true;
-      document.removeEventListener('visibilitychange', segarkanBilaTerlihat);
-      stopPolling();
+      document.removeEventListener('visibilitychange', segarkan);
+      window.clearInterval(tickId);
+      window.clearInterval(denyutId);
       if (retryId !== undefined) window.clearTimeout(retryId);
-      if (socket) socket.close();
+      if (socket) {
+        // Lepas penanganan sebelum menutup: `onclose` di atas akan menjadwalkan
+        // penyambungan ulang, dan hook yang sudah dibongkar tidak boleh
+        // meninggalkan timer hidup.
+        socket.onclose = null;
+        socket.close();
+      }
     };
-  }, [token, path, isPantarlih, refresh]);
+  }, [aktif]);
 
   return mode;
 }

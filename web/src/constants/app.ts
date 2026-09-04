@@ -26,6 +26,32 @@ export const LIVE_POLL_INTERVAL_MS = 10000;
 
 export const LIVE_SOCKET_RETRY_MS = 15000;
 
+/**
+ * Batas umur data ketika socket **sedang** tersambung.
+ *
+ * Socket yang mati diam-diam adalah kegagalan yang paling merugikan di layar
+ * quick count: sambungan yang diputus di tengah jalan oleh proxy tidak selalu
+ * mengirim frame penutup, jadi `onclose` tidak pernah terpanggil, penarikan
+ * cadangan tidak pernah dimulai, dan angka di layar berhenti tanpa satu pun
+ * tanda. Jaring pengaman ini menariknya ulang setiap kali datanya lebih tua
+ * dari ambang ini — satu permintaan kecil per setengah menit, dan layar yang
+ * ditinggal berjam-jam tidak bisa lagi membeku tanpa diketahui.
+ */
+export const LIVE_SAFETY_MAX_AGE_MS = 30000;
+
+/**
+ * Denyut teks ke server supaya sambungannya tidak dianggap menganggur.
+ *
+ * Perantara di depan origin memutus WebSocket yang sunyi, dan saat penghitungan
+ * belum dimulai memang tidak ada apa pun untuk disiarkan. Denyut ini juga yang
+ * memaksa sambungan setengah mati mengaku: `send()` pada socket yang sudah
+ * hilang akhirnya gagal dan memicu penyambungan ulang.
+ */
+export const LIVE_KEEPALIVE_MS = 25000;
+
+/** Seberapa sering pengawas memeriksa umur data. */
+export const LIVE_TICK_MS = 5000;
+
 /** Peristiwa socket yang membuat ringkasan dashboard perlu ditarik ulang. */
 export const LIVE_EVENTS = ['checkin', 'quick-count', 'update', 'paslon_updated'];
 
