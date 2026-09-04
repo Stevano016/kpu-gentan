@@ -1,10 +1,18 @@
 # -*- coding: utf-8 -*-
 """
-Membangun `database/seeders/dpt_seed.csv` dari berkas-berkas Excel di
-`d:\Coding\KPPS Gentan\DPS PILKADES 2026` (RW 1.xlsx - RW 14.xlsx).
+Membangun `database/seeders/dpt_seed.csv` dari berkas Excel DPS — baik satu
+berkas gabungan (sheet `RW 1` .. `RW 14`) maupun direktori `RW *.xlsx`.
 
-Mencocokkan data baru dengan database untuk mempertahankan NIK dan NKK
-yang sudah ada, serta mencatat nomor urut asli dari berkas Excel.
+Pemakaian:
+    python bangun_dpt_seed.py "<berkas.xlsx>" [--tanpa-db]
+
+Secara baku data baru dicocokkan dengan database lokal supaya NIK/NKK yang
+sudah ada tidak hilang ketika berkas sumbernya belum lengkap. `--tanpa-db`
+mematikan pencocokan itu, dipakai ketika berkas sumber memang dimaksudkan
+menggantikan seluruh data seeder: hasilnya lalu bisa dibangun ulang dari
+berkas itu saja, tidak bergantung pada isi database saat ini.
+
+Nomor urut asli dari berkas Excel tetap dicatat pada kolom `no_urut`.
 """
 
 import csv
@@ -153,7 +161,10 @@ def muat_data_db():
 
 
 def main() -> int:
-    excel_path = Path(sys.argv[1]) if len(sys.argv) > 1 else AKAR / "DPS_PILKADES_GENTAN_2026_GABUNGAN_BERSIH (1).xlsx"
+    argumen = [a for a in sys.argv[1:] if not a.startswith("--")]
+    tanpa_db = "--tanpa-db" in sys.argv[1:]
+
+    excel_path = Path(argumen[0]) if argumen else AKAR / "DPS_PILKADES_GENTAN_2026_GABUNGAN_BERSIH (2).xlsx"
     if not excel_path.exists():
         excel_path = AKAR / "DPS PILKADES 2026"
         if not excel_path.exists():
@@ -175,7 +186,11 @@ def main() -> int:
             print(f"Tidak ditemukan berkas RW *.xlsx di {excel_path}")
             return 1
 
-    db_full, db_name = muat_data_db()
+    if tanpa_db:
+        print("Mode --tanpa-db: seluruh NIK/NKK diambil dari berkas Excel, database diabaikan.")
+        db_full, db_name = {}, {}
+    else:
+        db_full, db_name = muat_data_db()
 
     hasil = []
     nik_terpakai = set()
@@ -223,6 +238,9 @@ def main() -> int:
         "nkk_sintetis": 0,
         "nik_kembar": 0
     }
+    # Nomor identitas yang panjangnya bukan 16 digit; dikumpulkan untuk
+    # dilaporkan di akhir, bukan didiamkan di tengah keluaran yang panjang.
+    cacat = []
 
     for rw_idx in range(1, 15):
         rw_num = str(rw_idx)
@@ -316,23 +334,38 @@ def main() -> int:
                 rw = nomor_wilayah(r[rw_idx]) if rw_idx != -1 and len(r) > rw_idx else ""
                 excel_nik = teks(r[ktp_idx]) if ktp_idx != -1 and len(r) > ktp_idx else ""
                 excel_nik = excel_nik.replace(" ", "").replace("-", "")
-                if excel_nik and len(excel_nik) != 16:
-                    raise ValueError(
-                        f"Galat Validasi NIK pada berkas '{fname}' (Sheet: '{sheet_name}', Baris Excel: {r_idx}):\n"
-                        f"  Nama: '{name_val}'\n"
-                        f"  NIK : '{excel_nik}' ({len(excel_nik)} digit) tidak valid! NIK harus tepat 16 digit."
+                # Nomor cacat panjang dikosongkan, bukan menggugurkan proses.
+                #
+                # Dulu satu digit yang kurang menggagalkan pembangunan seluruh
+                # berkas seeder, jadi tujuh ribu baris lain ikut tertahan oleh
+                # satu salah ketik. Sekarang orangnya tetap masuk daftar dengan
+                # nomor sementara — ia memang pemilih — dan angka aslinya
+                # disimpan di kolom catatan supaya bisa dibetulkan, bukan
+                # ditebak di sini. Semuanya dilaporkan di akhir keluaran.
+                if excel_nik and (len(excel_nik) != 16 or not excel_nik.isdigit()):
+                    cacat.append((sheet_name, r_idx, name_val, "NIK", excel_nik))
+                    catatan_cacat_nik = (
+                        f"NIK pada berkas sumber tidak sah ('{excel_nik}', "
+                        f"{len(excel_nik)} digit) — wajib diperbaiki."
                     )
+                    excel_nik = ""
+                else:
+                    catatan_cacat_nik = ""
 
                 excel_nkk = teks(r[kk_idx]) if kk_idx != -1 and len(r) > kk_idx else ""
                 excel_nkk = excel_nkk.replace(" ", "").replace("-", "")
-                if excel_nkk and len(excel_nkk) != 16:
-                    raise ValueError(
-                        f"Galat Validasi NKK pada berkas '{fname}' (Sheet: '{sheet_name}', Baris Excel: {r_idx}):\n"
-                        f"  Nama: '{name_val}'\n"
-                        f"  NKK : '{excel_nkk}' ({len(excel_nkk)} digit) tidak valid! NKK harus tepat 16 digit."
+                if excel_nkk and (len(excel_nkk) != 16 or not excel_nkk.isdigit()):
+                    cacat.append((sheet_name, r_idx, name_val, "NKK", excel_nkk))
+                    catatan_cacat_nkk = (
+                        f"NKK pada berkas sumber tidak sah ('{excel_nkk}', "
+                        f"{len(excel_nkk)} digit) — wajib diperbaiki."
                     )
+                    excel_nkk = ""
+                else:
+                    catatan_cacat_nkk = ""
 
                 catatan = [c for c in [teks(r[ket_idx]) if ket_idx != -1 and len(r) > ket_idx else ""] if c]
+                catatan += [c for c in (catatan_cacat_nik, catatan_cacat_nkk) if c]
 
                 # Tentukan NIK/NKK dan apakah sintetis
                 nik = ""
@@ -476,7 +509,13 @@ def main() -> int:
         per_tps[b["tps_id"]] = per_tps.get(b["tps_id"], 0) + 1
     for t in sorted(per_tps):
         print(f"  TPS {t}                : {per_tps[t]}")
-        
+
+    if cacat:
+        print(f"\nPERHATIAN — {len(cacat)} nomor identitas pada berkas sumber bukan 16 digit.")
+        print("  Barisnya tetap ikut memakai nomor sementara; angka aslinya ada di kolom catatan_impor.")
+        for sheet, baris, nama, jenis, nilai in cacat:
+            print(f"  {sheet} baris {baris}: {nama} — {jenis} '{nilai}' ({len(nilai)} digit)")
+
     return 0
 
 
