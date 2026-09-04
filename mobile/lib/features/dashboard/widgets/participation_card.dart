@@ -34,7 +34,7 @@ class ParticipationCard extends StatelessWidget {
                 child: CircularProgressIndicator(
                   value: stats.attendanceRatio,
                   strokeWidth: 12,
-                  backgroundColor: Colors.grey[200],
+                  backgroundColor: AppColors.neutralBg,
                   valueColor:
                       const AlwaysStoppedAnimation<Color>(AppColors.primary),
                 ),
@@ -53,7 +53,7 @@ class ParticipationCard extends StatelessWidget {
                   const SizedBox(height: 2),
                   const Text(
                     'Kehadiran',
-                    style: TextStyle(color: Colors.grey, fontSize: 11),
+                    style: TextStyle(color: AppColors.textFaint, fontSize: 11),
                   ),
                 ],
               ),
@@ -64,7 +64,7 @@ class ParticipationCard extends StatelessWidget {
             '${stats.totalHadir} dari ${stats.totalVoters} pemilih telah '
             'menggunakan hak pilih.',
             textAlign: TextAlign.center,
-            style: const TextStyle(fontSize: 12, color: Colors.grey),
+            style: const TextStyle(fontSize: 12, color: AppColors.textFaint),
           ),
         ],
       ),

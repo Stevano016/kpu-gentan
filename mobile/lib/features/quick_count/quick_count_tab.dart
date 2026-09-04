@@ -50,7 +50,7 @@ class QuickCountTab extends StatelessWidget {
                   background:
                       locked ? AppColors.neutralBg : AppColors.warningBg,
                   foreground:
-                      locked ? Colors.grey[700]! : AppColors.warning,
+                      locked ? AppColors.textMuted : AppColors.warning,
                 ),
               ],
             ),
@@ -117,7 +117,7 @@ class QuickCountTab extends StatelessWidget {
         text = 'Tersimpan di perangkat, menunggu jaringan';
       case QcSaveState.idle:
         icon = Icons.bolt_outlined;
-        color = Colors.grey;
+        color = AppColors.textFaint;
         text = 'Setiap perubahan tersimpan & terkirim otomatis';
     }
 
@@ -155,12 +155,12 @@ class QuickCountTab extends StatelessWidget {
   Widget _buildLockedHint() {
     return Row(
       children: [
-        const Icon(Icons.lock_outline, size: 16, color: Colors.grey),
+        const Icon(Icons.lock_outline, size: 16, color: AppColors.textFaint),
         const SizedBox(width: 8),
         Expanded(
           child: Text(
             'Hasil sudah dikunci final. Hubungi sekretariat untuk perubahan.',
-            style: TextStyle(fontSize: 12, color: Colors.grey[700]),
+            style: const TextStyle(fontSize: 12, color: AppColors.textMuted),
           ),
         ),
       ],

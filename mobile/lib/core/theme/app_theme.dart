@@ -24,7 +24,7 @@ abstract final class AppTheme {
     return base.copyWith(
       scaffoldBackgroundColor: AppColors.background,
       appBarTheme: const AppBarTheme(
-        backgroundColor: AppColors.primary,
+        backgroundColor: AppColors.primaryDark,
         foregroundColor: Colors.white,
         iconTheme: IconThemeData(color: Colors.white),
       ),

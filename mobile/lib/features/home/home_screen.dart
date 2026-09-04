@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../../core/theme/app_colors.dart';
 import '../../data/models/quick_count_entry.dart';
 import '../../shared/widgets/confirm_dialog.dart';
 import '../auth/login_screen.dart';
@@ -46,7 +47,7 @@ class _HomeScreenState extends State<HomeScreen> {
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         content: Text(feedback.message),
-        backgroundColor: feedback.isError ? Colors.red[600] : null,
+        backgroundColor: feedback.isError ? AppColors.danger : null,
       ),
     );
   }
@@ -92,7 +93,7 @@ class _HomeScreenState extends State<HomeScreen> {
       title: 'Keluar Aplikasi?',
       message: 'Apakah Anda yakin ingin keluar dari akun KPPS ini?',
       confirmText: 'Keluar',
-      confirmColor: Colors.red[600],
+      confirmColor: AppColors.danger,
     );
     if (!confirmed) return;
 

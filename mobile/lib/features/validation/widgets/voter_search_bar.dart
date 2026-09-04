@@ -36,7 +36,7 @@ class VoterSearchBar extends StatelessWidget {
         const Center(
           child: Text(
             'atau cari manual',
-            style: TextStyle(color: Colors.grey, fontSize: 12),
+            style: TextStyle(color: AppColors.textFaint, fontSize: 12),
           ),
         ),
         const SizedBox(height: 16),

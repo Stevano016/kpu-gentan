@@ -54,7 +54,7 @@ class ConnectivityCard extends StatelessWidget {
                 style: TextStyle(
                   fontSize: 16,
                   fontWeight: FontWeight.bold,
-                  color: pendingCheckins > 0 ? Colors.orange : Colors.grey,
+                  color: pendingCheckins > 0 ? AppColors.warning : AppColors.textFaint,
                 ),
               ),
             ],

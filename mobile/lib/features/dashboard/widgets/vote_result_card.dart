@@ -71,7 +71,7 @@ class VoteResultCard extends StatelessWidget {
             label: 'Suara Tidak Sah',
             votes: entry.invalid,
             total: total,
-            color: Colors.grey,
+            color: AppColors.textDisabled,
           ),
           const Divider(height: 24),
           Row(

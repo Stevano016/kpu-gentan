@@ -43,7 +43,7 @@ class HomeAppBar extends StatelessWidget implements PreferredSizeWidget {
                 ),
                 Text(
                   isOnline ? 'Online (Terhubung)' : 'Offline (Mode Lokal)',
-                  style: const TextStyle(fontSize: 11, color: Colors.white70),
+                  style: const TextStyle(fontSize: 12, color: Colors.white),
                 ),
               ],
             ),

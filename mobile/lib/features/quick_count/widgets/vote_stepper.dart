@@ -95,7 +95,7 @@ class _VoteStepperState extends State<VoteStepper> {
                   fontWeight: FontWeight.bold,
                   color: widget.enabled
                       ? AppColors.textPrimary
-                      : Colors.grey,
+                      : AppColors.textDisabled,
                 ),
               ),
             ),
@@ -147,7 +147,7 @@ class _StepButton extends StatelessWidget {
             child: Icon(
               icon,
               size: 22,
-              color: enabled ? color : Colors.grey[400],
+              color: enabled ? color : AppColors.textDisabled,
             ),
           ),
         ),

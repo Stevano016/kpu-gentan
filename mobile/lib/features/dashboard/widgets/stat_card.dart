@@ -42,7 +42,7 @@ class StatCard extends StatelessWidget {
           const SizedBox(height: 12),
           Text(
             title,
-            style: const TextStyle(color: Colors.grey, fontSize: 12),
+            style: const TextStyle(color: AppColors.textFaint, fontSize: 12),
           ),
           const SizedBox(height: 4),
           Text(
@@ -55,7 +55,7 @@ class StatCard extends StatelessWidget {
           ),
           Text(
             breakdown,
-            style: const TextStyle(color: Colors.grey, fontSize: 8),
+            style: const TextStyle(color: AppColors.textFaint, fontSize: 11),
           ),
         ],
       ),

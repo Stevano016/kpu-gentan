@@ -34,7 +34,7 @@ class HomeBottomBar extends StatelessWidget {
           currentIndex: currentIndex,
           onTap: onTap,
           selectedItemColor: AppColors.primary,
-          unselectedItemColor: Colors.grey,
+          unselectedItemColor: AppColors.textFaint,
           type: BottomNavigationBarType.fixed,
           items: items,
         ),

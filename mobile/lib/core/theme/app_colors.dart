@@ -8,6 +8,15 @@ abstract final class AppColors {
   static const Color primary = Color(0xFF0D9488);
   static const Color secondary = Color(0xFF14B8A6);
 
+  /// Nada gelap dari [primary], khusus AppBar.
+  ///
+  /// Teks putih di atas [primary] hanya berkontras 3.74:1 — cukup untuk
+  /// label tombol yang besar dan tebal, tapi di bawah ambang 4.5:1 untuk
+  /// teks kecil. Baris status Online/Offline di AppBar justru teks kecil,
+  /// dan justru itu yang paling perlu terbaca sekilas di bawah matahari.
+  /// Nada ini menaikkannya ke 5.07:1 tanpa mengubah warna mereknya.
+  static const Color primaryDark = Color(0xFF0B7C72);
+
   static const Color surface = Colors.white;
   static const Color background = Color(0xFFF9FAFB);
   static const Color border = Color(0xFFE5E7EB);

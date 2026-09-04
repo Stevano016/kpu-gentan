@@ -43,7 +43,7 @@ class _ManualCodeEntryState extends State<ManualCodeEntry> {
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
-                Icon(Icons.videocam_off, size: 48, color: Colors.grey[600]),
+                const Icon(Icons.videocam_off, size: 48, color: AppColors.textFaint),
                 const SizedBox(height: 16),
                 const Text(
                   'Kamera Tidak Tersedia',
@@ -54,7 +54,7 @@ class _ManualCodeEntryState extends State<ManualCodeEntry> {
                   'Kamera fisik tidak terdeteksi (Emulator/PC). Silakan ketik '
                   'payload QR secara manual untuk simulasi scan.',
                   textAlign: TextAlign.center,
-                  style: TextStyle(fontSize: 12, color: Colors.grey),
+                  style: TextStyle(fontSize: 12, color: AppColors.textFaint),
                 ),
                 const SizedBox(height: 20),
                 TextField(
