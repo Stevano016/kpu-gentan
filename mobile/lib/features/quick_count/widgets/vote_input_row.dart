@@ -9,11 +9,13 @@ class VoteInputRow extends StatelessWidget {
     required this.label,
     required this.controller,
     required this.enabled,
+    this.bolehTambah = true,
   });
 
   final String label;
   final TextEditingController controller;
   final bool enabled;
+  final bool bolehTambah;
 
   @override
   Widget build(BuildContext context) {
@@ -29,7 +31,11 @@ class VoteInputRow extends StatelessWidget {
           ),
         ),
         const SizedBox(width: 12),
-        VoteStepper(controller: controller, enabled: enabled),
+        VoteStepper(
+          controller: controller,
+          enabled: enabled,
+          bolehTambah: bolehTambah,
+        ),
       ],
     );
   }

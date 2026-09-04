@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../../core/theme/app_colors.dart';
+import '../../core/theme/app_theme.dart';
 import '../../shared/widgets/app_card.dart';
 import '../../shared/widgets/button_spinner.dart';
 import '../../shared/widgets/status_chip.dart';
@@ -62,6 +63,7 @@ class QuickCountTab extends StatelessWidget {
               builder: (context, _) {
                 final entry = controller.liveEntry;
                 final slots = controller.paslons.visibleSlots(entry.votesOf);
+                final bolehTambah = !locked && controller.sisaSuara > 0;
 
                 return Column(
                   crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -71,6 +73,7 @@ class QuickCountTab extends StatelessWidget {
                         label: controller.paslons.labelOf(nomor),
                         controller: controller.kandidatControllers[nomor]!,
                         enabled: !locked,
+                        bolehTambah: bolehTambah,
                       ),
                       const SizedBox(height: 12),
                     ],
@@ -78,7 +81,10 @@ class QuickCountTab extends StatelessWidget {
                       label: 'Suara Tidak Sah',
                       controller: controller.invalidController,
                       enabled: !locked,
+                      bolehTambah: bolehTambah,
                     ),
+                    const SizedBox(height: 16),
+                    _buildSisaSuara(),
                   ],
                 );
               },
@@ -92,6 +98,57 @@ class QuickCountTab extends StatelessWidget {
               _buildLockedHint(),
           ],
         ),
+      ),
+    );
+  }
+
+  /// Sisa suara yang masih boleh dimasukkan, plus alasannya bila sudah mentok.
+  ///
+  /// Angka ini yang membuat batas terasa masuk akal alih-alih seperti kerusakan:
+  /// tanpa penjelasan, tombol tambah yang tiba-tiba mati hanya terlihat rusak.
+  Widget _buildSisaSuara() {
+    final sisa = controller.sisaSuara;
+    final batas = controller.batasSuara;
+    final pesan = controller.pesanBatasSuara;
+    final mentok = sisa == 0;
+
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+      decoration: BoxDecoration(
+        color: mentok ? AppColors.warningBg : AppColors.neutralBg,
+        borderRadius: BorderRadius.circular(AppTheme.radius),
+        border: Border.all(
+          color: mentok ? AppColors.warningBorder : AppColors.border,
+        ),
+      ),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Icon(
+            mentok ? Icons.info_outline : Icons.how_to_vote_outlined,
+            size: 16,
+            color: mentok ? AppColors.warningText : AppColors.textFaint,
+          ),
+          const SizedBox(width: 8),
+          Expanded(
+            child: Text(
+              pesan ??
+                  (batas == 0
+                      ? 'Belum ada pemilih yang check-in, jadi suara belum bisa '
+                          'dimasukkan.'
+                      : mentok
+                          ? 'Sudah mencapai jumlah kehadiran ($batas suara).'
+                          : 'Sisa yang boleh dimasukkan: $sisa dari $batas '
+                              'kehadiran.'),
+              style: TextStyle(
+                fontSize: 12,
+                height: 1.35,
+                color: mentok ? AppColors.warningText : AppColors.textMuted,
+              ),
+            ),
+          ),
+        ],
       ),
     );
   }

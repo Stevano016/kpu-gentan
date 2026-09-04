@@ -19,10 +19,16 @@ class VoteStepper extends StatefulWidget {
     super.key,
     required this.controller,
     required this.enabled,
+    this.bolehTambah = true,
   });
 
   final TextEditingController controller;
   final bool enabled;
+
+  /// Tombol tambah dimatikan saat total suara sudah menyentuh kehadiran.
+  /// Tanpa ini angkanya tetap ditahan, tapi petugas hanya melihat angka yang
+  /// membalik sendiri tanpa tahu sebabnya.
+  final bool bolehTambah;
 
   /// Jeda antar penambahan saat tombol ditahan.
   static const Duration repeatInterval = Duration(milliseconds: 90);
@@ -43,6 +49,12 @@ class _VoteStepperState extends State<VoteStepper> {
   int get _value => int.tryParse(widget.controller.text.trim()) ?? 0;
 
   void _changeBy(int delta) {
+    if (delta > 0 && !widget.bolehTambah) {
+      // Sudah di batas kehadiran; hentikan juga penekanan-tahan yang sedang
+      // berjalan supaya tidak berputar sia-sia.
+      _stopRepeating();
+      return;
+    }
     // Suara tidak mungkin negatif.
     widget.controller.text =
         (_value + delta).clamp(0, AppConstants.maxVoteCount).toString();
@@ -103,7 +115,10 @@ class _VoteStepperState extends State<VoteStepper> {
           _StepButton(
             icon: Icons.add,
             color: AppColors.primary,
-            enabled: widget.enabled,
+            // Ikut mati begitu batas kehadiran tercapai. Kalau hanya
+            // penambahannya yang ditolak sementara tombolnya tetap tampak
+            // hidup, petugas cuma melihat angka membalik sendiri.
+            enabled: widget.enabled && widget.bolehTambah,
             onStart: () => _startRepeating(1),
             onStop: _stopRepeating,
             onTap: () => _changeBy(1),

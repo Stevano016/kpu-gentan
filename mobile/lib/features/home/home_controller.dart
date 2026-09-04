@@ -9,6 +9,7 @@ import '../../data/models/paslon.dart';
 import '../../data/models/quick_count_entry.dart';
 import '../../data/models/user_session.dart';
 import '../../data/models/voter.dart';
+import '../quick_count/batas_suara.dart';
 import '../../data/repositories/auth_repository.dart';
 import '../../data/repositories/paslon_repository.dart';
 import '../../data/repositories/quick_count_repository.dart';
@@ -91,6 +92,12 @@ class HomeController extends ChangeNotifier {
 
   /// Status penyimpanan otomatis dan penunda pengirimannya.
   QcSaveState _qcSaveState = QcSaveState.idle;
+
+  /// Nilai tiap kolom yang terakhir diterima, dipakai untuk mengetahui kolom
+  /// **mana** yang baru saja dinaikkan saat totalnya menyentuh batas. Tanpa
+  /// ini, satu-satunya pilihan adalah memotong kolom sembarang.
+  final Map<String, int> _suaraTerakhir = {};
+  String? _pesanBatasSuara;
   Timer? _qcAutoSaveTimer;
 
   /// Ditinggikan selama controller diisi dari kode (muat lokal, perapian angka)
@@ -145,6 +152,25 @@ class HomeController extends ChangeNotifier {
 
   /// Status penyimpanan otomatis untuk indikator kecil di layar quick count.
   QcSaveState get qcSaveState => _qcSaveState;
+
+  /// Batas atas perolehan suara: kehadiran yang tercatat **saat ini**.
+  ///
+  /// Memakai [AttendanceStats.eligibleHadir], angka yang sama dengan
+  /// pemeriksaan sebelum Submit Final, supaya apa yang boleh diketik dan apa
+  /// yang boleh dikirim tidak pernah berbeda. Angka ini ikut naik sendiri
+  /// setiap kali petugas memindai check-in baru.
+  int get batasSuara => _stats.eligibleHadir;
+
+  /// Sisa suara yang masih boleh dimasukkan sebelum menyentuh batas.
+  int get sisaSuara {
+    final terpakai = liveEntry.totalOn(_paslons.visibleSlots(liveEntry.votesOf));
+    final sisa = batasSuara - terpakai;
+    return sisa > 0 ? sisa : 0;
+  }
+
+  /// Keterangan sesaat ketika angka ditahan di batas; null bila tidak sedang
+  /// menahan apa pun.
+  String? get pesanBatasSuara => _pesanBatasSuara;
 
   /// Angka yang sedang tampil di kolom input, tanpa mengubah isinya.
   QuickCountEntry get liveEntry => QuickCountEntry(
@@ -380,10 +406,81 @@ class HomeController extends ChangeNotifier {
   /// [_suppressQcAutosave], dan hasil yang sudah final tidak lagi ikut disimpan.
   void _onQcInputChanged() {
     if (_suppressQcAutosave || isQcLocked) return;
+    if (_tahanDiBatas()) return;
     _qcSaveState = QcSaveState.saving;
     _notify();
     _qcAutoSaveTimer?.cancel();
     _qcAutoSaveTimer = Timer(AppConstants.qcAutoSaveDebounce, _autoSaveDraft);
+  }
+
+  /// Menahan total suara agar tidak melewati kehadiran saat itu.
+  ///
+  /// Ditegakkan **saat diisi**, bukan hanya saat Submit Final. Draft terkirim
+  /// otomatis tiap angka berubah dan langsung tampil di dashboard
+  /// sekretariat — jadi kalau baru ditolak di akhir, angka yang mustahil
+  /// (suara lebih banyak daripada orang yang datang) sudah lebih dulu terbaca
+  /// sebagai hasil sementara di luar TPS.
+  ///
+  /// Yang dipotong adalah kolom yang **baru saja dinaikkan**, bukan kolom
+  /// sembarang: menekan-tahan tombol tambah harus berhenti di batas, tanpa
+  /// mengurangi perolehan paslon lain yang sudah benar. Kalau tidak ada kolom
+  /// yang naik (mis. batasnya sendiri yang turun karena data check-in
+  /// disegarkan), kolom terbesarlah yang dipotong.
+  ///
+  /// Mengembalikan true bila ada angka yang diperbaiki — pemanggilnya berhenti
+  /// di situ, sebab penulisan balik akan memanggil listener ini sekali lagi.
+  bool _tahanDiBatas() {
+    final batas = batasSuara;
+    final nilai = <String, int>{
+      for (final slot in kandidatControllers.entries)
+        'k${slot.key}': int.tryParse(slot.value.text) ?? 0,
+      'invalid': int.tryParse(invalidController.text) ?? 0,
+    };
+
+    final total = nilai.values.fold(0, (a, b) => a + b);
+
+    if (total <= batas) {
+      _suaraTerakhir
+        ..clear()
+        ..addAll(nilai);
+      if (_pesanBatasSuara != null) {
+        _pesanBatasSuara = null;
+        _notify();
+      }
+      return false;
+    }
+
+    final ditahan = tahanDiBatas(
+      nilai: nilai,
+      terakhir: _suaraTerakhir,
+      batas: batas,
+    );
+
+    _suppressQcAutosave = true;
+    for (final slot in kandidatControllers.entries) {
+      final teks = ditahan['k${slot.key}'].toString();
+      if (slot.value.text != teks) slot.value.text = teks;
+    }
+    final teksInvalid = ditahan['invalid'].toString();
+    if (invalidController.text != teksInvalid) {
+      invalidController.text = teksInvalid;
+    }
+    _suppressQcAutosave = false;
+
+    _suaraTerakhir
+      ..clear()
+      ..addAll(ditahan);
+
+    _pesanBatasSuara = batas == 0
+        ? 'Belum ada pemilih yang check-in, jadi belum ada suara yang bisa dimasukkan.'
+        : 'Sudah mencapai jumlah kehadiran ($batas suara). Pindai check-in dulu untuk menambah.';
+
+    // Angka tertahan itu tetap perlu tersimpan sebagai draft.
+    _qcSaveState = QcSaveState.saving;
+    _notify();
+    _qcAutoSaveTimer?.cancel();
+    _qcAutoSaveTimer = Timer(AppConstants.qcAutoSaveDebounce, _autoSaveDraft);
+    return true;
   }
 
   /// Mengirim angka terkini ke server sebagai draft, tanpa mengganggu petugas
