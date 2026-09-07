@@ -132,8 +132,9 @@ export interface ImportStatus {
 /**
  * Baris pemilih seperti yang dikembalikan endpoint publik `pemilih/cek`.
  *
- * Respons server memuat bidang lain (nomor urut, rekap DPT per TPS) yang tidak
- * dipakai halaman publik; hanya yang benar-benar ditampilkan disebut di sini.
+ * Respons server memuat bidang lain (rekap DPT per TPS, nomor urut kedatangan)
+ * yang tidak dipakai halaman publik; hanya yang benar-benar ditampilkan
+ * disebut di sini.
  */
 export interface PemilihPublik {
   nama: string;
@@ -145,4 +146,12 @@ export interface PemilihPublik {
   rw: string;
   alamat: string;
   tahapan: string;
+  /** Nomor bawaan berkas DPS — angka yang sama dengan yang tercetak di undangan. */
+  no_urut_dps: number | null;
+  /**
+   * Nomor urut di dalam DPT, hasil penomoran ulang setelah penetapan. Bernilai
+   * `null` selama pemilihnya belum ditetapkan jadi DPT, dan itulah yang membuat
+   * kartu berganti sendiri dari nomor DPS ke nomor DPT.
+   */
+  no_urut_dpt: number | null;
 }

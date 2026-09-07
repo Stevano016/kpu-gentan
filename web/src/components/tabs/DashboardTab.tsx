@@ -2,6 +2,7 @@ import React from 'react';
 import { roundVal } from '../../utils/helpers';
 import { LoadingHint } from '../LoadingHint';
 import { IndikatorLangsung } from '../IndikatorLangsung';
+import { RekapGender } from '../RekapGender';
 import type { ModeLangsung } from '../../hooks/useLiveDashboard';
 
 interface DashboardTabProps {
@@ -195,6 +196,15 @@ export const DashboardTab: React.FC<DashboardTabProps> = ({
               </div>
             </div>
           </div>
+
+          {/* Rekap L/P: per TPS sekaligus totalnya, dua angka yang harus
+              disebut Berita Acara Penetapan. Ditaruh sebelum tabel status
+              karena keduanya sama-sama dibaca per TPS. */}
+          <RekapGender
+            total={dashboardData.stats.gender}
+            perTps={dashboardData.tps_list}
+            judul="Rekapitulasi Jenis Kelamin per TPS"
+          />
 
           {/* Dashboard TPS Reporting Table */}
           <h3 style={{ fontSize: '1.25rem', fontWeight: '700', marginBottom: '16px' }}>Status Laporan per TPS</h3>

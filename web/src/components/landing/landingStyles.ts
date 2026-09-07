@@ -218,6 +218,43 @@ export const GAYA_LANDING = `
     padding-bottom: 8px;
     border-bottom: 1px dashed var(--border);
   }
+  .voter-nomor {
+    margin-bottom: 14px;
+  }
+  .voter-nomor-utama {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    padding: 10px 14px;
+    background-color: var(--primary-light);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+  }
+  .voter-nomor-label {
+    font-size: 0.8rem;
+    font-weight: 600;
+    color: var(--text-muted);
+    text-transform: uppercase;
+    letter-spacing: 0.03em;
+  }
+  .voter-nomor-nilai {
+    font-family: Consolas, monospace;
+    font-size: 1.6rem;
+    font-weight: 700;
+    line-height: 1;
+    color: var(--primary);
+  }
+  .voter-nomor-catatan {
+    margin-top: 6px;
+    font-size: 0.75rem;
+    line-height: 1.45;
+    color: var(--text-muted);
+  }
+  .voter-nomor-catatan strong {
+    font-family: Consolas, monospace;
+    color: var(--text);
+  }
   .voter-detail-grid {
     display: grid;
     grid-template-columns: 1fr;
@@ -565,6 +602,11 @@ export const GAYA_LANDING = `
     .voter-detail-label {
       width: auto;
       margin-bottom: 2px;
+    }
+    .voter-nomor-utama {
+      flex-direction: column;
+      align-items: flex-start;
+      gap: 4px;
     }
   }
 `;

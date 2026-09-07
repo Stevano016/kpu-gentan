@@ -103,6 +103,15 @@ class Dpt extends Model
     /** Stages a voter is still counted as an active part of the roll. */
     public const TAHAPAN_AKTIF = ['dp4', 'dps', 'dptb', 'dpt', 'dpk'];
 
+    /** Seluruh tahapan yang dikenal, dalam urutan alur pendataan. */
+    public const TAHAPAN_SEMUA = ['dp4', 'dps', 'dptb', 'dpt', 'dpk', 'tms'];
+
+    /**
+     * Tahapan yang sudah masuk daftar tetap. Hanya keduanya yang berhak
+     * memilih, dan hanya keduanya yang ikut dihitung saat DPT dinomori ulang.
+     */
+    public const TAHAPAN_BERHAK = ['dpt', 'dpk'];
+
     /**
      * Stages that may be reached from each stage.
      *
@@ -119,6 +128,47 @@ class Dpt extends Model
         'dpk' => ['dpt'],
         'tms' => ['dp4', 'dps'],
     ];
+
+    /**
+     * Nomor urut seorang pemilih di dalam DPT sedesa, mulai dari 1.
+     *
+     * Selama fase DPS yang dipakai adalah `no_urut` apa adanya — nomor bawaan
+     * berkas DPS, yang juga tercetak di undangan. Begitu DPT ditetapkan nomor
+     * itu berlubang: pemilih yang gugur (TMS) ikut membawa nomornya keluar,
+     * sehingga daftar tetapnya melompat-lompat dan nomor terakhirnya tidak
+     * lagi sama dengan jumlah pemilih. Penomoran ulang di sini menutup lubang
+     * itu tanpa menukar urutan siapa pun.
+     *
+     * Urutannya sengaja disamakan dengan ekspor Excel dan
+     * `UndanganController::urutanDalamTps()`: `no_urut` menaik, lalu yang
+     * belum bernomor — pemilih hasil pendataan manual — menyusul di belakang
+     * menurut `id_pemilih`. Kalau dihitung dengan cara lain, satu orang bisa
+     * mendapat nomor berbeda antara panel dan lembar cetak.
+     *
+     * Mengembalikan `null` bila pemilihnya belum masuk DPT.
+     */
+    public static function nomorUrutDpt(self $pemilih): ?int
+    {
+        if (! in_array($pemilih->tahapan, self::TAHAPAN_BERHAK, true)) {
+            return null;
+        }
+
+        $daftar = static fn () => self::whereIn('tahapan', self::TAHAPAN_BERHAK);
+
+        if ($pemilih->no_urut !== null) {
+            return 1 + $daftar()
+                ->whereNotNull('no_urut')
+                ->where('no_urut', '<', $pemilih->no_urut)
+                ->count();
+        }
+
+        return 1
+            + $daftar()->whereNotNull('no_urut')->count()
+            + $daftar()
+                ->whereNull('no_urut')
+                ->where('id_pemilih', '<', $pemilih->id_pemilih)
+                ->count();
+    }
 
     public function getJenisPemilihAttribute(): ?string
     {

@@ -16,7 +16,16 @@ class DashboardController extends Controller
         $totalTps = Tps::count();
         
         // Satu query untuk seluruh tahapan; sebelumnya tiap angka satu query.
-        $perTahapan = Dpt::selectRaw('tahapan, COUNT(*) as jumlah, SUM(status_hadir = 1) as hadir')
+        // L/P ikut dijumlahkan di sini, bukan lewat query sendiri: rekap jenis
+        // kelamin dibutuhkan tiap kali dashboard dimuat, sedangkan dua SUM
+        // tambahan pada query yang sudah ada tidak menambah pembacaan tabel.
+        $perTahapan = Dpt::selectRaw(
+            'tahapan, COUNT(*) as jumlah, SUM(status_hadir = 1) as hadir, '
+            . "SUM(jenis_kelamin = 'LAKI-LAKI') as laki, "
+            . "SUM(jenis_kelamin = 'PEREMPUAN') as perempuan, "
+            . "SUM(jenis_kelamin = 'LAKI-LAKI' AND status_hadir = 1) as laki_hadir, "
+            . "SUM(jenis_kelamin = 'PEREMPUAN' AND status_hadir = 1) as perempuan_hadir"
+        )
             ->groupBy('tahapan')
             ->get()
             ->keyBy('tahapan');
@@ -58,6 +67,21 @@ class DashboardController extends Controller
             ->selectRaw($selectCols)
             ->first();
 
+        // Rekap L/P per TPS. Sengaja satu query berkelompok, bukan tambahan
+        // `withCount`: dua jenis kelamin dikali enam tahapan berarti dua belas
+        // subkueri per TPS, sementara pengelompokan di bawah membaca tabelnya
+        // sekali untuk seluruh TPS sekaligus.
+        $genderPerTps = Dpt::selectRaw(
+            'tps_id, tahapan, COUNT(*) as jumlah, SUM(status_hadir = 1) as hadir, '
+            . "SUM(jenis_kelamin = 'LAKI-LAKI') as laki, "
+            . "SUM(jenis_kelamin = 'PEREMPUAN') as perempuan, "
+            . "SUM(jenis_kelamin = 'LAKI-LAKI' AND status_hadir = 1) as laki_hadir, "
+            . "SUM(jenis_kelamin = 'PEREMPUAN' AND status_hadir = 1) as perempuan_hadir"
+        )
+            ->groupBy('tps_id', 'tahapan')
+            ->get()
+            ->groupBy('tps_id');
+
         // List of all TPS with stats (optimized using withCount to prevent N+1 queries)
         $tpsList = Tps::with(['quickCount'])
             ->withCount([
@@ -93,11 +117,12 @@ class DashboardController extends Controller
                 }
             ])
             ->get()
-            ->map(function ($tps) {
+            ->map(function ($tps) use ($genderPerTps) {
                 return [
                     'id' => $tps->id,
                     'nama' => $tps->nama,
                     'wilayah' => $tps->wilayah,
+                    'gender' => $this->bentukGender($genderPerTps[$tps->id] ?? collect()),
                     'total_dp4' => (int)$tps->total_dp4,
                     'total_dpt' => (int)$tps->total_dpt,
                     'total_dpk' => (int)$tps->total_dpk,
@@ -133,6 +158,11 @@ class DashboardController extends Controller
                     'total_dps' => $totalDpsOnly,
                     'total_dptb' => $totalDptbOnly,
                     'total_tms' => $totalTms,
+                    // Rekap L/P per tahapan, dipakai penyusunan Berita Acara
+                    // Penetapan. Panel yang memilih lingkupnya (DPS, DPT+DPK,
+                    // atau seluruh tahapan aktif) dan menjumlah sendiri, supaya
+                    // menambah lingkup baru tidak perlu mengubah API.
+                    'gender' => $this->bentukGender($perTahapan->values()),
                     // Hanya DPT + DPK; tahapan lain belum/tidak berhak memilih.
                     'total_pemilih' => $totalPemilih,
                     'belum_diverifikasi' => $totalDp4,
@@ -168,7 +198,7 @@ class DashboardController extends Controller
         $tps = Tps::with(['quickCount', 'users'])->findOrFail($id);
 
         $voters = Dpt::where('tps_id', $id)
-            ->select('nik', 'nama', 'status_hadir', 'waktu_checkin', 'tahapan', 'asal', 'tms_alasan', 'dpk_alasan')
+            ->select('nik', 'nama', 'jenis_kelamin', 'status_hadir', 'waktu_checkin', 'tahapan', 'asal', 'tms_alasan', 'dpk_alasan')
             ->orderBy('nama')
             ->get();
 
@@ -215,6 +245,11 @@ class DashboardController extends Controller
                     'hadir_dptb' => $hadirDptb,
                     'tidak_hadir' => $totalVal - $hadirVal,
                     'persentase_kehadiran' => $totalVal > 0 ? round(($hadirVal / $totalVal) * 100, 2) : 0,
+                    // Bentuknya sama dengan rekap desa di `getSummary()`,
+                    // sehingga satu komponen panel bisa menampilkan keduanya.
+                    // Dihitung dari koleksi yang sudah di memori, bukan query
+                    // baru: seluruh pemilih TPS ini memang sudah diambil.
+                    'gender' => $this->bentukGender($voters),
                 ],
                 'quick_count' => $tps->quickCount,
                 'voters' => $voters,
@@ -222,5 +257,76 @@ class DashboardController extends Controller
                 'paslons' => $paslons
             ]
         ]);
+    }
+
+    /**
+     * Rekap jumlah pemilih Laki-laki dan Perempuan, dipilah per tahapan.
+     *
+     * Menerima dua bentuk masukan sekaligus: baris hasil `GROUP BY tahapan`
+     * (punya kolom `laki`, `perempuan`, `jumlah`) maupun koleksi pemilih apa
+     * adanya, seperti daftar pemilih satu TPS yang sudah di memori. Keluarannya
+     * satu bentuk saja, supaya panel tidak perlu tahu mana yang dipakai:
+     *
+     *     ['dp4' => ['l' => 0, 'p' => 0, 'n' => 0, 'lh' => 0, 'ph' => 0, 'nh' => 0], ...]
+     *
+     * Tiap tahapan membawa dua pasang angka: `l`/`p`/`n` untuk yang terdaftar,
+     * dan `lh`/`ph`/`nh` untuk yang sudah check-in. Berita Acara menyebut
+     * keduanya — jumlah pemilih L/P saat penetapan, dan jumlah yang hadir L/P
+     * pada hari pemungutan suara — jadi keduanya dihitung bersamaan di satu
+     * kueri alih-alih menunggu panel meminta yang kedua.
+     *
+     * `n` adalah jumlah baris pada tahapan itu, bukan `l + p`. Keduanya sengaja
+     * dibedakan: bila ada pemilih yang jenis kelaminnya belum tercatat, `n`
+     * akan lebih besar, dan panel bisa mengatakannya alih-alih diam-diam
+     * melaporkan rekap yang tidak menjumlah ke total.
+     *
+     * Seluruh tahapan selalu ada di keluaran, termasuk yang kosong, supaya
+     * panel tidak perlu memeriksa keberadaan kunci sebelum menjumlah lingkup.
+     */
+    private function bentukGender($baris): array
+    {
+        $rekap = [];
+        foreach (Dpt::TAHAPAN_SEMUA as $tahapan) {
+            $rekap[$tahapan] = ['l' => 0, 'p' => 0, 'n' => 0, 'lh' => 0, 'ph' => 0, 'nh' => 0];
+        }
+
+        foreach ($baris as $b) {
+            $tahapan = $b->tahapan ?? null;
+            if (! isset($rekap[$tahapan])) {
+                continue;
+            }
+
+            // Baris hasil GROUP BY sudah membawa jumlahnya; pemilih perorangan
+            // menyumbang satu ke kolom jenis kelaminnya sendiri.
+            if (isset($b->laki) || isset($b->perempuan)) {
+                $rekap[$tahapan]['l'] += (int) ($b->laki ?? 0);
+                $rekap[$tahapan]['p'] += (int) ($b->perempuan ?? 0);
+                $rekap[$tahapan]['n'] += (int) ($b->jumlah ?? 0);
+                $rekap[$tahapan]['lh'] += (int) ($b->laki_hadir ?? 0);
+                $rekap[$tahapan]['ph'] += (int) ($b->perempuan_hadir ?? 0);
+                $rekap[$tahapan]['nh'] += (int) ($b->hadir ?? 0);
+                continue;
+            }
+
+            $hadir = (bool) $b->status_hadir;
+            $rekap[$tahapan]['n']++;
+            if ($hadir) {
+                $rekap[$tahapan]['nh']++;
+            }
+
+            if ($b->jenis_kelamin === 'LAKI-LAKI') {
+                $rekap[$tahapan]['l']++;
+                if ($hadir) {
+                    $rekap[$tahapan]['lh']++;
+                }
+            } elseif ($b->jenis_kelamin === 'PEREMPUAN') {
+                $rekap[$tahapan]['p']++;
+                if ($hadir) {
+                    $rekap[$tahapan]['ph']++;
+                }
+            }
+        }
+
+        return $rekap;
     }
 }

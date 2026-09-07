@@ -2021,3 +2021,307 @@ tr:hover td {
   letter-spacing: 0.02em;
   color: var(--warning);
 }
+
+/* ============================================================
+   Rekapitulasi jenis kelamin (L/P)
+   ------------------------------------------------------------
+   Dua warna identitas, bukan dua langkah dari satu warna: L dan P
+   tidak punya urutan besar-kecil, jadi yang dibedakan identitasnya.
+   Pasangan indigo/rose ini lolos seluruh pemeriksaan palet pada
+   latar terang aplikasi — jarak buta warna terburuknya ΔE 12.9
+   (protanopia) dan 31.6 (tritanopia), jauh di atas ambang 8, dengan
+   kontras keduanya di atas 3:1. Jangan diganti tanpa menjalankan
+   ulang validator paletnya; hijau dan oranye di sini akan menyatu
+   bagi pembaca buta warna merah-hijau, dan keduanya sudah dipakai
+   kandidat quick count di halaman yang sama.
+   ============================================================ */
+
+.rekap-gender {
+  margin-bottom: 32px;
+}
+
+.rekap-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+  flex-wrap: wrap;
+  margin-bottom: 20px;
+}
+
+.rekap-judul {
+  font-size: 1.1rem;
+  font-weight: 700;
+  color: var(--text);
+}
+
+.rekap-keterangan {
+  font-size: 0.8rem;
+  color: var(--text-muted);
+  margin-top: 4px;
+}
+
+/* Dua penyaring bersebelahan; di layar sempit menumpuk. */
+.rekap-penyaring {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+/* Penyaring lingkup: satu baris di atas angkanya. */
+.rekap-lingkup {
+  display: flex;
+  gap: 4px;
+  padding: 4px;
+  background-color: var(--surface-alt);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+}
+
+.rekap-lingkup-btn {
+  padding: 6px 12px;
+  font-family: inherit;
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: var(--text-muted);
+  background: none;
+  border: none;
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  transition: var(--transition);
+  white-space: nowrap;
+}
+
+.rekap-lingkup-btn:hover {
+  color: var(--text);
+}
+
+.rekap-lingkup-btn.is-aktif {
+  color: var(--primary);
+  background-color: var(--surface);
+  box-shadow: var(--shadow);
+}
+
+/* ---------- Angka utama; kotak warnanya sekaligus keterangan warna ---------- */
+
+.rekap-angka {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+  gap: 20px;
+  padding-bottom: 20px;
+  border-bottom: 1px solid var(--border);
+}
+
+.rekap-angka-item {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+}
+
+/* Kartu total tidak punya kotak warna, jadi teksnya diberi lekuk masuk
+   sebesar kotak itu supaya ketiga angkanya tetap sebaris. */
+.rekap-angka-item.is-total {
+  padding-left: 22px;
+}
+
+.rekap-swatch {
+  width: 12px;
+  height: 12px;
+  flex-shrink: 0;
+  margin-top: 5px;
+  border-radius: 3px;
+}
+
+.rekap-swatch-l {
+  background-color: #5b5bd6;
+}
+
+.rekap-swatch-p {
+  background-color: #d9418c;
+}
+
+.rekap-angka-label {
+  font-size: 0.8rem;
+  font-weight: 500;
+  color: var(--text-muted);
+}
+
+/* Lebar digit tetap supaya kolom angka tetap sejajar antar kartu. */
+.rekap-angka-nilai {
+  font-size: 1.75rem;
+  font-weight: 700;
+  line-height: 1.15;
+  color: var(--text);
+  font-variant-numeric: tabular-nums;
+}
+
+.rekap-angka-sub {
+  font-size: 0.75rem;
+  color: var(--text-muted);
+}
+
+/* ---------- Batang komposisi per TPS ---------- */
+
+.rekap-batang {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 20px 0;
+}
+
+.rekap-batang-baris {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.rekap-batang-nama {
+  width: 76px;
+  flex-shrink: 0;
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: var(--text);
+}
+
+.rekap-bar-track {
+  flex: 1;
+  min-width: 0;
+}
+
+/* Celah 2px berwarna latar itulah yang memisahkan kedua ruas — bukan
+   garis tepi, yang akan menambah tinta yang bukan data. */
+.rekap-bar {
+  display: flex;
+  gap: 2px;
+  height: 16px;
+  min-width: 2px;
+}
+
+.rekap-seg {
+  display: block;
+  min-width: 3px;
+}
+
+/* Ujung data dibulatkan, pangkalnya tetap siku pada garis dasar. */
+.rekap-seg:last-child {
+  border-radius: 0 4px 4px 0;
+}
+
+.rekap-seg-l {
+  background-color: #5b5bd6;
+}
+
+.rekap-seg-p {
+  background-color: #d9418c;
+}
+
+.rekap-batang-nilai {
+  width: 56px;
+  flex-shrink: 0;
+  text-align: right;
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: var(--text);
+  font-variant-numeric: tabular-nums;
+}
+
+/* ---------- Tabel angka: bentuk yang benar-benar dipakai Berita Acara ---------- */
+
+.rekap-tabel table {
+  font-variant-numeric: tabular-nums;
+}
+
+.rekap-tabel-total td {
+  font-weight: 700;
+  color: var(--text);
+  background-color: var(--surface-alt);
+  border-top: 2px solid var(--border);
+}
+
+/* ---------- Rincian per tahapan: keenamnya, lepas dari tombol lingkup ---------- */
+
+.rekap-rincian {
+  margin-top: 24px;
+  padding-top: 20px;
+  border-top: 1px solid var(--border);
+}
+
+.rekap-subjudul {
+  font-size: 0.9rem;
+  font-weight: 700;
+  color: var(--text);
+  margin-bottom: 12px;
+}
+
+.rekap-rincian .rekap-keterangan {
+  margin-top: 8px;
+}
+
+/* TMS tetap terbaca tapi tidak menuntut perhatian: ia bukan bagian dari
+   daftar aktif, dan barisnya ada supaya angkanya bisa diperiksa. */
+.rekap-tabel tr.is-gugur td {
+  color: var(--text-muted);
+}
+
+.rekap-tanda-gugur {
+  display: inline-block;
+  margin-left: 8px;
+  padding: 1px 6px;
+  font-size: 0.65rem;
+  font-weight: 600;
+  color: var(--text-muted);
+  background-color: var(--surface-alt);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  white-space: nowrap;
+}
+
+.rekap-hampa,
+.rekap-catatan {
+  font-size: 0.8rem;
+  color: var(--text-muted);
+  line-height: 1.5;
+}
+
+.rekap-hampa {
+  padding: 24px 0 4px 0;
+}
+
+.rekap-catatan {
+  margin-top: 12px;
+  padding: 10px 12px;
+  background-color: var(--warning-light);
+  border: 1px dashed var(--warning);
+  border-radius: var(--radius-sm);
+  color: var(--text);
+}
+
+@media (max-width: 900px) {
+  .rekap-penyaring {
+    width: 100%;
+  }
+}
+
+@media (max-width: 640px) {
+  .rekap-penyaring {
+    flex-direction: column;
+    align-items: stretch;
+  }
+  .rekap-lingkup {
+    width: 100%;
+  }
+  .rekap-lingkup-btn {
+    flex: 1;
+    padding: 6px 8px;
+    font-size: 0.75rem;
+  }
+  .rekap-batang-nama {
+    width: 56px;
+    font-size: 0.75rem;
+  }
+  .rekap-batang-nilai {
+    width: 44px;
+    font-size: 0.75rem;
+  }
+}

@@ -1,4 +1,5 @@
 import React from 'react';
+import { RekapGender } from '../RekapGender';
 
 interface TpsDetailTabProps {
   tpsDetailData: any;
@@ -51,6 +52,13 @@ export const TpsDetailTab: React.FC<TpsDetailTabProps> = ({
           </div>
         </div>
       </div>
+
+      {/* Rekap L/P TPS ini, dirinci per tahapan. Bentuk kartunya sama dengan
+          yang di dashboard, hanya tanpa rincian antar-TPS. */}
+      <RekapGender
+        total={tpsDetailData.stats.gender}
+        judul={`Rekapitulasi Jenis Kelamin — ${tpsDetailData.tps.nama}`}
+      />
 
       <div className="detail-grid">
         {/* Voter list log */}

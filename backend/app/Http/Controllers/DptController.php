@@ -718,7 +718,15 @@ class DptController extends Controller
                 'alamat' => $v->alamat,
                 'tahapan' => $v->tahapan,
                 'id_pemilih' => $v->id_pemilih,
+                // Tetap dikirim apa adanya: undangan C6 mencetak angka ini.
                 'no_urut' => $v->no_urut,
+                // Dua nomor yang ditampilkan kartu hasil pencarian publik.
+                // Selama pemilihnya masih DPS, `no_urut_dpt` bernilai null dan
+                // kartu menampilkan nomor DPS-nya; begitu ia ditetapkan jadi
+                // DPT, nomor DPT-nya muncul dan kartu berganti sendiri tanpa
+                // ada saklar fase yang harus dinyalakan seseorang.
+                'no_urut_dps' => $v->no_urut,
+                'no_urut_dpt' => Dpt::nomorUrutDpt($v),
                 'umur' => $v->umur,
                 'tps_total_dpt' => $totalDptTps,
                 'tps_voter_index' => $voterIndex,
