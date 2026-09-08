@@ -104,7 +104,7 @@ export const KeluargaTab: React.FC<KeluargaTabProps> = ({
       .finally(() => { if (!dibatalkan) setMemuat(false); });
 
     return () => { dibatalkan = true; };
-  }, [token, parameter, halaman, cari]);
+  }, [token, parameter, halaman, cari, showError]);
 
   const ekspor = async (mode: ModeNomor) => {
     if (!token || mengekspor) return;

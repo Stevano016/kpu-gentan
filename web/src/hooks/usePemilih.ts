@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useState } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import { ApiService } from '../services/api';
 import { ambilData, bacaJson, jalankanAksi, pesanGagal } from '../utils/request';
 import { useFormState, type FormState } from './useFormState';
@@ -82,12 +83,15 @@ const susunPayload = (f: DptForm, editingDpt: any) => {
 /** Data pemilih: tabel berhalaman, penyaring, dan formulir tambah/sunting. */
 export function usePemilih({ token, path, feedback }: Argumen): PemilihController {
   const { showSuccess, showError, showConfirm } = feedback;
+  const [searchParams, setSearchParams] = useSearchParams();
+
+  const tahapanAwal = searchParams.get('tahapan') || searchParams.get('jenis') || '';
 
   const [dptData, setDptData] = useState<any>(null);
   const [dptLoading, setDptLoading] = useState(false);
   const [search, setSearch] = useState('');
   const [tpsId, setTpsId] = useState('');
-  const [jenis, setJenis] = useState('');
+  const [jenis, setJenis] = useState(tahapanAwal);
   const [keteranganFilter, setKeteranganFilter] = useState('');
   const [page, setPage] = useState(1);
 
@@ -102,7 +106,28 @@ export function usePemilih({ token, path, feedback }: Argumen): PemilihControlle
   const handleSetJenis = useCallback((val: string) => {
     setJenis(val);
     setKeteranganFilter('');
-  }, []);
+    setPage(1);
+    setSearchParams((prev) => {
+      const next = new URLSearchParams(prev);
+      if (val) {
+        next.set('tahapan', val);
+      } else {
+        next.delete('tahapan');
+        next.delete('jenis');
+      }
+      return next;
+    }, { replace: true });
+  }, [setSearchParams]);
+
+  useEffect(() => {
+    if (path !== '/pemilih') return;
+    const urlTahapan = searchParams.get('tahapan') || searchParams.get('jenis') || '';
+    if (urlTahapan !== jenis) {
+      setJenis(urlTahapan);
+      setKeteranganFilter('');
+      setPage(1);
+    }
+  }, [path, searchParams, jenis]);
 
   const fetchDpts = useCallback(async () => {
     if (!token) return;

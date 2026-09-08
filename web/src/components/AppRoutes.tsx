@@ -183,9 +183,13 @@ export const AppRoutes: React.FC<AppRoutesProps> = ({
         />
       )} />
 
-      {/* Rute lama diarahkan ke menu gabungan agar bookmark tetap berfungsi */}
-      <Route path="/dpt" element={<Navigate to="/pemilih" replace />} />
-      <Route path="/dpk" element={<Navigate to="/pemilih" replace />} />
+      {/* Rute lama dan pintasan tahapan diarahkan ke menu gabungan dengan parameter tahapan */}
+      <Route path="/dpt" element={<Navigate to="/pemilih?tahapan=dpt" replace />} />
+      <Route path="/dpk" element={<Navigate to="/pemilih?tahapan=dpk" replace />} />
+      <Route path="/dps" element={<Navigate to="/pemilih?tahapan=dps" replace />} />
+      <Route path="/dp4" element={<Navigate to="/pemilih?tahapan=dp4" replace />} />
+      <Route path="/dptb" element={<Navigate to="/pemilih?tahapan=dptb" replace />} />
+      <Route path="/tms" element={<Navigate to="/pemilih?tahapan=tms" replace />} />
 
       <Route path="/kpps" element={hanyaUntukNonTerbatas(
         <KppsTab

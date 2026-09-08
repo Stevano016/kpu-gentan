@@ -14,6 +14,13 @@ This file captures the active state, environment variables, completed tasks, and
 
 ## 📋 Task History & Context
 
+- **8 Sep 2026 — Ekspor Excel per sub-menu tahapan pemilih (Semua, DP4, DPS, DPTb, DPT, DPK, TMS)**:
+  - **Ekspor otomatis mengikuti sub-menu/tahapan yang aktif**: Saat berada di sub-menu tertentu (misalnya DPS), tombol ekspor menampilkan `Ekspor Excel (DPS)` (atau `Unduh Excel DPS TPS Saya` untuk Pantarlih). Opsi ekspor (seluruh kelurahan, per TPS, atau per RW) otomatis menyertakan parameter `tahapan=<aktif>`, sehingga berkas Excel yang dihasilkan hanya berisi data pemilih dari tahapan tersebut.
+  - **Dukungan filter keterangan pada TMS**: `ExportController` kini memvalidasi dan memfilter `keterangan` (misal alasan TMS: "4 : Meninggal", "5 : Ganda", dsb.) bila sedang dipilih di filter antarmuka.
+  - **Sinkronisasi URL search params**: Sub-menu pemilih disinkronkan dengan URL search params (`/pemilih?tahapan=dps`, dsb.) melalui `useSearchParams`, dengan rute pintasan `/dps`, `/dp4`, `/dptb`, `/dpt`, `/dpk`, `/tms` yang otomatis mengarahkan ke tahapan terkait.
+  - **UX Ekspor ditingkatkan**: Opsi cepat TPS aktif bila sedang disaring di halaman, penutup menu dropdown otomatis saat klik di luar (click-outside), dan judul modal konfirmasi ekspor yang secara eksplisit mencantumkan nama tahapan yang akan diunduh.
+  - **Testing**: Ditambahkan 5 feature test baru di `backend/tests/Feature/ExportTest.php` (ekspor semua, ekspor per tahapan, ekspor TMS berdasar keterangan/alasan, ekspor per TPS + tahapan, serta ekspor pantarlih terkunci ke RW + tahapan). Seluruh 13 tes backend dan lint/build frontend lolos 100%.
+
 - **7 Sep 2026 — No. Urut di halaman Cek Pemilih + rekap L/P di dashboard**:
   - **Kartu hasil pencarian publik menampilkan nomor urut**, di paling atas dan besar, karena itulah satu angka yang dicocokkan warga dengan lembar tempel dan undangan cetaknya. Labelnya mengikuti tahapan pemilihnya sendiri — **tidak ada saklar fase** yang harus dinyalakan seseorang: selama masih DPS tampil "No. Urut DPS" dengan `no_urut` bawaan berkas DPS; begitu ditetapkan jadi DPT, tampil "No. Urut DPT" dan angkanya berganti sendiri.
   - **DPT dinomori ulang, bukan memakai `no_urut` apa adanya.** Pemilih yang gugur (TMS) membawa nomornya keluar dari daftar, jadi DPT versi `no_urut` berlubang — pada data uji, DPT berisi 1.436 orang tapi nomor terakhirnya 5.808. `Dpt::nomorUrutDpt()` menutup lubang itu tanpa menukar urutan siapa pun: urutannya tetap `no_urut` menaik, yang belum bernomor menyusul menurut `id_pemilih`, sama seperti ekspor Excel dan `UndanganController::urutanDalamTps()`. Biayanya 0,45 ms per pemanggilan (maks 5 pemilih per permintaan), jadi tidak perlu indeks baru.

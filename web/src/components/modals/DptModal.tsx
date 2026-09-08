@@ -170,13 +170,12 @@ export const DptModal: React.FC<DptModalProps> = ({
   downloadQrCode,
   onSubmit,
 }) => {
-  if (!isOpen) return null;
-
   // Nomor sementara buatan sistem berawalan 9999 (NIK) / 9998 (NKK); lihat
   // migrasi `tandai_nik_nkk_sintetis_pada_dpt` di backend.
   const nikSementara = !!editingDpt?.nik_sintetis;
 
   React.useEffect(() => {
+    if (!isOpen) return;
     if (dptFormNik && dptFormNik.length === 16 && /^\d+$/.test(dptFormNik)) {
       if (dptFormNik.startsWith('9999') || dptFormNik.startsWith('9998')) {
         return;
@@ -219,16 +218,19 @@ export const DptModal: React.FC<DptModalProps> = ({
         }
       }
     }
-  }, [dptFormNik, setDptFormUmur, setDptFormJenisKelamin]);
+  }, [isOpen, dptFormNik, setDptFormUmur, setDptFormJenisKelamin]);
 
   React.useEffect(() => {
+    if (!isOpen) return;
     if (!isPantarlih && dptFormRt && dptFormRw) {
       const autoTpsId = getTpsIdFromRtRw(dptFormRt, dptFormRw, tpsList);
       if (autoTpsId) {
         setDptFormTps(autoTpsId);
       }
     }
-  }, [dptFormRt, dptFormRw, tpsList, setDptFormTps, isPantarlih]);
+  }, [isOpen, dptFormRt, dptFormRw, tpsList, setDptFormTps, isPantarlih]);
+
+  if (!isOpen) return null;
 
   return (
     <div className="modal-overlay">

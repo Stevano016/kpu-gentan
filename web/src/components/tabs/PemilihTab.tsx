@@ -118,6 +118,38 @@ export const PemilihTab: React.FC<PemilihTabProps> = ({
   const [c6VoterSelect, setC6VoterSelect] = React.useState<any | null>(null);
   const [menuMaratonTerbuka, setMenuMaratonTerbuka] = React.useState(false);
 
+  const eksporDropdownRef = React.useRef<HTMLDivElement>(null);
+  const maratonDropdownRef = React.useRef<HTMLDivElement>(null);
+
+  React.useEffect(() => {
+    const handleKlikLuar = (e: MouseEvent) => {
+      if (eksporDropdownRef.current && !eksporDropdownRef.current.contains(e.target as Node)) {
+        setMenuEksporTerbuka(false);
+      }
+      if (maratonDropdownRef.current && !maratonDropdownRef.current.contains(e.target as Node)) {
+        setMenuMaratonTerbuka(false);
+      }
+    };
+    document.addEventListener('mousedown', handleKlikLuar);
+    return () => document.removeEventListener('mousedown', handleKlikLuar);
+  }, []);
+
+  const activeTahapan = dptJenisFilter;
+  const activeTahapanLabel = activeTahapan ? metaTahapan(activeTahapan).singkat : 'Semua';
+  const activeJenisLabel = activeTahapan ? metaTahapan(activeTahapan).singkat : 'Semua Kategori';
+
+  const siapkanEkspor = (lingkupParams: Record<string, string>) => {
+    const params: Record<string, string> = { ...lingkupParams };
+    if (activeTahapan) {
+      params.tahapan = activeTahapan;
+    }
+    if (activeTahapan === 'tms' && dptKeteranganFilter) {
+      params.keterangan = dptKeteranganFilter;
+    }
+    setExportParams(params);
+    setIsExportConfirmOpen(true);
+  };
+
   /**
    * Undangan satu orang.
    *
@@ -153,8 +185,6 @@ export const PemilihTab: React.FC<PemilihTabProps> = ({
     }
   };
 
-  const activeJenisLabel = dptJenisFilter ? metaTahapan(dptJenisFilter).singkat : 'Semua Kategori';
-
   return (
     <div>
       <div className="section-header">
@@ -184,53 +214,94 @@ export const PemilihTab: React.FC<PemilihTabProps> = ({
             )}
             {isPantarlih ? (
               <button
-                onClick={() => { setExportParams({}); setIsExportConfirmOpen(true); }}
+                onClick={() => siapkanEkspor({})}
                 className="btn btn-secondary"
-                title="Unduh seluruh pemilih di TPS Anda"
+                title={activeTahapan
+                  ? `Unduh pemilih tahapan ${activeTahapanLabel} di TPS Anda`
+                  : 'Unduh seluruh pemilih di TPS Anda'}
               >
                 <Icons.Download />
-                <span>Unduh Excel TPS Saya</span>
+                <span>
+                  {activeTahapan ? `Unduh Excel ${activeTahapanLabel} TPS Saya` : 'Unduh Excel TPS Saya'}
+                </span>
               </button>
             ) : (
-              <div className="export-dropdown">
+              <div className="export-dropdown" ref={eksporDropdownRef}>
                 <button
                   type="button"
                   onClick={() => setMenuEksporTerbuka((v) => !v)}
                   className="btn btn-secondary"
+                  title={activeTahapan ? `Ekspor data ${metaTahapan(activeTahapan).label}` : 'Ekspor data seluruh pemilih'}
                 >
                   <Icons.Download />
-                  <span>Ekspor Excel</span>
+                  <span>
+                    {activeTahapan ? `Ekspor Excel (${activeTahapanLabel})` : 'Ekspor Excel'}
+                  </span>
                 </button>
                 {menuEksporTerbuka && (
                   <div className="export-menu">
+                    {dptTpsFilter && (
+                      <>
+                        <button
+                          type="button"
+                          className="export-menu-item"
+                          style={{ fontWeight: 600, color: 'var(--primary)' }}
+                          onClick={() => {
+                            setMenuEksporTerbuka(false);
+                            siapkanEkspor({ lingkup: 'tps', tps_id: dptTpsFilter });
+                          }}
+                        >
+                          {tpsList.find((t) => String(t.id) === String(dptTpsFilter))?.nama || `TPS ${dptTpsFilter}`}
+                          {activeTahapan ? ` (${activeTahapanLabel})` : ''}
+                        </button>
+                        <div style={{ height: '1px', backgroundColor: 'var(--border)', margin: '4px 0' }} />
+                      </>
+                    )}
+
                     <button
                       type="button"
                       className="export-menu-item"
-                      onClick={() => { setMenuEksporTerbuka(false); setExportParams({ lingkup: 'all' }); setIsExportConfirmOpen(true); }}
+                      onClick={() => {
+                        setMenuEksporTerbuka(false);
+                        siapkanEkspor({ lingkup: 'all' });
+                      }}
                     >
-                      Semua data pemilih
+                      {activeTahapan
+                        ? `Semua data ${activeTahapanLabel} (Seluruh Kelurahan)`
+                        : 'Semua data pemilih (Seluruh Kelurahan)'}
                     </button>
 
-                    <div className="export-menu-label">Per TPS</div>
+                    <div className="export-menu-label">
+                      Per TPS {activeTahapan ? `(${activeTahapanLabel})` : ''}
+                    </div>
+                    {tpsList.length === 0 && <div className="export-menu-kosong">Belum ada data TPS</div>}
                     {tpsList.map((t) => (
                       <button
                         key={`tps-${t.id}`}
                         type="button"
                         className="export-menu-item"
-                        onClick={() => { setMenuEksporTerbuka(false); setExportParams({ lingkup: 'tps', tps_id: String(t.id) }); setIsExportConfirmOpen(true); }}
+                        onClick={() => {
+                          setMenuEksporTerbuka(false);
+                          siapkanEkspor({ lingkup: 'tps', tps_id: String(t.id) });
+                        }}
                       >
                         {t.nama}
                       </button>
                     ))}
 
-                    <div className="export-menu-label">Per RW</div>
+                    <div className="export-menu-label">
+                      Per RW {activeTahapan ? `(${activeTahapanLabel})` : ''}
+                    </div>
                     {daftarRw.length === 0 && <div className="export-menu-kosong">Belum ada data RW</div>}
                     {daftarRw.map((rw) => (
                       <button
                         key={`rw-${rw}`}
                         type="button"
                         className="export-menu-item"
-                        onClick={() => { setMenuEksporTerbuka(false); setExportParams({ lingkup: 'rw', rw }); setIsExportConfirmOpen(true); }}
+                        onClick={() => {
+                          setMenuEksporTerbuka(false);
+                          siapkanEkspor({ lingkup: 'rw', rw });
+                        }}
                       >
                         RW {rw}
                       </button>
@@ -243,7 +314,7 @@ export const PemilihTab: React.FC<PemilihTabProps> = ({
             {/* Undangan maraton: satu TPS dicetak bersegmen, bukan satu-satu
                 dari tombol C6 di tiap baris. */}
             {!isPantarlih && (
-              <div className="export-dropdown">
+              <div className="export-dropdown" ref={maratonDropdownRef}>
                 <button
                   type="button"
                   onClick={() => setMenuMaratonTerbuka((v) => !v)}
@@ -658,10 +729,14 @@ export const PemilihTab: React.FC<PemilihTabProps> = ({
         <div className="modal-overlay" style={{ zIndex: 1100 }}>
           <div className="modal-content" style={{ maxWidth: '420px', padding: '24px' }}>
             <h3 className="modal-title" style={{ marginBottom: '12px', fontSize: '1.2rem', fontWeight: '700' }}>
-              Pilih Opsi Ekspor Excel
+              Pilih Opsi Ekspor Excel {activeTahapan ? `— ${activeTahapanLabel}` : ''}
             </h3>
             <p style={{ fontSize: '0.875rem', color: 'var(--text-muted)', marginBottom: '24px', lineHeight: '1.5' }}>
-              Silakan pilih format berkas Excel yang ingin Anda unduh:
+              Silakan pilih format berkas Excel yang ingin Anda unduh untuk data{' '}
+              <strong style={{ color: 'var(--text)' }}>
+                {activeTahapan ? metaTahapan(activeTahapan).label : 'seluruh pemilih'}
+              </strong>
+              {activeTahapan === 'tms' && dptKeteranganFilter ? ` (${dptKeteranganFilter})` : ''}:
             </p>
             <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', marginBottom: '24px' }}>
               {PILIHAN_SENSOR.map((pilihan, i) => (

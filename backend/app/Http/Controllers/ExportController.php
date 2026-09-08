@@ -56,6 +56,7 @@ class ExportController extends Controller
             'tps_id' => 'required_if:lingkup,tps|nullable|integer|exists:tps,id',
             'rw' => 'required_if:lingkup,rw|nullable|string|max:10',
             'tahapan' => 'nullable|string|in:dp4,dps,dptb,dpt,dpk,tms',
+            'keterangan' => 'nullable|string|max:100',
             'format' => 'nullable|string|in:csv,json',
         ]);
 
@@ -101,6 +102,12 @@ class ExportController extends Controller
             $query->where('tahapan', $request->tahapan);
             $label .= '-' . $request->tahapan;
             $judul .= ' — tahapan ' . strtoupper($request->tahapan);
+        }
+
+        if ($request->filled('keterangan')) {
+            $query->where('keterangan', $request->keterangan);
+            $label .= '-' . $this->amankan($request->keterangan);
+            $judul .= ' (' . $request->keterangan . ')';
         }
 
         return [$query, $label, $judul];
