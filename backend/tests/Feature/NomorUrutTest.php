@@ -32,6 +32,8 @@ class NomorUrutTest extends TestCase
                 'nik' => str_pad((string) $i, 16, '0', STR_PAD_LEFT),
                 'nama' => 'PEMILIH ' . $i,
                 'tps_id' => 1,
+                'rw' => '001',
+                'rt' => '001',
                 'id_pemilih' => sprintf('USH-GTN-%07d', $i),
                 'no_urut' => $i,
                 'tahapan' => 'dpt',
@@ -111,8 +113,9 @@ class NomorUrutTest extends TestCase
     {
         $this->siapkanPemilih();
 
-        // Pemilih hasil pendataan manual belum punya nomor bawaan; ia berada di
-        // belakang seluruh yang bernomor, diurutkan menurut `id_pemilih`.
+        // Pemilih hasil pendataan manual di sini belum punya RW/RT maupun nomor
+        // bawaan. Keduanya menaruhnya di belakang: data yang belum lengkap
+        // mengekor, bukan memimpin daftar. Antar-mereka diurutkan `id_pemilih`.
         foreach (['USH-GTN-0000009', 'USH-GTN-0000008'] as $i => $id) {
             Dpt::create([
                 'nik' => str_pad((string) (100 + $i), 16, '0', STR_PAD_LEFT),
@@ -134,37 +137,84 @@ class NomorUrutTest extends TestCase
     }
 
     /**
-     * Dua jalur perhitungan harus sepakat, baris demi baris.
+     * Wilayah menentukan urutan, bukan `no_urut`.
      *
-     * `nomorUrut()` dipakai halaman Cek Pemilih (paling banyak lima orang),
-     * `petaNomorUrut()` dipakai pencetakan undangan satu TPS sekaligus. Kalau
-     * keduanya berbeda satu angka saja, layar dan kertas tidak lagi cocok — dan
-     * itu justru tidak akan kelihatan sampai ada warga yang mengeluh.
+     * Inti perbaikannya. `no_urut` merekam urutan berkas DPS saat diimpor;
+     * begitu RT/RW seseorang diperbaiki, nomornya tidak ikut berpindah. Di
+     * produksi itu membuat warga RW 010 duduk di nomor 2 di antara warga
+     * RW 001 — daftar yang tidak bisa dicocokkan dengan lembar per RW.
      */
-    public function test_kedua_jalur_perhitungan_sepakat(): void
+    public function test_urutan_mengikuti_rw_lalu_rt_bukan_no_urut(): void
     {
-        $this->siapkanPemilih();
-        Dpt::where('no_urut', 2)->firstOrFail()->delete();
-        Dpt::create([
-            'nik' => str_pad('200', 16, '0', STR_PAD_LEFT),
-            'nama' => 'TANPA NOMOR',
-            'tps_id' => 1,
-            'id_pemilih' => 'USH-GTN-0000099',
-            'no_urut' => null,
-            'tahapan' => 'dptb',
-            'jenis_kelamin' => 'LAKI-LAKI',
-        ]);
+        Tps::create(['id' => 1, 'nama' => 'TPS 01', 'wilayah' => 'Gentan']);
 
-        $peta = Dpt::petaNomorUrut();
-        $this->assertCount(6, $peta);
+        // Sengaja dibuat bertentangan: yang ber-no_urut kecil justru berada di
+        // RW besar, persis seperti data yang RT/RW-nya sudah diperbaiki.
+        $orang = [
+            ['no_urut' => 2, 'rw' => '010', 'rt' => '001'],
+            ['no_urut' => 11, 'rw' => '008', 'rt' => '002'],
+            ['no_urut' => 900, 'rw' => '001', 'rt' => '002'],
+            ['no_urut' => 901, 'rw' => '001', 'rt' => '001'],
+            ['no_urut' => 902, 'rw' => '008', 'rt' => '001'],
+        ];
 
-        foreach (Dpt::all() as $pemilih) {
-            $this->assertSame(
-                $peta[$pemilih->nik],
-                Dpt::nomorUrut($pemilih),
-                "Nomor {$pemilih->nama} berbeda antara peta dan hitungan satuan."
-            );
+        foreach ($orang as $i => $d) {
+            Dpt::create([
+                'nik' => str_pad((string) ($i + 1), 16, '0', STR_PAD_LEFT),
+                'nama' => 'PEMILIH ' . ($i + 1),
+                'tps_id' => 1,
+                'rw' => $d['rw'],
+                'rt' => $d['rt'],
+                'id_pemilih' => sprintf('USH-GTN-%07d', $i + 1),
+                'no_urut' => $d['no_urut'],
+                'tahapan' => 'dps',
+                'jenis_kelamin' => 'LAKI-LAKI',
+            ]);
         }
+
+        $nomor = fn (int $noUrut) => Dpt::nomorUrut(Dpt::where('no_urut', $noUrut)->firstOrFail());
+
+        // RW 001 lebih dulu, di dalamnya RT 001 sebelum RT 002.
+        $this->assertSame(1, $nomor(901), 'RW 001 / RT 001 harus nomor 1.');
+        $this->assertSame(2, $nomor(900), 'RW 001 / RT 002 menyusul.');
+        // Lalu RW 008, RT 001 sebelum RT 002.
+        $this->assertSame(3, $nomor(902));
+        $this->assertSame(4, $nomor(11));
+        // RW 010 terakhir, walau `no_urut`-nya paling kecil.
+        $this->assertSame(5, $nomor(2), 'no_urut terkecil tidak lagi berarti nomor 1.');
+    }
+
+    public function test_rt_kosong_ditaruh_di_belakang_rt_bernomor_dalam_rw_nya(): void
+    {
+        Tps::create(['id' => 1, 'nama' => 'TPS 01', 'wilayah' => 'Gentan']);
+
+        $orang = [
+            ['no_urut' => 1, 'rw' => '003', 'rt' => ''],
+            ['no_urut' => 2, 'rw' => '003', 'rt' => '002'],
+            ['no_urut' => 3, 'rw' => '004', 'rt' => '001'],
+        ];
+
+        foreach ($orang as $i => $d) {
+            Dpt::create([
+                'nik' => str_pad((string) ($i + 1), 16, '0', STR_PAD_LEFT),
+                'nama' => 'PEMILIH ' . ($i + 1),
+                'tps_id' => 1,
+                'rw' => $d['rw'],
+                'rt' => $d['rt'],
+                'id_pemilih' => sprintf('USH-GTN-%07d', $i + 1),
+                'no_urut' => $d['no_urut'],
+                'tahapan' => 'dps',
+                'jenis_kelamin' => 'LAKI-LAKI',
+            ]);
+        }
+
+        $nomor = fn (int $noUrut) => Dpt::nomorUrut(Dpt::where('no_urut', $noUrut)->firstOrFail());
+
+        // RT bernomor lebih dulu; yang kosong menyusul, tapi tetap di RW-nya
+        // sendiri — bukan terlempar ke akhir daftar desa.
+        $this->assertSame(1, $nomor(2), 'RW 003 / RT 002 lebih dulu.');
+        $this->assertSame(2, $nomor(1), 'RW 003 / RT kosong menyusul di belakangnya.');
+        $this->assertSame(3, $nomor(3), 'RW 004 tetap sesudah seluruh RW 003.');
     }
 
     public function test_endpoint_publik_dan_undangan_memakai_nomor_yang_sama(): void

@@ -144,6 +144,83 @@ class Dpt extends Model
         'tms' => ['dp4', 'dps'],
     ];
 
+    /** Simpanan peringkat sepanjang satu permintaan; lihat `petaNomorUrut()`. */
+    protected static ?array $petaNomorUrut = null;
+
+    protected static function booted(): void
+    {
+        // Setiap perubahan baris menggeser penomoran seluruh orang di
+        // belakangnya, jadi simpanannya dibuang begitu ada yang berubah.
+        // Tanpa ini, satu permintaan yang mencoret lalu membaca nomor akan
+        // memakai peringkat sebelum pencoretan.
+        foreach (['saved', 'deleted', 'restored', 'forceDeleted'] as $peristiwa) {
+            static::registerModelEvent($peristiwa, function () {
+                static::$petaNomorUrut = null;
+            });
+        }
+    }
+
+    /**
+     * Satu-satunya aturan urutan daftar pemilih.
+     *
+     * Dipakai penomoran, ekspor Excel, dan pembagian sesi jam pada undangan,
+     * supaya ketiganya tidak mungkin berbeda. Urutannya:
+     *
+     *   1. RW, lalu RT — pengelompokan inilah yang dipakai lembar fisik.
+     *   2. `no_urut` bawaan berkas DPS, sebagai urutan asal di dalam satu RT.
+     *   3. `id_pemilih`, pemecah seri terakhir supaya hasilnya pasti.
+     *
+     * **Kenapa RW/RT lebih dulu, bukan `no_urut` saja.** `no_urut` merekam
+     * urutan berkas DPS saat diimpor. Begitu RT/RW seseorang diperbaiki —
+     * dan itu memang salah satu tujuan pendataan — nomornya tidak ikut
+     * berpindah, sehingga orang RW 010 bisa duduk di nomor 2 di antara
+     * warga RW 001. Mengurutkan wilayahnya lebih dulu mengembalikan daftar
+     * itu ke bentuk yang bisa dicocokkan dengan lembar per RW.
+     *
+     * RW/RT yang kosong ditaruh di belakang yang bernomor, bukan di depan:
+     * NULL dan string kosong secara alami mengurut paling awal, dan itu akan
+     * menaruh data yang belum lengkap di puncak daftar — tempat paling
+     * mencolok untuk baris yang justru paling belum siap.
+     */
+    public function scopeUrutDaftar($query)
+    {
+        return $query
+            ->orderByRaw("CASE WHEN rw IS NULL OR rw = '' THEN 1 ELSE 0 END ASC")
+            ->orderBy('rw')
+            ->orderByRaw("CASE WHEN rt IS NULL OR rt = '' THEN 1 ELSE 0 END ASC")
+            ->orderBy('rt')
+            // Yang belum bernomor menyusul di belakang seluruh yang bernomor.
+            ->orderByRaw('CASE WHEN no_urut IS NULL THEN 1 ELSE 0 END ASC')
+            ->orderBy('no_urut')
+            ->orderBy('id_pemilih');
+    }
+
+    /**
+     * Nomor urut seluruh pemilih sekaligus, `nik => nomor`.
+     *
+     * Inilah satu-satunya tempat nomor urut dihitung. Sempat ada versi satuan
+     * yang menghitung "berapa orang di depan saya" dengan COUNT, tapi begitu
+     * urutannya memakai empat kunci, perbandingan leksikografisnya jadi rumit
+     * dan gampang meleset satu angka dari versi borongan ini — perbedaan yang
+     * baru ketahuan saat undangan tercetak tidak cocok dengan layar.
+     *
+     * Hasilnya disimpan sepanjang permintaan: satu pencarian publik menomori
+     * lima orang, dan tanpa simpanan itu berarti lima kali membaca tabel.
+     */
+    public static function petaNomorUrut(): array
+    {
+        if (static::$petaNomorUrut !== null) {
+            return static::$petaNomorUrut;
+        }
+
+        $peta = [];
+        foreach (self::query()->urutDaftar()->pluck('nik') as $posisi => $nik) {
+            $peta[$nik] = $posisi + 1;
+        }
+
+        return static::$petaNomorUrut = $peta;
+    }
+
     /**
      * Nomor urut seorang pemilih di dalam daftar sedesa, mulai dari 1.
      *
@@ -152,16 +229,9 @@ class Dpt extends Model
      * dari daftar dan semua yang di belakangnya naik satu. Tidak ada penomoran
      * ulang yang harus dijalankan siapa pun.
      *
-     * Yang menutup lubang itu adalah penghapusan lunaknya sendiri — kueri di
-     * bawah tidak menyebut TMS sama sekali, karena baris terhapus memang sudah
-     * tidak ikut dihitung. `no_urut` bawaan berkas DPS tetap disimpan sebagai
-     * asal urutan, bukan sebagai nomor yang ditampilkan.
-     *
-     * Urutannya sengaja disamakan dengan ekspor Excel dan
-     * `UndanganController::urutanDalamTps()`: `no_urut` menaik, lalu yang belum
-     * bernomor — pemilih hasil pendataan manual — menyusul di belakang menurut
-     * `id_pemilih`. Kalau dihitung dengan cara lain, satu orang bisa mendapat
-     * nomor berbeda antara panel, lembar cetak, dan undangannya.
+     * Yang menutup lubang itu adalah penghapusan lunaknya sendiri — daftar di
+     * `petaNomorUrut()` tidak menyebut TMS sama sekali, karena baris terhapus
+     * memang sudah tidak ikut dihitung.
      *
      * Mengembalikan `null` untuk pemilih yang sudah dicoret: ia tidak ada di
      * daftar, jadi ia tidak punya nomor urut di daftar itu.
@@ -172,52 +242,7 @@ class Dpt extends Model
             return null;
         }
 
-        // `no_urut < x` sudah mengecualikan baris ber-NULL dengan sendirinya,
-        // dan itu memang yang diinginkan: yang belum bernomor ada di belakang.
-        // Seri pada `no_urut` dipecah `id_pemilih`, persis seperti urutan pada
-        // `petaNomorUrut()` — tanpa itu keduanya bisa berbeda satu angka.
-        if ($pemilih->no_urut !== null) {
-            return 1 + self::where(function ($q) use ($pemilih) {
-                $q->where('no_urut', '<', $pemilih->no_urut)
-                    ->orWhere(function ($sama) use ($pemilih) {
-                        $sama->where('no_urut', $pemilih->no_urut)
-                            ->where('id_pemilih', '<', $pemilih->id_pemilih);
-                    });
-            })->count();
-        }
-
-        return 1
-            + self::whereNotNull('no_urut')->count()
-            + self::whereNull('no_urut')
-                ->where('id_pemilih', '<', $pemilih->id_pemilih)
-                ->count();
-    }
-
-    /**
-     * Nomor urut seluruh pemilih sekaligus, `nik => nomor`.
-     *
-     * `nomorUrut()` memakai dua COUNT per orang — murah untuk lima hasil
-     * pencarian, tapi mencetak undangan satu TPS berarti ribuan kueri. Di sini
-     * urutannya diambil sekali lalu dinomori di memori.
-     *
-     * Aturan urutannya harus sama persis dengan `nomorUrut()`; ada uji yang
-     * membandingkan keduanya baris demi baris supaya tidak diam-diam berbeda.
-     */
-    public static function petaNomorUrut(): array
-    {
-        $urut = self::query()
-            // Yang belum bernomor menyusul di belakang seluruh yang bernomor.
-            ->orderByRaw('CASE WHEN no_urut IS NULL THEN 1 ELSE 0 END ASC')
-            ->orderBy('no_urut')
-            ->orderBy('id_pemilih')
-            ->pluck('nik');
-
-        $peta = [];
-        foreach ($urut as $posisi => $nik) {
-            $peta[$nik] = $posisi + 1;
-        }
-
-        return $peta;
+        return self::petaNomorUrut()[$pemilih->nik] ?? null;
     }
 
     public function getJenisPemilihAttribute(): ?string

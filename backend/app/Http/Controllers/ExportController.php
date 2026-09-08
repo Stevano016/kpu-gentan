@@ -77,10 +77,14 @@ class ExportController extends Controller
 
         // `withTrashed()`: `tahapan=tms` adalah lingkup ekspor yang sah, dan
         // ekspor "semua" memang memuat seluruh tahapan termasuk yang dicoret.
+        // Urutannya memakai aturan yang sama dengan penomoran di panel
+        // (`Dpt::scopeUrutDaftar()`): RW, RT, lalu urutan asal. Kolom "No" pada
+        // lembar Excel adalah nomor baris, jadi kalau urutannya berbeda,
+        // nomor di lembar cetak tidak akan cocok dengan nomor di layar maupun
+        // di undangan.
         $query = Dpt::withTrashed()
             ->with('tps:id,nama')
-            ->orderByRaw('CASE WHEN no_urut IS NULL THEN 99999999 ELSE no_urut END ASC')
-            ->orderBy('nama');
+            ->urutDaftar();
         $label = 'semua';
         $judul = 'Seluruh Pemilih Kelurahan Gentan';
 

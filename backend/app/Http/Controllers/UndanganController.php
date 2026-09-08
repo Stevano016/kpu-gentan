@@ -86,50 +86,30 @@ class UndanganController extends Controller
     /**
      * Nomor urut kedatangan tiap pemilih di dalam TPS-nya, 0-based.
      *
-     * Rumusnya sengaja disamakan dengan `DptController::cekMandiri()`: yang
-     * punya `no_urut` diurutkan menurutnya, yang belum punya menyusul menurut
-     * `id_pemilih`. Kalau di sini dihitung dengan cara lain, satu orang bisa
-     * mendapat jam berbeda antara unduhan satuan dan unduhan maraton.
+     * Angka inilah pembagi sesi jam pada undangan, jadi urutannya memakai
+     * aturan yang sama dengan penomoran daftar (`Dpt::scopeUrutDaftar()`):
+     * RW, RT, lalu urutan asal. Dengan begitu warga satu RT mendapat sesi yang
+     * berdekatan — dan dua orang yang bersebelahan di daftar tidak lagi bisa
+     * kebagian jam berbeda tanpa alasan yang kelihatan.
      */
     private function urutanDalamTps($aktif): array
     {
-        $bernomor = $aktif->filter(fn ($p) => $p->no_urut !== null)
-            ->sortBy('no_urut')
-            ->values();
-        $tanpaNomor = $aktif->filter(fn ($p) => $p->no_urut === null)
-            ->sortBy('id_pemilih', SORT_STRING)
-            ->values();
+        $terurut = $aktif->sort(function ($a, $b) {
+            $kunci = fn ($p) => [
+                $p->rw === null || $p->rw === '' ? 1 : 0, (string) $p->rw,
+                $p->rt === null || $p->rt === '' ? 1 : 0, (string) $p->rt,
+                $p->no_urut === null ? 1 : 0, (int) $p->no_urut,
+                (string) $p->id_pemilih,
+            ];
 
-        $idTanpaNomor = $tanpaNomor->pluck('id_pemilih')->all();
+            return $kunci($a) <=> $kunci($b);
+        })->values();
 
         $urutan = [];
-
-        foreach ($bernomor as $posisi => $p) {
-            $urutan[$p->nik] = $posisi + $this->jumlahLebihKecil($idTanpaNomor, (string) $p->id_pemilih);
-        }
-
-        foreach ($tanpaNomor as $posisi => $p) {
+        foreach ($terurut as $posisi => $p) {
             $urutan[$p->nik] = $posisi;
         }
 
         return $urutan;
-    }
-
-    /** Berapa banyak id_pemilih pada daftar terurut yang lebih kecil dari $id. */
-    private function jumlahLebihKecil(array $terurut, string $id): int
-    {
-        $kiri = 0;
-        $kanan = count($terurut);
-
-        while ($kiri < $kanan) {
-            $tengah = intdiv($kiri + $kanan, 2);
-            if (strcmp((string) $terurut[$tengah], $id) < 0) {
-                $kiri = $tengah + 1;
-            } else {
-                $kanan = $tengah;
-            }
-        }
-
-        return $kiri;
     }
 }
