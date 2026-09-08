@@ -116,12 +116,22 @@ export async function susunUndangan(
 
   const nomor = form.getTextField('nomor');
   nomor.setFontSize(14);
-  // Yang dicetak adalah nomor urut hari ini, bukan `no_urut` bawaan berkas
-  // DPS. Begitu ada pemilih dicoret, nomor bawaan itu berlubang dan tidak lagi
-  // cocok dengan daftar mana pun — termasuk dengan angka yang dilihat warga di
-  // halaman Cek Pemilih. `no_urut` hanya dipakai bila server lama belum
-  // mengirim nomor barunya.
-  const nomorUrut = pemilih.no_urut_tampil ?? pemilih.no_urut;
+  /**
+   * Yang dicetak adalah nomor urut hari ini, bukan `no_urut` bawaan berkas DPS.
+   * Begitu ada pemilih dicoret, nomor bawaan itu berlubang dan tidak lagi cocok
+   * dengan daftar mana pun — termasuk dengan angka yang dilihat warga di
+   * halaman Cek Pemilih.
+   *
+   * `undefined` dan `null` sengaja dibedakan, dan bukan kerewelan: `undefined`
+   * berarti servernya belum mengirim bidang itu sama sekali (versi lama), jadi
+   * `no_urut` dipakai sebagai cadangan; `null` berarti server sudah menjawab
+   * dan orangnya memang **tidak punya** nomor karena sudah dicoret. Menyamakan
+   * keduanya lewat `??` membuat undangan pemilih tercoret tercetak dengan nomor
+   * lamanya yang sudah basi.
+   */
+  const nomorUrut = pemilih.no_urut_tampil === undefined
+    ? pemilih.no_urut
+    : pemilih.no_urut_tampil;
   nomor.setText(nomorUrut !== null && nomorUrut !== undefined ? String(nomorUrut) : '');
 
   form.getTextField('nama').setText(pemilih.nama);
