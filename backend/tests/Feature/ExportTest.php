@@ -151,4 +151,67 @@ class ExportTest extends TestCase
             ->assertJsonPath('status', 'success')
             ->assertJsonPath('data.jumlah', 0);
     }
+
+    /**
+     * Lembar Excel membawa nomor urut sedesa, bukan hanya nomor baris.
+     *
+     * Nomor barisnya selalu mulai dari 1 dan ikut berubah tiap kali ekspornya
+     * disaring; yang dicocokkan warga dengan undangannya adalah nomor urut.
+     * Keduanya harus ada, dan nomor urutnya harus sama persis dengan yang
+     * dipakai panel dan pencetakan undangan.
+     */
+    public function test_ekspor_membawa_nomor_urut_yang_sama_dengan_panel(): void
+    {
+        $this->siapkanData();
+        Sanctum::actingAs(User::create([
+            'username' => 'sekre',
+            'password' => bcrypt('rahasia'),
+            'role' => 'sekretariat',
+        ]));
+
+        $baris = $this->getJson('/api/export/pemilih?format=json&lingkup=all')
+            ->assertOk()
+            ->json('data.baris');
+
+        $peta = Dpt::petaNomorUrut();
+
+        foreach ($baris as $b) {
+            if ($b['tahapan'] === 'tms') {
+                // Sudah dicoret: tidak ada di daftar, jadi tidak bernomor.
+                $this->assertNull($b['no_urut_tampil'], "TMS tidak boleh bernomor: {$b['nama']}");
+                continue;
+            }
+
+            $this->assertSame(
+                $peta[$b['nik']],
+                $b['no_urut_tampil'],
+                "Nomor urut {$b['nama']} di ekspor berbeda dengan yang dipakai panel."
+            );
+        }
+    }
+
+    /** Ekspor yang disaring tetap membawa nomor sedesa, bukan menomori ulang. */
+    public function test_ekspor_per_rw_tetap_memakai_nomor_sedesa(): void
+    {
+        $this->siapkanData();
+        Sanctum::actingAs(User::create([
+            'username' => 'sekre',
+            'password' => bcrypt('rahasia'),
+            'role' => 'sekretariat',
+        ]));
+
+        $baris = $this->getJson('/api/export/pemilih?format=json&lingkup=rw&rw=002')
+            ->assertOk()
+            ->json('data.baris');
+
+        $this->assertNotEmpty($baris);
+        $peta = Dpt::petaNomorUrut();
+
+        foreach ($baris as $b) {
+            $this->assertSame('002', $b['rw']);
+            $this->assertSame($peta[$b['nik']], $b['no_urut_tampil']);
+            // Bukan 1..N lembar itu sendiri.
+            $this->assertGreaterThan(1, $b['no_urut_tampil']);
+        }
+    }
 }

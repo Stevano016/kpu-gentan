@@ -11,6 +11,8 @@ import { GAYA, bingkai, muatExcelJS, nomorSesuaiMode, unduhWorkbook, type ModeNo
  */
 
 export interface BarisPemilih {
+  /** Posisi pemilih di daftar sedesa — sama dengan yang tampil di panel dan undangan. */
+  no_urut_tampil?: number | null;
   id_pemilih?: string | null;
   nik: string;
   nkk?: string | null;
@@ -48,8 +50,25 @@ interface Kolom {
   tengah?: boolean;
 }
 
+/**
+ * Dua kolom nomor, meniru lembar DPS fisik yang memang punya keduanya.
+ *
+ * `No` adalah nomor baris di lembar ini — selalu mulai dari 1, berguna untuk
+ * menghitung dan menunjuk baris saat rapat. `No. Urut` adalah posisi pemilih di
+ * daftar sedesa: angka yang sama persis dengan yang dilihat warga di halaman
+ * Cek Pemilih dan yang tercetak di undangannya. Pada ekspor yang disaring —
+ * satu RW, satu TPS — keduanya memang berbeda, dan itu disengaja: yang satu
+ * menomori lembar, yang satu menomori orangnya.
+ */
 const kolomUntuk = (mode: ModeNomor): Kolom[] => [
   { judul: 'No', ambil: () => null, lebar: 6, tengah: true },
+  {
+    judul: 'No. Urut',
+    // Pemilih tercoret (TMS) tidak ada di daftar, jadi tidak bernomor.
+    ambil: (b) => b.no_urut_tampil ?? '—',
+    lebar: 10,
+    tengah: true,
+  },
   { judul: 'ID Pemilih', ambil: (b) => b.id_pemilih ?? '', lebar: 17 },
   { judul: 'NIK', ambil: (b) => nomorSesuaiMode(b.nik, mode), lebar: 20, teks: true },
   { judul: 'No. KK', ambil: (b) => nomorSesuaiMode(b.nkk, mode), lebar: 20, teks: true },
@@ -142,7 +161,7 @@ export async function unduhExcelPemilih(data: DataEksporPemilih, mode: ModeNomor
 
     kolomTersaring.forEach((kolom, i) => {
       const sel = baris.getCell(i + 1);
-      const nilai = i === 0 ? indeks + 1 : kolom.ambil(data_baris);
+      const nilai = kolom.judul === 'No' ? indeks + 1 : kolom.ambil(data_baris);
       sel.value = nilai === '' ? null : nilai;
       sel.border = bingkai();
       sel.font = kolom.teks
@@ -182,6 +201,15 @@ export async function unduhExcelPemilih(data: DataEksporPemilih, mode: ModeNomor
     ws.getCell(barisCatatan + 1, 1).value =
       'Data diekspor tanpa memuat kolom NIK dan Nomor KK atas alasan privasi.';
   }
+
+  // Penjelasan dua kolom nomor, ditaruh sesudah catatan lain supaya seluruhnya
+  // berada di bawah judul "Keterangan".
+  ws.getCell(barisCatatan + 3, 1).value =
+    'Kolom "No" adalah nomor baris pada lembar ini. Kolom "No. Urut" adalah nomor pemilih pada daftar sedesa — '
+    + 'angka yang sama dengan yang tampil di halaman Cek Pemilih dan yang tercetak di undangan. '
+    + 'Pada ekspor yang disaring per RW atau per TPS keduanya memang berbeda.';
+  ws.getCell(barisCatatan + 4, 1).value =
+    'Pemilih yang sudah dicoret (TMS) tidak punya No. Urut — ia tidak ada di daftar — dan ditandai tanda pisah.';
 
   return unduhWorkbook(wb, `pemilih-${data.label}${AKHIRAN[mode]}-${cap()}.xlsx`);
 }

@@ -124,12 +124,21 @@ class ExportController extends Controller
     {
         $baris = [];
 
-        $query->chunk(1000, function ($kumpulan) use (&$baris) {
+        // Nomor urut sedesa untuk seluruh pemilih sekaligus. Angka inilah yang
+        // dilihat warga di halaman Cek Pemilih dan tercetak di undangan; tanpa
+        // membawanya ke sini, kolom nomor di lembar Excel hanya nomor baris
+        // dan tidak bisa dicocokkan dengan keduanya.
+        $nomorUrut = Dpt::petaNomorUrut();
+
+        $query->chunk(1000, function ($kumpulan) use (&$baris, $nomorUrut) {
             foreach ($kumpulan as $p) {
                 $data = [];
                 foreach (self::KOLOM as $atribut) {
                     $data[$atribut] = $p->{$atribut};
                 }
+                // Pemilih yang sudah dicoret tidak ada di daftar, jadi tidak
+                // punya nomor urut di daftar itu.
+                $data['no_urut_tampil'] = $nomorUrut[$p->nik] ?? null;
                 $data['tps'] = $p->tps->nama ?? '';
                 $data['status_hadir'] = (bool) $p->status_hadir;
                 $data['waktu_checkin'] = $p->waktu_checkin?->format('Y-m-d H:i:s');
@@ -161,14 +170,17 @@ class ExportController extends Controller
             fwrite($keluaran, "sep=,\n");
 
             fputcsv($keluaran, array_merge(
+                ['No. Urut'],
                 array_keys(self::KOLOM),
                 ['TPS', 'Kehadiran', 'Waktu Check-in', 'Nomor Sementara'],
             ));
 
+            $nomorUrut = Dpt::petaNomorUrut();
+
             // chunk supaya ekspor sebesar apa pun tidak menumpuk di memori.
-            $query->chunk(500, function ($baris) use ($keluaran) {
+            $query->chunk(500, function ($baris) use ($keluaran, $nomorUrut) {
                 foreach ($baris as $p) {
-                    $data = [];
+                    $data = [$nomorUrut[$p->nik] ?? ''];
                     foreach (self::KOLOM as $atribut) {
                         $nilai = $p->{$atribut};
                         $data[] = in_array($atribut, self::KOLOM_NOMOR_IDENTITAS, true)
