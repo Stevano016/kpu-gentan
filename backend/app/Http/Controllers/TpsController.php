@@ -74,6 +74,10 @@ class TpsController extends Controller
     {
         $tps = Tps::with(['quickCount', 'users'])->findOrFail($id);
         
+        // Sejak TMS dihapus lunak, `total_pemilih` di bawah tidak lagi memuat
+        // pemilih yang sudah dicoret — dan itu memang yang benar: mereka bukan
+        // pemilih TPS ini lagi, dan ikut menghitungnya membuat persentase
+        // kehadiran selalu lebih rendah dari yang sebenarnya.
         $totalDptOnly = $tps->dpt()->where('tahapan', 'dpt')->count();
         $totalDpkOnly = $tps->dpt()->where('tahapan', 'dpk')->count();
         $attendanceCount = $tps->dpt()->where('status_hadir', true)->count();

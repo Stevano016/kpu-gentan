@@ -14,12 +14,20 @@ class DptController extends Controller
 {
     public function index(Request $request)
     {
-        $query = Dpt::with('tps')
+        // `withTrashed()`: tab TMS memang meminta baris yang sudah dicoret,
+        // dan tanpa ini seluruh tabnya kosong. Penyaring `tahapan` di bawah
+        // yang menentukan siapa yang benar-benar tampil.
+        $query = Dpt::withTrashed()
+            ->with('tps')
             ->select('dpt.*')
             ->selectSub(function ($q) {
+                // Subkueri mentah tidak ikut lingkup SoftDeletes, jadi
+                // `deleted_at` disebut sendiri. Tanpa itu, seseorang tetap
+                // bertanda ganda hanya karena kembarannya sudah dicoret.
                 $q->selectRaw('count(*) > 1')
                   ->from('dpt as d2')
-                  ->whereColumn('d2.nama', 'dpt.nama');
+                  ->whereColumn('d2.nama', 'dpt.nama')
+                  ->whereNull('d2.deleted_at');
             }, 'is_ganda');
 
         if ($request->filled('search')) {
@@ -93,7 +101,11 @@ class DptController extends Controller
             ], 422);
         }
 
-        $pemilih = Dpt::with('tps:id,nama')->where('nik', $request->nik)->first();
+        // `withTrashed()`: NIK adalah kunci primer, jadi baris yang sudah
+        // dicoret tetap menahannya. Kalau pemeriksa ini melewatkan mereka, ia
+        // menjawab "belum terdaftar" untuk NIK yang beberapa detik kemudian
+        // ditolak `unique:dpt,nik` saat disimpan.
+        $pemilih = Dpt::withTrashed()->with('tps:id,nama')->where('nik', $request->nik)->first();
 
         if (!$pemilih) {
             return response()->json([
@@ -106,6 +118,9 @@ class DptController extends Controller
             'status' => 'success',
             'data' => [
                 'terdaftar' => true,
+                // Sudah dicoret sebagai TMS: NIK-nya terpakai, tapi orangnya
+                // tidak ada di daftar mana pun. Panel perlu membedakan keduanya.
+                'dicoret' => $pemilih->trashed(),
                 'nama' => $pemilih->nama,
                 'tahapan' => $pemilih->tahapan,
                 'tps' => $pemilih->tps->nama ?? null,
@@ -211,7 +226,11 @@ class DptController extends Controller
         }
 
         // Auto-generate the next id_pemilih (format USH-GTN-026xxxx)
-        $latestVoter = Dpt::where('id_pemilih', 'like', 'USH-GTN-026%')
+        // `withTrashed()` wajib: nomor tertinggi bisa saja milik baris yang
+        // sudah dicoret. Melewatkannya membuat generator mengulang dari nomor
+        // yang sudah terpakai, dan `id_pemilih` itulah isi QR undangan.
+        $latestVoter = Dpt::withTrashed()
+            ->where('id_pemilih', 'like', 'USH-GTN-026%')
             ->orderBy('id_pemilih', 'desc')
             ->first();
             
@@ -397,12 +416,22 @@ class DptController extends Controller
         ]);
     }
 
+    /**
+     * Hapus permanen satu pemilih.
+     *
+     * Sengaja `forceDelete()`, bukan penghapusan lunak. `deleted_at` di tabel
+     * ini punya satu arti saja — dicoret sebagai TMS, lewat
+     * `TahapanController::tandaiTms()`, dan bisa dibatalkan. Kalau tombol Hapus
+     * ikut memakainya, dua hal yang berbeda jadi tidak bisa dibedakan: baris
+     * yang dibuang petugas akan muncul di tab TMS tanpa alasan pencoretan, dan
+     * NIK-nya tetap tertahan tanpa ada cara membebaskannya dari panel.
+     */
     public function destroy(Request $request, $nik)
     {
-        $dpt = Dpt::where('nik', $nik)->firstOrFail();
+        $dpt = Dpt::withTrashed()->where('nik', $nik)->firstOrFail();
         $tpsId = $dpt->tps_id;
         $oldTahapan = $dpt->tahapan;
-        $dpt->delete();
+        $dpt->forceDelete();
 
         if (in_array($oldTahapan, ['dp4', 'dps', 'dptb', 'dpt'])) {
             Tps::where('id', $tpsId)->decrement('total_dpt');
@@ -483,7 +512,11 @@ class DptController extends Controller
         $tpsByIdMap = Tps::all()->pluck('id', 'id')->toArray();
         
         // Get initial starting index for id_pemilih generation (Anti-N+1)
-        $latestVoter = Dpt::where('id_pemilih', 'like', 'USH-GTN-026%')
+        // `withTrashed()` wajib: nomor tertinggi bisa saja milik baris yang
+        // sudah dicoret. Melewatkannya membuat generator mengulang dari nomor
+        // yang sudah terpakai, dan `id_pemilih` itulah isi QR undangan.
+        $latestVoter = Dpt::withTrashed()
+            ->where('id_pemilih', 'like', 'USH-GTN-026%')
             ->orderBy('id_pemilih', 'desc')
             ->first();
             
@@ -527,8 +560,12 @@ class DptController extends Controller
                     continue;
                 }
 
-                // Check existing in DB
-                $exists = Dpt::where('nik', $nik)->exists();
+                // Check existing in DB. `withTrashed()`: NIK baris tercoret
+                // tetap menempati kunci primer, jadi tanpa ini pemeriksaan
+                // lolos lalu `Dpt::create()` melempar duplikat — dan karena
+                // impor berjalan dalam satu transaksi, satu baris seperti itu
+                // membatalkan seluruh berkas.
+                $exists = Dpt::withTrashed()->where('nik', $nik)->exists();
                 if ($exists) {
                     $errors[] = "Baris " . ($index + 2) . ": NIK {$nik} sudah terdaftar.";
                     continue;
@@ -718,15 +755,14 @@ class DptController extends Controller
                 'alamat' => $v->alamat,
                 'tahapan' => $v->tahapan,
                 'id_pemilih' => $v->id_pemilih,
-                // Tetap dikirim apa adanya: undangan C6 mencetak angka ini.
+                // Nomor bawaan berkas DPS. Disimpan sebagai asal urutan, bukan
+                // sebagai nomor yang ditampilkan — begitu ada yang dicoret, ia
+                // berlubang. Tetap dikirim untuk penelusuran ke data sumber.
                 'no_urut' => $v->no_urut,
-                // Dua nomor yang ditampilkan kartu hasil pencarian publik.
-                // Selama pemilihnya masih DPS, `no_urut_dpt` bernilai null dan
-                // kartu menampilkan nomor DPS-nya; begitu ia ditetapkan jadi
-                // DPT, nomor DPT-nya muncul dan kartu berganti sendiri tanpa
-                // ada saklar fase yang harus dinyalakan seseorang.
-                'no_urut_dps' => $v->no_urut,
-                'no_urut_dpt' => Dpt::nomorUrutDpt($v),
+                // Nomor yang benar-benar dipakai: posisi pemilih di daftar hari
+                // ini. Ikut naik sendiri saat orang di depannya dicoret, dan
+                // angka inilah yang juga tercetak di undangan C6.
+                'no_urut_tampil' => Dpt::nomorUrut($v),
                 'umur' => $v->umur,
                 'tps_total_dpt' => $totalDptTps,
                 'tps_voter_index' => $voterIndex,

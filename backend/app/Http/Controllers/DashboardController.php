@@ -19,7 +19,9 @@ class DashboardController extends Controller
         // L/P ikut dijumlahkan di sini, bukan lewat query sendiri: rekap jenis
         // kelamin dibutuhkan tiap kali dashboard dimuat, sedangkan dua SUM
         // tambahan pada query yang sudah ada tidak menambah pembacaan tabel.
-        $perTahapan = Dpt::selectRaw(
+        // `withTrashed()`: pengelompokan ini yang mengisi kartu TMS dan baris
+        // TMS pada rekap L/P. Tanpa itu, embernya ada tapi selalu nol.
+        $perTahapan = Dpt::withTrashed()->selectRaw(
             'tahapan, COUNT(*) as jumlah, SUM(status_hadir = 1) as hadir, '
             . "SUM(jenis_kelamin = 'LAKI-LAKI') as laki, "
             . "SUM(jenis_kelamin = 'PEREMPUAN') as perempuan, "
@@ -71,7 +73,7 @@ class DashboardController extends Controller
         // `withCount`: dua jenis kelamin dikali enam tahapan berarti dua belas
         // subkueri per TPS, sementara pengelompokan di bawah membaca tabelnya
         // sekali untuk seluruh TPS sekaligus.
-        $genderPerTps = Dpt::selectRaw(
+        $genderPerTps = Dpt::withTrashed()->selectRaw(
             'tps_id, tahapan, COUNT(*) as jumlah, SUM(status_hadir = 1) as hadir, '
             . "SUM(jenis_kelamin = 'LAKI-LAKI') as laki, "
             . "SUM(jenis_kelamin = 'PEREMPUAN') as perempuan, "
@@ -197,7 +199,9 @@ class DashboardController extends Controller
     {
         $tps = Tps::with(['quickCount', 'users'])->findOrFail($id);
 
-        $voters = Dpt::where('tps_id', $id)
+        // `withTrashed()`: log kehadiran TPS ini menampilkan seluruh tahapan,
+        // TMS termasuk, dan rekap L/P-nya dihitung dari koleksi yang sama.
+        $voters = Dpt::withTrashed()->where('tps_id', $id)
             ->select('nik', 'nama', 'jenis_kelamin', 'status_hadir', 'waktu_checkin', 'tahapan', 'asal', 'tms_alasan', 'dpk_alasan')
             ->orderBy('nama')
             ->get();

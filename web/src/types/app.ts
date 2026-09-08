@@ -146,12 +146,12 @@ export interface PemilihPublik {
   rw: string;
   alamat: string;
   tahapan: string;
-  /** Nomor bawaan berkas DPS — angka yang sama dengan yang tercetak di undangan. */
-  no_urut_dps: number | null;
   /**
-   * Nomor urut di dalam DPT, hasil penomoran ulang setelah penetapan. Bernilai
-   * `null` selama pemilihnya belum ditetapkan jadi DPT, dan itulah yang membuat
-   * kartu berganti sendiri dari nomor DPS ke nomor DPT.
+   * Posisi pemilih di daftar hari ini, dihitung server saat diminta.
+   *
+   * Ikut naik sendiri begitu seseorang di depannya dicoret jadi TMS, dan angka
+   * inilah yang juga tercetak di undangan C6 — keduanya memakai perhitungan
+   * yang sama supaya tidak pernah berbeda.
    */
-  no_urut_dpt: number | null;
+  no_urut_tampil: number | null;
 }

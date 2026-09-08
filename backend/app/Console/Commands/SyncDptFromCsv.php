@@ -68,7 +68,11 @@ class SyncDptFromCsv extends Command
             $csvCatatanImpor = $row[$colMap['catatan_impor']] ?: null;
             $csvNama = $row[$colMap['nama']];
 
-            // Fetch current voter in database by no_urut
+            // Sengaja `DB::table`, bukan model: perkakas ini menyelaraskan
+            // tabel dengan berkas CSV, jadi ia harus melihat seluruh baris —
+            // yang sudah dicoret sebagai TMS sekalipun. Pertukaran NIK dua
+            // tahap di bawah akan bentrok di kunci primer kalau ada baris yang
+            // tidak terlihat sedang memegang NIK tujuan.
             $dbVoter = DB::table('dpt')->where('no_urut', $noUrut)->first();
 
             if (!$dbVoter) {

@@ -75,7 +75,10 @@ class ExportController extends Controller
         $pengguna = $request->user();
         $lingkup = $request->lingkup ?? 'all';
 
-        $query = Dpt::with('tps:id,nama')
+        // `withTrashed()`: `tahapan=tms` adalah lingkup ekspor yang sah, dan
+        // ekspor "semua" memang memuat seluruh tahapan termasuk yang dicoret.
+        $query = Dpt::withTrashed()
+            ->with('tps:id,nama')
             ->orderByRaw('CASE WHEN no_urut IS NULL THEN 99999999 ELSE no_urut END ASC')
             ->orderBy('nama');
         $label = 'semua';
@@ -217,7 +220,10 @@ class ExportController extends Controller
             return response()->json(['status' => 'success', 'data' => [$pengguna->rw]]);
         }
 
-        $daftar = Dpt::query()
+        // `withTrashed()`: daftar pilihan RW pada dialog ekspor. Sebuah RW yang
+        // seluruh sisa barisnya sudah dicoret akan hilang dari pilihan, padahal
+        // ekspor TMS-nya justru masih perlu dibuka.
+        $daftar = Dpt::withTrashed()
             ->whereNotNull('rw')
             ->where('rw', '!=', '')
             ->distinct()

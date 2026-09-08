@@ -24,45 +24,33 @@ const namaJenisKelamin = (kode: string): string =>
 interface NomorUrut {
   label: string;
   nomor: number;
-  /** Nomor DPS-nya, disebut hanya bila sudah berbeda dari nomor yang tampil. */
-  nomorDps: number | null;
 }
 
 /**
- * Nomor urut yang pantas ditampilkan untuk satu pemilih, beserta namanya.
+ * Nomor urut yang ditampilkan untuk satu pemilih, beserta namanya.
  *
- * Tidak ada saklar fase yang harus dinyalakan seseorang: yang menentukan adalah
- * tahapan pemilihnya sendiri. Selama ia masih DPS, `no_urut_dpt` dari server
- * bernilai `null` dan yang tampil nomor DPS-nya; begitu ia ditetapkan jadi DPT,
- * nomor DPT-nya ada dan kartu ini berganti sendiri.
+ * Angkanya datang dari server sudah jadi — posisi orang itu di daftar hari ini,
+ * bukan nomor bawaan berkas DPS. Bedanya terasa begitu ada yang dicoret: nomor
+ * semua orang di belakangnya naik satu, dan undangan cetaknya memakai angka
+ * yang sama persis.
  *
- * Keduanya bisa berbeda, dan bukan karena salah hitung: penetapan DPT menutup
- * lubang yang ditinggalkan pemilih yang gugur, sehingga nomornya bergeser maju.
- * Undangan cetak masih membawa nomor DPS-nya, jadi angka itu tetap disebut di
- * bawah — tanpa itu, warga yang memegang undangan akan menyangka datanya salah.
+ * Yang ditentukan di sini hanya namanya. Tidak ada saklar fase yang harus
+ * dinyalakan seseorang: label mengikuti tahapan pemilihnya sendiri, jadi kartu
+ * berganti dari "No. Urut DPS" ke "No. Urut DPT" saat ia ditetapkan. DPK ikut
+ * disebut DPT karena ia memang bagian dari daftar tetap.
  *
- * `null` berarti pemilihnya memang belum bernomor — pemilih tambahan yang baru
- * didata dan belum masuk daftar cetak mana pun.
+ * `null` berarti pemilihnya memang belum bernomor.
  */
 function nomorUrutTampil(pemilih: PemilihPublik): NomorUrut | null {
-  if (BERHAK_MEMILIH.includes(pemilih.tahapan)) {
-    if (pemilih.no_urut_dpt === null) return null;
-    return {
-      label: 'No. Urut DPT',
-      nomor: pemilih.no_urut_dpt,
-      nomorDps:
-        pemilih.no_urut_dps !== null && pemilih.no_urut_dps !== pemilih.no_urut_dpt
-          ? pemilih.no_urut_dps
-          : null,
-    };
+  if (pemilih.no_urut_tampil === null || pemilih.no_urut_tampil === undefined) {
+    return null;
   }
 
-  if (pemilih.no_urut_dps === null) return null;
-  return {
-    label: `No. Urut ${metaTahapan(pemilih.tahapan).singkat}`,
-    nomor: pemilih.no_urut_dps,
-    nomorDps: null,
-  };
+  const label = BERHAK_MEMILIH.includes(pemilih.tahapan)
+    ? 'DPT'
+    : metaTahapan(pemilih.tahapan).singkat;
+
+  return { label: `No. Urut ${label}`, nomor: pemilih.no_urut_tampil };
 }
 
 interface KartuPemilihProps {
@@ -86,12 +74,6 @@ export const KartuPemilih: React.FC<KartuPemilihProps> = ({ pemilih }) => {
             <span className="voter-nomor-label">{urut.label}</span>
             <span className="voter-nomor-nilai">{urut.nomor}</span>
           </div>
-          {urut.nomorDps !== null && (
-            <p className="voter-nomor-catatan">
-              Nomor pada DPS dan undangan cetak: <strong>{urut.nomorDps}</strong>. Nomor
-              bergeser karena DPT dinomori ulang setelah penetapan.
-            </p>
-          )}
         </div>
       )}
 

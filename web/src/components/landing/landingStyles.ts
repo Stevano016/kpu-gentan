@@ -245,16 +245,6 @@ export const GAYA_LANDING = `
     line-height: 1;
     color: var(--primary);
   }
-  .voter-nomor-catatan {
-    margin-top: 6px;
-    font-size: 0.75rem;
-    line-height: 1.45;
-    color: var(--text-muted);
-  }
-  .voter-nomor-catatan strong {
-    font-family: Consolas, monospace;
-    color: var(--text);
-  }
   .voter-detail-grid {
     display: grid;
     grid-template-columns: 1fr;

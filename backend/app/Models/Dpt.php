@@ -5,10 +5,25 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\SoftDeletes;
 
 class Dpt extends Model
 {
     use HasFactory;
+
+    /**
+     * Pemilih yang gugur (TMS) dihapus lunak, bukan sekadar ditandai.
+     *
+     * Selama TMS hanya berupa nilai `tahapan`, tiap kueri harus ingat
+     * mengecualikannya sendiri, dan satu yang lupa membuat pemilih tercoret
+     * ikut terhitung tanpa ada yang menyadarinya. Dengan `deleted_at`, yang
+     * dikecualikan menjadi bawaan dan yang memang ingin melihat TMS harus
+     * memintanya lewat `withTrashed()`.
+     *
+     * Kolom `tahapan` tetap berisi `'tms'`, jadi alasan pencoretan dan tahapan
+     * asalnya tidak hilang dan pembatalan TMS tetap tahu tujuannya.
+     */
+    use SoftDeletes;
 
     protected $table = 'dpt';
     protected $primaryKey = 'nik';
@@ -130,44 +145,79 @@ class Dpt extends Model
     ];
 
     /**
-     * Nomor urut seorang pemilih di dalam DPT sedesa, mulai dari 1.
+     * Nomor urut seorang pemilih di dalam daftar sedesa, mulai dari 1.
      *
-     * Selama fase DPS yang dipakai adalah `no_urut` apa adanya — nomor bawaan
-     * berkas DPS, yang juga tercetak di undangan. Begitu DPT ditetapkan nomor
-     * itu berlubang: pemilih yang gugur (TMS) ikut membawa nomornya keluar,
-     * sehingga daftar tetapnya melompat-lompat dan nomor terakhirnya tidak
-     * lagi sama dengan jumlah pemilih. Penomoran ulang di sini menutup lubang
-     * itu tanpa menukar urutan siapa pun.
+     * Nomornya dihitung saat diminta, bukan disimpan, dan itulah yang membuatnya
+     * ikut bergerak: begitu seseorang di depan dicoret jadi TMS, barisnya keluar
+     * dari daftar dan semua yang di belakangnya naik satu. Tidak ada penomoran
+     * ulang yang harus dijalankan siapa pun.
+     *
+     * Yang menutup lubang itu adalah penghapusan lunaknya sendiri — kueri di
+     * bawah tidak menyebut TMS sama sekali, karena baris terhapus memang sudah
+     * tidak ikut dihitung. `no_urut` bawaan berkas DPS tetap disimpan sebagai
+     * asal urutan, bukan sebagai nomor yang ditampilkan.
      *
      * Urutannya sengaja disamakan dengan ekspor Excel dan
-     * `UndanganController::urutanDalamTps()`: `no_urut` menaik, lalu yang
-     * belum bernomor — pemilih hasil pendataan manual — menyusul di belakang
-     * menurut `id_pemilih`. Kalau dihitung dengan cara lain, satu orang bisa
-     * mendapat nomor berbeda antara panel dan lembar cetak.
+     * `UndanganController::urutanDalamTps()`: `no_urut` menaik, lalu yang belum
+     * bernomor — pemilih hasil pendataan manual — menyusul di belakang menurut
+     * `id_pemilih`. Kalau dihitung dengan cara lain, satu orang bisa mendapat
+     * nomor berbeda antara panel, lembar cetak, dan undangannya.
      *
-     * Mengembalikan `null` bila pemilihnya belum masuk DPT.
+     * Mengembalikan `null` untuk pemilih yang sudah dicoret: ia tidak ada di
+     * daftar, jadi ia tidak punya nomor urut di daftar itu.
      */
-    public static function nomorUrutDpt(self $pemilih): ?int
+    public static function nomorUrut(self $pemilih): ?int
     {
-        if (! in_array($pemilih->tahapan, self::TAHAPAN_BERHAK, true)) {
+        if ($pemilih->trashed()) {
             return null;
         }
 
-        $daftar = static fn () => self::whereIn('tahapan', self::TAHAPAN_BERHAK);
-
+        // `no_urut < x` sudah mengecualikan baris ber-NULL dengan sendirinya,
+        // dan itu memang yang diinginkan: yang belum bernomor ada di belakang.
+        // Seri pada `no_urut` dipecah `id_pemilih`, persis seperti urutan pada
+        // `petaNomorUrut()` — tanpa itu keduanya bisa berbeda satu angka.
         if ($pemilih->no_urut !== null) {
-            return 1 + $daftar()
-                ->whereNotNull('no_urut')
-                ->where('no_urut', '<', $pemilih->no_urut)
-                ->count();
+            return 1 + self::where(function ($q) use ($pemilih) {
+                $q->where('no_urut', '<', $pemilih->no_urut)
+                    ->orWhere(function ($sama) use ($pemilih) {
+                        $sama->where('no_urut', $pemilih->no_urut)
+                            ->where('id_pemilih', '<', $pemilih->id_pemilih);
+                    });
+            })->count();
         }
 
         return 1
-            + $daftar()->whereNotNull('no_urut')->count()
-            + $daftar()
-                ->whereNull('no_urut')
+            + self::whereNotNull('no_urut')->count()
+            + self::whereNull('no_urut')
                 ->where('id_pemilih', '<', $pemilih->id_pemilih)
                 ->count();
+    }
+
+    /**
+     * Nomor urut seluruh pemilih sekaligus, `nik => nomor`.
+     *
+     * `nomorUrut()` memakai dua COUNT per orang — murah untuk lima hasil
+     * pencarian, tapi mencetak undangan satu TPS berarti ribuan kueri. Di sini
+     * urutannya diambil sekali lalu dinomori di memori.
+     *
+     * Aturan urutannya harus sama persis dengan `nomorUrut()`; ada uji yang
+     * membandingkan keduanya baris demi baris supaya tidak diam-diam berbeda.
+     */
+    public static function petaNomorUrut(): array
+    {
+        $urut = self::query()
+            // Yang belum bernomor menyusul di belakang seluruh yang bernomor.
+            ->orderByRaw('CASE WHEN no_urut IS NULL THEN 1 ELSE 0 END ASC')
+            ->orderBy('no_urut')
+            ->orderBy('id_pemilih')
+            ->pluck('nik');
+
+        $peta = [];
+        foreach ($urut as $posisi => $nik) {
+            $peta[$nik] = $posisi + 1;
+        }
+
+        return $peta;
     }
 
     public function getJenisPemilihAttribute(): ?string

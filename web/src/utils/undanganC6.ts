@@ -22,6 +22,8 @@ export interface PemilihUndangan {
   rw?: string | null;
   tps?: string | null;
   no_urut?: number | null;
+  /** Posisi di daftar hari ini; inilah yang dicetak, bukan `no_urut`. */
+  no_urut_tampil?: number | null;
   tps_total_dpt?: number | null;
   tps_voter_index?: number | null;
 }
@@ -114,9 +116,13 @@ export async function susunUndangan(
 
   const nomor = form.getTextField('nomor');
   nomor.setFontSize(14);
-  nomor.setText(
-    pemilih.no_urut !== null && pemilih.no_urut !== undefined ? String(pemilih.no_urut) : '',
-  );
+  // Yang dicetak adalah nomor urut hari ini, bukan `no_urut` bawaan berkas
+  // DPS. Begitu ada pemilih dicoret, nomor bawaan itu berlubang dan tidak lagi
+  // cocok dengan daftar mana pun — termasuk dengan angka yang dilihat warga di
+  // halaman Cek Pemilih. `no_urut` hanya dipakai bila server lama belum
+  // mengirim nomor barunya.
+  const nomorUrut = pemilih.no_urut_tampil ?? pemilih.no_urut;
+  nomor.setText(nomorUrut !== null && nomorUrut !== undefined ? String(nomorUrut) : '');
 
   form.getTextField('nama').setText(pemilih.nama);
   form.getTextField('jenis_kelamin').setText('');

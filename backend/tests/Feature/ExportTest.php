@@ -29,7 +29,7 @@ class ExportTest extends TestCase
         ];
 
         foreach ($pemilih as $i => $data) {
-            Dpt::create([
+            $baris = Dpt::create([
                 'nik' => str_pad((string) ($i + 1), 16, '0', STR_PAD_LEFT),
                 'nama' => $data['nama'],
                 'tps_id' => $data['tps_id'],
@@ -41,6 +41,13 @@ class ExportTest extends TestCase
                 'keterangan' => $data['keterangan'],
                 'jenis_kelamin' => 'LAKI-LAKI',
             ]);
+
+            // TMS berarti terhapus lunak — itulah keadaan yang dibuat
+            // `TahapanController::tandaiTms()`. Tanpa ini, ekspornya tidak
+            // benar-benar menguji bahwa baris tercoret tetap bisa diambil.
+            if ($data['tahapan'] === 'tms') {
+                $baris->delete();
+            }
         }
     }
 

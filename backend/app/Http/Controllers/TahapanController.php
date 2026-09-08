@@ -109,6 +109,12 @@ class TahapanController extends Controller
             'diverifikasi_pada' => now(),
         ]);
 
+        // Dicoret dari daftar, bukan sekadar diberi label. Sejak baris ini
+        // terhapus lunak, ia otomatis keluar dari setiap hitungan dan setiap
+        // penomoran — nomor urut semua orang di belakangnya naik satu tanpa ada
+        // yang perlu dijalankan. Barisnya sendiri tetap ada beserta alasannya.
+        $dpt->delete();
+
         Broadcaster::trigger('update', ['tps_id' => $dpt->tps_id]);
 
         return response()->json([
@@ -129,7 +135,9 @@ class TahapanController extends Controller
      */
     public function batalkanTms($nik)
     {
-        $dpt = Dpt::where('nik', $nik)->firstOrFail();
+        // Barisnya sudah terhapus lunak, jadi kueri biasa tidak akan
+        // menemukannya lagi.
+        $dpt = Dpt::withTrashed()->where('nik', $nik)->firstOrFail();
 
         $tujuan = in_array($dpt->tahapan_sebelum_tms, ['dp4', 'dps'], true)
             ? $dpt->tahapan_sebelum_tms
@@ -146,6 +154,10 @@ class TahapanController extends Controller
             'keterangan' => $tujuan === 'dps' ? '1 : Terverifikasi/Valid' : null,
             'diverifikasi_pada' => $tujuan === 'dps' ? $dpt->diverifikasi_pada : null,
         ]);
+
+        // Kembali ke daftar: `deleted_at` dikosongkan, dan nomor urut semua
+        // orang di belakangnya turun satu lagi dengan sendirinya.
+        $dpt->restore();
 
         Broadcaster::trigger('update', ['tps_id' => $dpt->tps_id]);
 
@@ -259,7 +271,9 @@ class TahapanController extends Controller
     {
         $request->validate(['tps_id' => 'nullable|integer|exists:tps,id']);
 
-        $dasar = fn () => Dpt::query()
+        // `withTrashed()`: ringkasan ini melaporkan TMS sebagai salah satu
+        // angkanya, dan tanpa ini angka itu selalu nol.
+        $dasar = fn () => Dpt::withTrashed()
             ->when($request->filled('tps_id'), fn ($q) => $q->where('tps_id', $request->tps_id));
 
         $perTahapan = $dasar()

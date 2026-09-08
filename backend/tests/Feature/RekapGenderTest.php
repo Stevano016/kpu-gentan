@@ -38,10 +38,13 @@ class RekapGenderTest extends TestCase
             [2, 'dps', 'PEREMPUAN', true],
             [2, 'dps', 'PEREMPUAN', false],
             [2, 'dps', null, true],
+            // Sudah dicoret: tidak boleh ikut angka DPS, tapi harus tetap
+            // muncul sebagai TMS pada rekapnya.
+            [2, 'tms', 'PEREMPUAN', false],
         ];
 
         foreach ($orang as $i => [$tpsId, $tahapan, $jk, $hadir]) {
-            Dpt::create([
+            $baris = Dpt::create([
                 'nik' => str_pad((string) ($i + 1), 16, '0', STR_PAD_LEFT),
                 'nama' => 'PEMILIH ' . ($i + 1),
                 'tps_id' => $tpsId,
@@ -51,6 +54,10 @@ class RekapGenderTest extends TestCase
                 'jenis_kelamin' => $jk,
                 'status_hadir' => $hadir,
             ]);
+
+            if ($tahapan === 'tms') {
+                $baris->delete();
+            }
         }
 
         Sanctum::actingAs(User::create([
@@ -80,6 +87,12 @@ class RekapGenderTest extends TestCase
         $this->assertSame(
             ['l' => 0, 'p' => 0, 'n' => 0, 'lh' => 0, 'ph' => 0, 'nh' => 0],
             $data['stats']['gender']['dpk']
+        );
+        // Pemilih tercoret tetap terhitung sebagai TMS — rekap ini yang
+        // melaporkannya, jadi ia harus meminta baris terhapus secara sengaja.
+        $this->assertSame(
+            ['l' => 0, 'p' => 1, 'n' => 1, 'lh' => 0, 'ph' => 0, 'nh' => 0],
+            $data['stats']['gender']['tms']
         );
 
         $perTps = collect($data['tps_list'])->keyBy('nama');

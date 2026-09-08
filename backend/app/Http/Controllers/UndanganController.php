@@ -40,6 +40,11 @@ class UndanganController extends Controller
         $urutan = $this->urutanDalamTps($aktif);
         $total = $aktif->count();
 
+        // Nomor urut sedesa untuk seluruh pemilih sekaligus. `Dpt::nomorUrut()`
+        // per baris berarti dua COUNT dikali jumlah pemilih TPS — ribuan kueri
+        // untuk satu kali cetak maraton.
+        $nomorUrut = Dpt::petaNomorUrut();
+
         // Yang dicetak hanya DPT dan DPK, sama seperti tombol C6 di tabel.
         $baris = $aktif
             ->filter(fn ($p) => in_array($p->tahapan, ['dpt', 'dpk'], true))
@@ -55,6 +60,11 @@ class UndanganController extends Controller
                 'tahapan' => $p->tahapan,
                 'id_pemilih' => $p->id_pemilih,
                 'no_urut' => $p->no_urut,
+                // Angka yang tercetak di undangan. Bukan `no_urut` bawaan
+                // berkas DPS: begitu ada pemilih dicoret, nomor itu berlubang
+                // dan tidak lagi cocok dengan daftar mana pun. Sama persis
+                // dengan yang ditampilkan halaman Cek Pemilih.
+                'no_urut_tampil' => $nomorUrut[$p->nik] ?? null,
                 'tps' => $tps->nama ?? '',
                 'tps_total_dpt' => $total,
                 'tps_voter_index' => $urutan[$p->nik] ?? 0,
