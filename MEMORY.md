@@ -14,6 +14,11 @@ This file captures the active state, environment variables, completed tasks, and
 
 ## 📋 Task History & Context
 
+- **9 Sep 2026 (lanjutan) — No. Urut di halaman publik hanya untuk DPT dan DPK**:
+  - Sebelum penetapan, nomor seseorang masih bergerak setiap kali ada yang dicoret atau ditambahkan. Menampilkannya saat itu berarti mengundang warga menghafal angka yang hampir pasti berubah, dan mencocokkannya dengan lembar yang bahkan belum dicetak. Kartu hasil pencarian kini **tidak menampilkan blok nomor sama sekali untuk DPS, DPTb, dan DP4** — bukan karena tidak punya nomor, tapi karena nomornya belum berarti apa-apa. Muncul sendiri begitu pemilihnya ditetapkan jadi DPT; DPK ikut memakai label DPT karena dinomori di daftar yang sama.
+  - Perubahannya murni tampilan (`KartuPemilih.tsx`). API tetap mengirim `no_urut_tampil` untuk seluruh tahapan aktif, karena bidang itu juga dipakai pencetakan C6 satuan lewat `/pemilih/cek` dan tidak ada alasan mengubah kontraknya.
+  - Diperiksa langsung di peramban dengan tiga tahapan sungguhan: DP4 dan DPS tidak memunculkan blok nomor, DPT memunculkan "NO. URUT DPT 181". Label kini tetap, tidak lagi mengikuti singkatan tahapan, jadi `metaTahapan` tidak dipakai lagi di berkas itu.
+
 - **9 Sep 2026 — NKK ikut jadi kunci urutan: satu keluarga satu blok**:
   - Urutan RW→RT→`no_urut` ternyata belum cukup. Berkas DPS memang menyusun keluarga berdampingan, tapi urutan itu tidak bertahan: memperbaiki RT/RW satu anggota, atau mendata anggota baru belakangan, menyelipkan orang lain di antara mereka. **Diukur dulu di produksi sebelum menyentuh kode: 336 keluarga terpecah, melibatkan 1.142 orang.**
   - Kunci urutannya jadi **RW → RT → NKK → `no_urut` → `id_pemilih`**. NKK menyatukan keluarga, `no_urut` mempertahankan urutan asli **di dalam** keluarga (kepala keluarga tetap lebih dulu dari anaknya walau `no_urut` anaknya jauh). NKK kosong ditaruh di belakang, sama seperti RW/RT kosong; nomor sintetis berawalan 9998 tersusun sendiri di belakang nomor asli — memang di situ tempatnya, keluarganya belum teridentifikasi.

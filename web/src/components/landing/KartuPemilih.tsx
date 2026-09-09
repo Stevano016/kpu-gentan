@@ -1,7 +1,7 @@
 import React from 'react';
 import { tautanPetaTps } from '../../constants/landing';
 import type { PemilihPublik } from '../../types/app';
-import { BERHAK_MEMILIH, metaTahapan } from '../../utils/tahapan';
+import { BERHAK_MEMILIH } from '../../utils/tahapan';
 import { LandingIcons } from './LandingIcons';
 
 interface BarisProps {
@@ -21,36 +21,29 @@ const Baris: React.FC<BarisProps> = ({ label, className = '', children }) => (
 const namaJenisKelamin = (kode: string): string =>
   kode === 'LAKI-LAKI' ? 'Laki-laki' : 'Perempuan';
 
-interface NomorUrut {
-  label: string;
-  nomor: number;
-}
-
 /**
- * Nomor urut yang ditampilkan untuk satu pemilih, beserta namanya.
+ * Nomor urut yang ditampilkan untuk satu pemilih — atau `null` bila belum
+ * waktunya ditampilkan.
  *
- * Angkanya datang dari server sudah jadi — posisi orang itu di daftar hari ini,
- * bukan nomor bawaan berkas DPS. Bedanya terasa begitu ada yang dicoret: nomor
- * semua orang di belakangnya naik satu, dan undangan cetaknya memakai angka
- * yang sama persis.
+ * **Hanya DPT dan DPK yang diberi nomor di kartu ini.** Sebelum penetapan,
+ * nomor seseorang masih bergerak setiap kali ada yang dicoret atau
+ * ditambahkan; menampilkannya saat itu berarti mengundang warga menghafal
+ * angka yang hampir pasti berubah, dan mencocokkannya dengan lembar yang belum
+ * dicetak. Karena itu DPS, DPTb, dan DP4 tidak menampilkan nomor sama sekali —
+ * bukan karena tidak punya, tapi karena nomornya belum berarti apa-apa.
  *
- * Yang ditentukan di sini hanya namanya. Tidak ada saklar fase yang harus
- * dinyalakan seseorang: label mengikuti tahapan pemilihnya sendiri, jadi kartu
- * berganti dari "No. Urut DPS" ke "No. Urut DPT" saat ia ditetapkan. DPK ikut
- * disebut DPT karena ia memang bagian dari daftar tetap.
+ * Begitu ia ditetapkan jadi DPT, nomornya muncul sendiri. Tidak ada saklar
+ * fase yang harus dinyalakan seseorang: yang menentukan tahapan pemilihnya.
  *
- * `null` berarti pemilihnya memang belum bernomor.
+ * DPK ikut diberi label DPT karena ia memang bagian dari daftar tetap dan
+ * dinomori di daftar yang sama.
  */
-function nomorUrutTampil(pemilih: PemilihPublik): NomorUrut | null {
-  if (pemilih.no_urut_tampil === null || pemilih.no_urut_tampil === undefined) {
+function nomorUrutTampil(pemilih: PemilihPublik): number | null {
+  if (!BERHAK_MEMILIH.includes(pemilih.tahapan)) {
     return null;
   }
 
-  const label = BERHAK_MEMILIH.includes(pemilih.tahapan)
-    ? 'DPT'
-    : metaTahapan(pemilih.tahapan).singkat;
-
-  return { label: `No. Urut ${label}`, nomor: pemilih.no_urut_tampil };
+  return pemilih.no_urut_tampil ?? null;
 }
 
 interface KartuPemilihProps {
@@ -68,11 +61,11 @@ export const KartuPemilih: React.FC<KartuPemilihProps> = ({ pemilih }) => {
 
       {/* Nomor urut ditaruh paling atas dan dibuat besar: inilah satu angka
           yang dicocokkan warga dengan lembar tempel dan undangan cetaknya. */}
-      {urut && (
+      {urut !== null && (
         <div className="voter-nomor">
           <div className="voter-nomor-utama">
-            <span className="voter-nomor-label">{urut.label}</span>
-            <span className="voter-nomor-nilai">{urut.nomor}</span>
+            <span className="voter-nomor-label">No. Urut DPT</span>
+            <span className="voter-nomor-nilai">{urut}</span>
           </div>
         </div>
       )}
