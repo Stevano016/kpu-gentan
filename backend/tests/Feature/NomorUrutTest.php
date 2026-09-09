@@ -217,6 +217,113 @@ class NomorUrutTest extends TestCase
         $this->assertSame(3, $nomor(3), 'RW 004 tetap sesudah seluruh RW 003.');
     }
 
+    /**
+     * Satu keluarga tetap satu blok, walau urutan asalnya terpecah.
+     *
+     * Berkas DPS memang menyusun keluarga berdampingan, tapi urutan itu tidak
+     * bertahan: memperbaiki RT/RW satu anggota, atau mendata anggota baru
+     * belakangan, menyelipkan orang lain di antara mereka. Pada data produksi
+     * hal itu memecah 336 keluarga yang melibatkan 1.142 orang.
+     */
+    public function test_satu_keluarga_tidak_terpecah_walau_no_urut_nya_terselip(): void
+    {
+        Tps::create(['id' => 1, 'nama' => 'TPS 01', 'wilayah' => 'Gentan']);
+
+        // Keluarga A (nkk ...0001) punya anggota di no_urut 1 dan 9 — di
+        // antaranya terselip keluarga B. Dengan urutan lama mereka terpisah.
+        $orang = [
+            ['no_urut' => 1, 'nkk' => '3311100000000001', 'nama' => 'A-SATU'],
+            ['no_urut' => 5, 'nkk' => '3311100000000002', 'nama' => 'B-SATU'],
+            ['no_urut' => 6, 'nkk' => '3311100000000002', 'nama' => 'B-DUA'],
+            ['no_urut' => 9, 'nkk' => '3311100000000001', 'nama' => 'A-DUA'],
+        ];
+
+        foreach ($orang as $i => $d) {
+            Dpt::create([
+                'nik' => str_pad((string) ($i + 1), 16, '0', STR_PAD_LEFT),
+                'nama' => $d['nama'],
+                'tps_id' => 1,
+                'rw' => '001',
+                'rt' => '001',
+                'nkk' => $d['nkk'],
+                'id_pemilih' => sprintf('USH-GTN-%07d', $i + 1),
+                'no_urut' => $d['no_urut'],
+                'tahapan' => 'dps',
+                'jenis_kelamin' => 'LAKI-LAKI',
+            ]);
+        }
+
+        $peta = Dpt::petaNomorUrut();
+        $nomorDari = fn (string $nama) => $peta[Dpt::where('nama', $nama)->firstOrFail()->nik];
+
+        // Keluarga A lebih dulu (NKK-nya lebih kecil) dan utuh berdampingan.
+        $this->assertSame(1, $nomorDari('A-SATU'));
+        $this->assertSame(2, $nomorDari('A-DUA'), 'Anggota keluarga yang sama harus bersebelahan.');
+        // Baru keluarga B, juga utuh.
+        $this->assertSame(3, $nomorDari('B-SATU'));
+        $this->assertSame(4, $nomorDari('B-DUA'));
+    }
+
+    /** Di dalam satu keluarga, urutan aslinya (`no_urut`) dipertahankan. */
+    public function test_urutan_di_dalam_keluarga_tetap_urutan_asli(): void
+    {
+        Tps::create(['id' => 1, 'nama' => 'TPS 01', 'wilayah' => 'Gentan']);
+
+        foreach ([['KEPALA', 3], ['ANAK', 12], ['ISTRI', 4]] as $i => [$nama, $noUrut]) {
+            Dpt::create([
+                'nik' => str_pad((string) ($i + 1), 16, '0', STR_PAD_LEFT),
+                'nama' => $nama,
+                'tps_id' => 1,
+                'rw' => '001',
+                'rt' => '001',
+                'nkk' => '3311100000000001',
+                'id_pemilih' => sprintf('USH-GTN-%07d', $i + 1),
+                'no_urut' => $noUrut,
+                'tahapan' => 'dps',
+                'jenis_kelamin' => 'LAKI-LAKI',
+            ]);
+        }
+
+        $peta = Dpt::petaNomorUrut();
+        $nomorDari = fn (string $nama) => $peta[Dpt::where('nama', $nama)->firstOrFail()->nik];
+
+        $this->assertSame(1, $nomorDari('KEPALA'));
+        $this->assertSame(2, $nomorDari('ISTRI'));
+        $this->assertSame(3, $nomorDari('ANAK'));
+    }
+
+    /** RT tetap mengalahkan NKK: keluarga tidak boleh melompati batas RT. */
+    public function test_rt_tetap_lebih_kuat_daripada_nkk(): void
+    {
+        Tps::create(['id' => 1, 'nama' => 'TPS 01', 'wilayah' => 'Gentan']);
+
+        $orang = [
+            ['rt' => '002', 'nkk' => '3311100000000001', 'nama' => 'RT2-NKK-KECIL'],
+            ['rt' => '001', 'nkk' => '3311100000000009', 'nama' => 'RT1-NKK-BESAR'],
+        ];
+
+        foreach ($orang as $i => $d) {
+            Dpt::create([
+                'nik' => str_pad((string) ($i + 1), 16, '0', STR_PAD_LEFT),
+                'nama' => $d['nama'],
+                'tps_id' => 1,
+                'rw' => '001',
+                'rt' => $d['rt'],
+                'nkk' => $d['nkk'],
+                'id_pemilih' => sprintf('USH-GTN-%07d', $i + 1),
+                'no_urut' => $i + 1,
+                'tahapan' => 'dps',
+                'jenis_kelamin' => 'LAKI-LAKI',
+            ]);
+        }
+
+        $peta = Dpt::petaNomorUrut();
+        $nomorDari = fn (string $nama) => $peta[Dpt::where('nama', $nama)->firstOrFail()->nik];
+
+        $this->assertSame(1, $nomorDari('RT1-NKK-BESAR'), 'RT 001 tetap sebelum RT 002.');
+        $this->assertSame(2, $nomorDari('RT2-NKK-KECIL'));
+    }
+
     public function test_endpoint_publik_dan_undangan_memakai_nomor_yang_sama(): void
     {
         $this->siapkanPemilih();

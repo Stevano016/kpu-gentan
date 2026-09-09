@@ -167,8 +167,9 @@ class Dpt extends Model
      * supaya ketiganya tidak mungkin berbeda. Urutannya:
      *
      *   1. RW, lalu RT — pengelompokan inilah yang dipakai lembar fisik.
-     *   2. `no_urut` bawaan berkas DPS, sebagai urutan asal di dalam satu RT.
-     *   3. `id_pemilih`, pemecah seri terakhir supaya hasilnya pasti.
+     *   2. NKK — satu keluarga tetap berada dalam satu blok berurutan.
+     *   3. `no_urut` bawaan berkas DPS, sebagai urutan asal di dalam keluarga.
+     *   4. `id_pemilih`, pemecah seri terakhir supaya hasilnya pasti.
      *
      * **Kenapa RW/RT lebih dulu, bukan `no_urut` saja.** `no_urut` merekam
      * urutan berkas DPS saat diimpor. Begitu RT/RW seseorang diperbaiki —
@@ -177,7 +178,15 @@ class Dpt extends Model
      * warga RW 001. Mengurutkan wilayahnya lebih dulu mengembalikan daftar
      * itu ke bentuk yang bisa dicocokkan dengan lembar per RW.
      *
-     * RW/RT yang kosong ditaruh di belakang yang bernomor, bukan di depan:
+     * **Kenapa NKK ikut jadi kunci.** Berkas DPS memang menyusun keluarga
+     * berdampingan, tapi urutan itu tidak bertahan: memperbaiki RT/RW satu
+     * anggota, atau menambah anggota baru belakangan, menyelipkan orang lain
+     * di antara mereka. Pada data produksi hal itu memecah **336 keluarga**
+     * yang melibatkan 1.142 orang. Menjadikan NKK kunci sebelum `no_urut`
+     * mengembalikan tiap keluarga ke satu blok utuh, dan urutan di dalam
+     * keluarga tetap urutan aslinya.
+     *
+     * RW/RT/NKK yang kosong ditaruh di belakang yang terisi, bukan di depan:
      * NULL dan string kosong secara alami mengurut paling awal, dan itu akan
      * menaruh data yang belum lengkap di puncak daftar — tempat paling
      * mencolok untuk baris yang justru paling belum siap.
@@ -189,6 +198,11 @@ class Dpt extends Model
             ->orderBy('rw')
             ->orderByRaw("CASE WHEN rt IS NULL OR rt = '' THEN 1 ELSE 0 END ASC")
             ->orderBy('rt')
+            // Satu keluarga satu blok. Nomor sementara buatan sistem (awalan
+            // 9998) tersusun sendiri di belakang nomor asli, dan itu memang
+            // tempatnya: keluarganya belum benar-benar teridentifikasi.
+            ->orderByRaw("CASE WHEN nkk IS NULL OR nkk = '' THEN 1 ELSE 0 END ASC")
+            ->orderBy('nkk')
             // Yang belum bernomor menyusul di belakang seluruh yang bernomor.
             ->orderByRaw('CASE WHEN no_urut IS NULL THEN 1 ELSE 0 END ASC')
             ->orderBy('no_urut')

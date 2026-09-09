@@ -88,9 +88,10 @@ class UndanganController extends Controller
      *
      * Angka inilah pembagi sesi jam pada undangan, jadi urutannya memakai
      * aturan yang sama dengan penomoran daftar (`Dpt::scopeUrutDaftar()`):
-     * RW, RT, lalu urutan asal. Dengan begitu warga satu RT mendapat sesi yang
-     * berdekatan — dan dua orang yang bersebelahan di daftar tidak lagi bisa
-     * kebagian jam berbeda tanpa alasan yang kelihatan.
+     * RW, RT, NKK, lalu urutan asal. Dengan begitu satu keluarga mendapat sesi
+     * jam yang sama — mereka memang datang bersama — dan dua orang yang
+     * bersebelahan di daftar tidak lagi bisa kebagian jam berbeda tanpa alasan
+     * yang kelihatan.
      */
     private function urutanDalamTps($aktif): array
     {
@@ -98,6 +99,7 @@ class UndanganController extends Controller
             $kunci = fn ($p) => [
                 $p->rw === null || $p->rw === '' ? 1 : 0, (string) $p->rw,
                 $p->rt === null || $p->rt === '' ? 1 : 0, (string) $p->rt,
+                $p->nkk === null || $p->nkk === '' ? 1 : 0, (string) $p->nkk,
                 $p->no_urut === null ? 1 : 0, (int) $p->no_urut,
                 (string) $p->id_pemilih,
             ];
