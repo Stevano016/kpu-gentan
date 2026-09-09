@@ -49,12 +49,12 @@ export const SyaratPemilihModal: React.FC<SyaratPemilihModalProps> = ({ isOpen, 
           </div>
 
           <div>
-            <h4 className="syarat-heading">Silakan Menghubungi Pantarlih:</h4>
+            <h4 className="syarat-heading">Hubungi Pantarlih di Wilayah Anda:</h4>
             <div className="pantarlih-table-wrap">
               <table className="pantarlih-table">
                 <thead>
                   <tr>
-                    <th>Nama</th>
+                    <th>Nama & Kontak</th>
                     <th>RW</th>
                     <th>WA</th>
                   </tr>
@@ -62,7 +62,12 @@ export const SyaratPemilihModal: React.FC<SyaratPemilihModalProps> = ({ isOpen, 
                 <tbody>
                   {DAFTAR_PANTARLIH.map(pantarlih => (
                     <tr key={pantarlih.wilayah}>
-                      <td>{pantarlih.nama}</td>
+                      <td>
+                        <div>{pantarlih.nama}</div>
+                        <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', fontWeight: 500, fontFamily: 'monospace', marginTop: '2px' }}>
+                          {pantarlih.telp}
+                        </div>
+                      </td>
                       <td className="pantarlih-wilayah">{pantarlih.wilayah}</td>
                       <td className="pantarlih-aksi">
                         <a
@@ -70,7 +75,7 @@ export const SyaratPemilihModal: React.FC<SyaratPemilihModalProps> = ({ isOpen, 
                           target="_blank"
                           rel="noopener noreferrer"
                           className="wa-btn"
-                          title={`Hubungi ${pantarlih.nama} via WhatsApp`}
+                          title={`Hubungi ${pantarlih.nama} via WhatsApp (${pantarlih.telp})`}
                         >
                           <LandingIcons.WhatsApp />
                         </a>

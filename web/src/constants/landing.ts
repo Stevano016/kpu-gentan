@@ -37,24 +37,26 @@ export interface Pantarlih {
   wilayah: string;
   /** Nomor WhatsApp berformat internasional tanpa tanda plus. */
   wa: string;
+  /** Nomor telepon berformat lokal. */
+  telp: string;
 }
 
 /** Kontak pantarlih per RW, ditampilkan saat data pemilih tidak ditemukan. */
 export const DAFTAR_PANTARLIH: Pantarlih[] = [
-  { nama: 'DANANG SUPRIYDI', wilayah: 'RW. 001', wa: '628112631016' },
-  { nama: 'DWI SETIAWAN', wilayah: 'RW. 002', wa: '6281382286151' },
-  { nama: 'YOGI YUNIANTO', wilayah: 'RW. 003', wa: '62895327040201' },
-  { nama: 'RAHAYU EMBONG W', wilayah: 'RW. 004', wa: '6288808310449' },
-  { nama: 'AGUS SUTAMTOMO', wilayah: 'RW. 005', wa: '6289509789748' },
-  { nama: 'MUHAMMAD KRISNA MUKTI', wilayah: 'RW. 006', wa: '6289690010502' },
-  { nama: 'SUROSO', wilayah: 'RW. 007', wa: '6288802655697' },
-  { nama: 'TRI HARYONO', wilayah: 'RW. 008', wa: '6285712750705' },
-  { nama: 'KALIKTUS TUNA', wilayah: 'RW. 009', wa: '6281226282460' },
-  { nama: 'EKA RAHMAWAN', wilayah: 'RW. 010', wa: '6285647020102' },
-  { nama: 'TRI UTOMO', wilayah: 'RW. 011', wa: '6283179331297' },
-  { nama: 'TEGUH SUPRIANTO', wilayah: 'RW. 012', wa: '6283179331297' },
-  { nama: 'DIANA ASRININGRUM', wilayah: 'RW. 013', wa: '6281227916591' },
-  { nama: 'SUNARYO', wilayah: 'RW. 014', wa: '628122585546' },
+  { nama: 'DANANG SUPRIYDI', wilayah: 'RW. 001', wa: '628112631016', telp: '08112631016' },
+  { nama: 'DWI SETIAWAN', wilayah: 'RW. 002', wa: '6281382286151', telp: '081382286151' },
+  { nama: 'YOGI YUNIANTO', wilayah: 'RW. 003', wa: '62895327040201', telp: '0895327040201' },
+  { nama: 'RAHAYU EMBONG W', wilayah: 'RW. 004', wa: '6288808310449', telp: '088808310449' },
+  { nama: 'AGUS SUTAMTOMO', wilayah: 'RW. 005', wa: '6289509789748', telp: '089509789748' },
+  { nama: 'MUHAMMAD KRISNA MUKTI', wilayah: 'RW. 006', wa: '6289690010502', telp: '089690010502' },
+  { nama: 'SUROSO', wilayah: 'RW. 007', wa: '6288802655697', telp: '088802655697' },
+  { nama: 'TRI HARYONO', wilayah: 'RW. 008', wa: '6285712750705', telp: '085712750705' },
+  { nama: 'KALIKTUS TUNA', wilayah: 'RW. 009', wa: '6281226282460', telp: '081226282460' },
+  { nama: 'EKA RAHMAWAN', wilayah: 'RW. 010', wa: '6285647020102', telp: '085647020102' },
+  { nama: 'TRI UTOMO', wilayah: 'RW. 011', wa: '6283179331297', telp: '083179331297' },
+  { nama: 'TEGUH SUPRIANTO', wilayah: 'RW. 012', wa: '6289530441818', telp: '089530441818' },
+  { nama: 'DIANA ASRININGRUM', wilayah: 'RW. 013', wa: '6281227916591', telp: '081227916591' },
+  { nama: 'SUNARYO', wilayah: 'RW. 014', wa: '628122585546', telp: '08122585546' },
 ];
 
 /** Tautan WhatsApp beserta pesan pembuka yang sudah terisi. */
