@@ -659,7 +659,7 @@ class DptController extends Controller
     public function cekMandiri(Request $request)
     {
         $validator = Validator::make($request->all(), [
-            'nik' => 'nullable|string|min:4',
+            'nik' => 'nullable|string|min:16',
             'nama' => 'required_without:nik|nullable|string|min:3',
             'rt' => 'required_with:nama|nullable|string',
             'rw' => 'required_with:nama|nullable|string',

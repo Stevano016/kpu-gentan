@@ -341,4 +341,16 @@ class NomorUrutTest extends TestCase
             ->assertOk()
             ->assertJsonCount(0, 'data');
     }
+
+    public function test_endpoint_publik_validasi_nik_minimal_16_karakter(): void
+    {
+        // NIK kurang dari 16 karakter ditolak dengan 422
+        $this->getJson('/api/pemilih/cek?nik=12345')
+            ->assertStatus(422)
+            ->assertJsonValidationErrors(['nik']);
+
+        // NIK 16 karakter lolos validasi
+        $this->getJson('/api/pemilih/cek?nik=3311101234560001')
+            ->assertOk();
+    }
 }

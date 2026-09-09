@@ -14,8 +14,8 @@ export interface FormPencarian {
 
 const FORM_KOSONG: FormPencarian = { nik: '', nama: '', rt: '', rw: '' };
 
-/** NIK boleh sebagian: warga sering hanya ingat empat digit terakhir. */
-const NIK_MINIMAL = 4;
+/** NIK wajib 16 digit sesuai KTP. */
+const NIK_MINIMAL = 16;
 const NAMA_MINIMAL = 3;
 
 /**

@@ -14,6 +14,11 @@ This file captures the active state, environment variables, completed tasks, and
 
 ## 📋 Task History & Context
 
+- **10 Sep 2026 (lanjutan) — Validasi NIK pencarian publik diubah menjadi minimal 16 karakter**:
+  - Mengubah batas minimal panjang NIK pada form pencarian mandiri publik dari 4 menjadi 16 karakter (`NIK_MINIMAL = 16` di [`useCekPemilih.ts`](file:///D:/Coding/KPPS%20Gentan/web/src/hooks/useCekPemilih.ts)), sehingga pesan validasi menjadi: `"Harap masukkan NIK dengan benar (minimal 16 karakter)."`.
+  - Menyesuaikan validasi backend API di [`DptController.php`](file:///D:/Coding/KPPS%20Gentan/backend/app/Http/Controllers/DptController.php) (`cekMandiri`) agar `nik` wajib minimal 16 karakter (`min:16`).
+  - Menambahkan pengujian di `tests/Feature/NomorUrutTest.php` (`test_endpoint_publik_validasi_nik_minimal_16_karakter`) — 29 pengujian backend lolos.
+
 - **10 Sep 2026 — Pembaruan kontak WhatsApp Pantarlih di Landing Page**:
   - Memperbarui daftar kontak Pantarlih di modal "Syarat Pemilih & Daftar Pantarlih" ([landing.ts](file:///D:/Coding/KPPS%20Gentan/web/src/constants/landing.ts)).
   - Mengoreksi nomor kontak RW. 012 (TEGUH SUPRIANTO) dari nomor ganda RW 011 menjadi `089530441818` (`6289530441818`).
