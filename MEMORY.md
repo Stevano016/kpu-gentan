@@ -17,7 +17,7 @@ This file captures the active state, environment variables, completed tasks, and
 - **10 Sep 2026 — Pembaruan kontak WhatsApp Pantarlih di Landing Page**:
   - Memperbarui daftar kontak Pantarlih di modal "Syarat Pemilih & Daftar Pantarlih" ([landing.ts](file:///D:/Coding/KPPS%20Gentan/web/src/constants/landing.ts)).
   - Mengoreksi nomor kontak RW. 012 (TEGUH SUPRIANTO) dari nomor ganda RW 011 menjadi `089530441818` (`6289530441818`).
-  - Menampilkan nomor telepon langsung di bawah nama Pantarlih pada tabel modal ([SyaratPemilihModal.tsx](file:///D:/Coding/KPPS%20Gentan/web/src/components/landing/SyaratPemilihModal.tsx)) untuk kemudahan salin/baca warga tanpa harus membuka aplikasi WhatsApp.
+  - Menghapus teks nomor telepon di bawah nama Pantarlih pada tabel modal ([SyaratPemilihModal.tsx](file:///D:/Coding/KPPS%20Gentan/web/src/components/landing/SyaratPemilihModal.tsx)) agar antarmuka tetap bersih; nomor telepon ditaruh pada tombol WhatsApp (`title` & `aria-label`) yang langsung membuka tautan `wa.me`.
 
 - **9 Sep 2026 (lanjutan) — No. Urut di halaman publik hanya untuk DPT dan DPK**:
   - Sebelum penetapan, nomor seseorang masih bergerak setiap kali ada yang dicoret atau ditambahkan. Menampilkannya saat itu berarti mengundang warga menghafal angka yang hampir pasti berubah, dan mencocokkannya dengan lembar yang bahkan belum dicetak. Kartu hasil pencarian kini **tidak menampilkan blok nomor sama sekali untuk DPS, DPTb, dan DP4** — bukan karena tidak punya nomor, tapi karena nomornya belum berarti apa-apa. Muncul sendiri begitu pemilihnya ditetapkan jadi DPT; DPK ikut memakai label DPT karena dinomori di daftar yang sama.
