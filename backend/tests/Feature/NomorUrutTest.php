@@ -344,13 +344,48 @@ class NomorUrutTest extends TestCase
 
     public function test_endpoint_publik_validasi_nik_minimal_16_karakter(): void
     {
+        $this->siapkanPemilih();
+
         // NIK kurang dari 16 karakter ditolak dengan 422
         $this->getJson('/api/pemilih/cek?nik=12345')
             ->assertStatus(422)
             ->assertJsonValidationErrors(['nik']);
 
         // NIK 16 karakter lolos validasi
-        $this->getJson('/api/pemilih/cek?nik=3311101234560001')
+        $res = $this->getJson('/api/pemilih/cek?nik=' . str_pad('4', 16, '0', STR_PAD_LEFT))
             ->assertOk();
+
+        $this->assertArrayHasKey('tps_total_dpt', $res->json('data.0'));
+        $this->assertArrayHasKey('tps_voter_index', $res->json('data.0'));
+    }
+
+    public function test_import_csv_anti_n_plus_one(): void
+    {
+        \Laravel\Sanctum\Sanctum::actingAs(\App\Models\User::create([
+            'username' => 'admin_csv',
+            'password' => bcrypt('password'),
+            'role' => 'sekretariat',
+            'sekretariat_role' => 'admin',
+        ]));
+
+        $tps = \App\Models\Tps::create(['nama' => 'TPS 01', 'wilayah' => 'Gentan', 'total_dpt' => 0]);
+
+        $csvContent = "NIK,NAMA,TPS\n";
+        $csvContent .= "3311100000000001,Budi Santoso,TPS 01\n";
+        $csvContent .= "3311100000000002,Siti Aminah,TPS 01\n";
+
+        $file = \Illuminate\Http\UploadedFile::fake()->createWithContent('dpt.csv', $csvContent);
+
+        $response = $this->postJson('/api/dpt/import', [
+            'file' => $file,
+        ]);
+
+        $response->assertOk()
+            ->assertJsonPath('status', 'success')
+            ->assertJsonPath('message', 'Berhasil mengimpor 2 data pemilih.');
+
+        $this->assertDatabaseHas('dpt', ['nik' => '3311100000000001', 'nama' => 'Budi Santoso']);
+        $this->assertDatabaseHas('dpt', ['nik' => '3311100000000002', 'nama' => 'Siti Aminah']);
+        $this->assertEquals(2, $tps->fresh()->total_dpt);
     }
 }

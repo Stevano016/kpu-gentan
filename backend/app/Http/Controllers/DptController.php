@@ -527,6 +527,27 @@ class DptController extends Controller
             $nextIndex = intval($suffixStr) + 1;
         }
 
+        // Kumpulkan semua NIK valid dari CSV untuk diperiksa sekaligus (Anti-N+1)
+        $csvNiks = [];
+        foreach ($rows as $r) {
+            if (isset($r[$nikIdx])) {
+                $n = trim($r[$nikIdx]);
+                if (strlen($n) === 16 && is_numeric($n)) {
+                    $csvNiks[] = $n;
+                }
+            }
+        }
+
+        $existingNiks = [];
+        if (!empty($csvNiks)) {
+            $existingNiks = Dpt::withTrashed()
+                ->whereIn('nik', array_unique($csvNiks))
+                ->pluck('nik')
+                ->flip()
+                ->toArray();
+        }
+
+        $tpsIncrements = [];
         $successCount = 0;
         $errors = [];
 
@@ -560,16 +581,17 @@ class DptController extends Controller
                     continue;
                 }
 
-                // Check existing in DB. `withTrashed()`: NIK baris tercoret
-                // tetap menempati kunci primer, jadi tanpa ini pemeriksaan
-                // lolos lalu `Dpt::create()` melempar duplikat — dan karena
-                // impor berjalan dalam satu transaksi, satu baris seperti itu
-                // membatalkan seluruh berkas.
-                $exists = Dpt::withTrashed()->where('nik', $nik)->exists();
-                if ($exists) {
+                // Check existing in DB (O(1) in-memory lookup).
+                // `withTrashed()`: NIK baris tercoret tetap menempati kunci
+                // primer, jadi tanpa ini pemeriksaan lolos lalu `Dpt::create()`
+                // melempar duplikat — dan karena impor berjalan dalam satu
+                // transaksi, satu baris seperti itu membatalkan seluruh berkas.
+                if (isset($existingNiks[$nik])) {
                     $errors[] = "Baris " . ($index + 2) . ": NIK {$nik} sudah terdaftar.";
                     continue;
                 }
+                // Tandai NIK sudah dipakai agar NIK ganda di berkas yang sama ikut tertolak
+                $existingNiks[$nik] = true;
 
                 // Find TPS ID
                 $tpsId = null;
@@ -619,9 +641,15 @@ class DptController extends Controller
                     'tahapan' => 'dp4',
                 ]);
 
-                Tps::where('id', $tpsId)->increment('total_dpt');
+                $tpsIncrements[$tpsId] = ($tpsIncrements[$tpsId] ?? 0) + 1;
                 $successCount++;
             }
+
+            // Update total_dpt TPS secara batch (Anti-N+1)
+            foreach ($tpsIncrements as $tId => $count) {
+                Tps::where('id', $tId)->increment('total_dpt', $count);
+            }
+
             DB::commit();
             \App\Utils\Broadcaster::trigger('update', ['tps_id' => 'all']);
         } catch (\Exception $e) {
@@ -701,7 +729,26 @@ class DptController extends Controller
             ]);
         }
 
-        $formatted = $voters->map(function ($v) {
+        // Ambil data total DPT dan urutan kedatangan per TPS sekaligus (Anti-N+1).
+        // Aturan urutan memakai Dpt::scopeUrutDaftar() (RW -> RT -> NKK -> no_urut -> id_pemilih),
+        // sama persis dengan urutan cetak undangan di UndanganController.
+        $tpsIds = $voters->pluck('tps_id')->filter()->unique()->values();
+        $tpsData = [];
+
+        foreach ($tpsIds as $tpsId) {
+            $tpsVoters = Dpt::where('tps_id', $tpsId)
+                ->whereIn('tahapan', Dpt::TAHAPAN_AKTIF)
+                ->urutDaftar()
+                ->pluck('nik')
+                ->toArray();
+
+            $tpsData[$tpsId] = [
+                'total' => count($tpsVoters),
+                'indices' => array_flip($tpsVoters),
+            ];
+        }
+
+        $formatted = $voters->map(function ($v) use ($tpsData) {
             // Masking NIK: 331110**********0001
             $nikMasked = $v->nik;
             if (strlen($nikMasked) === 16) {
@@ -720,29 +767,8 @@ class DptController extends Controller
                 }
             }
 
-            $totalDptTps = \App\Models\Dpt::where('tps_id', $v->tps_id)
-                ->whereIn('tahapan', \App\Models\Dpt::TAHAPAN_AKTIF)
-                ->count();
-            
-            $voterIndex = 0;
-            if ($v->no_urut !== null) {
-                $voterIndex = \App\Models\Dpt::where('tps_id', $v->tps_id)
-                    ->whereIn('tahapan', \App\Models\Dpt::TAHAPAN_AKTIF)
-                    ->where(function($q) use ($v) {
-                        $q->where('no_urut', '<', $v->no_urut)
-                          ->orWhere(function($sub) use ($v) {
-                              $sub->whereNull('no_urut')
-                                  ->where('id_pemilih', '<', $v->id_pemilih);
-                          });
-                    })
-                    ->count();
-            } else {
-                $voterIndex = \App\Models\Dpt::where('tps_id', $v->tps_id)
-                    ->whereIn('tahapan', \App\Models\Dpt::TAHAPAN_AKTIF)
-                    ->whereNull('no_urut')
-                    ->where('id_pemilih', '<', $v->id_pemilih)
-                    ->count();
-            }
+            $totalDptTps = $tpsData[$v->tps_id]['total'] ?? 0;
+            $voterIndex = $tpsData[$v->tps_id]['indices'][$v->nik] ?? 0;
 
             return [
                 'nama' => strtoupper($v->nama),

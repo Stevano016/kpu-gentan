@@ -14,6 +14,12 @@ This file captures the active state, environment variables, completed tasks, and
 
 ## 📋 Task History & Context
 
+- **10 Sep 2026 (lanjutan) — Audit & Eliminasi Kueri N+1 pada Backend**:
+  - Mengaudit seluruh controller dan model backend untuk mendeteksi kueri di dalam loop.
+  - Mengoptimasi `DptController::importCsv()`: mengganti kueri per-baris `where('nik', $nik)->exists()` dengan kueri batch `whereIn('nik', $csvNiks)` sebelum loop ($O(1)$ memory lookup), serta membatch increment `total_dpt` TPS setelah loop selesai. Menghilangkan ~2.000 kueri berlebih saat impor berkas 1.000 baris.
+  - Mengoptimasi `DptController::cekMandiri()`: mengambil data total pemilih TPS dan indeks urutan per-TPS di luar loop mapping menggunakan `scopeUrutDaftar()` sehingga menghilangkan kueri hitung per-pemilih di dalam `map()`.
+  - Menambahkan pengujian di `tests/Feature/NomorUrutTest.php` (`test_import_csv_anti_n_plus_one`) — 30 feature tests backend lolos 100%.
+
 - **10 Sep 2026 (lanjutan) — Validasi NIK pencarian publik diubah menjadi minimal 16 karakter**:
   - Mengubah batas minimal panjang NIK pada form pencarian mandiri publik dari 4 menjadi 16 karakter (`NIK_MINIMAL = 16` di [`useCekPemilih.ts`](file:///D:/Coding/KPPS%20Gentan/web/src/hooks/useCekPemilih.ts)), sehingga pesan validasi menjadi: `"Harap masukkan NIK dengan benar (minimal 16 karakter)."`.
   - Menyesuaikan validasi backend API di [`DptController.php`](file:///D:/Coding/KPPS%20Gentan/backend/app/Http/Controllers/DptController.php) (`cekMandiri`) agar `nik` wajib minimal 16 karakter (`min:16`).
